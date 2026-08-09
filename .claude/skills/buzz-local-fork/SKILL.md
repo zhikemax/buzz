@@ -4,9 +4,9 @@ description: >-
   Maintains this Buzz fork's local mods (zh-CN i18n, local Docker closed-loop
   community create, managed-agent localhost Host fix, Windows build tweaks) and
   syncs them onto official block/buzz main without losing either side. Use when
-  the user mentions 官方同步, sync upstream/main, 汉化, zh-CN i18n, 本地闭环,
-  LocalCommunityCreateForm, localhost Host, mesh-llm Windows build, or updating
-  the feat/zh-CN-i18n branch after upstream moves.
+  the user mentions 同步官方, 官方同步, 版本升级, sync upstream/main, 汉化,
+  zh-CN i18n, 本地闭环, LocalCommunityCreateForm, localhost Host, mesh-llm
+  Windows build, or updating the feat/zh-CN-i18n branch after upstream moves.
 ---
 
 # Buzz local fork — sync + preserve mods
@@ -57,7 +57,7 @@ equivalent). Do not rewrite hook PATH.
 ## Conflict resolution rules
 
 1. **Upstream structure wins for new features** — keep new UI/logic from
-   `origin/main`, then re-wire user-visible strings through `useT()` / `t("key")`.
+   `upstream/main`, then re-wire user-visible strings through `useT()` / `t("key")`.
 2. **Create-community path stays local** — welcome / add-community **create**
    continues to use `LocalCommunityCreateForm`, not `HostedCommunityOnboarding`.
    Hosted code may remain in tree for join/other flows; do not delete it just to
