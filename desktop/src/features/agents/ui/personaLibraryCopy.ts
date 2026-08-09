@@ -1,45 +1,27 @@
 import type { TranslateFn } from "@/shared/i18n";
 
-export function getPersonaLibraryCopy(t: TranslateFn) {
-  return {
-    title: t("agents.myAgents"),
-    description:
-      "The agents you have chosen for this app. Use them to create teams and launch agents.",
-    chooseFromCatalog: t("agents.chooseFromCatalog"),
-    createNew: t("agents.newAgent"),
-    import: t("agents.importSnapshot"),
-    emptyTitle: t("agents.noAgentsYet"),
-    emptyDescription: t("agents.emptyHint"),
-    emptyImportHint:
-      "Or drop an .agent.json or .agent.png snapshot here to import.",
-  } as const;
-}
-
 export function getPersonaCatalogCopy(t: TranslateFn) {
   return {
     title: t("agents.catalogTitle"),
     description: t("agents.catalogHint"),
     dialogTitle: t("agents.catalogTitle"),
     dialogDescription: t("agents.catalogHint"),
-    emptyTitle: "You're all set",
-    emptyDescription: "Everything in Agent Catalog is already in My Agents.",
-    emptyCatalogDescription: "Shared agents will appear here.",
+    emptyTitle: t("agents.catalogAllSetTitle"),
+    emptyDescription: t("agents.catalogAllSetDescription"),
+    emptyCatalogDescription: t("agents.catalogEmptyHint"),
     emptyCatalogTitle: t("agents.catalogEmpty"),
     detailsAction: t("agents.viewDetails"),
     selectAction: t("agents.choose"),
     deselectAction: t("agents.deselect"),
-    selectedState: "Selected",
-    availableState: "Available",
-    detailSelectedTitle: "Selected for My Agents",
-    detailSelectedDescription:
-      "Turn this off to remove the agent from teams and agent creation in this app.",
-    detailAvailableTitle: "Available in Agent Catalog",
-    detailAvailableDescription:
-      "Turn this on to make the agent available for teams and agent creation.",
+    selectedState: t("agents.catalogSelectedState"),
+    availableState: t("agents.catalogAvailableState"),
+    detailSelectedTitle: t("agents.catalogDetailSelectedTitle"),
+    detailSelectedDescription: t("agents.catalogDetailSelectedDescription"),
+    detailAvailableTitle: t("agents.catalogDetailAvailableTitle"),
+    detailAvailableDescription: t("agents.catalogDetailAvailableDescription"),
     useAction: t("agents.addAgent"),
     addedAction: t("agents.addedToMyAgents"),
-    teamEmptyState:
-      "No agents in My Agents yet. Create one or choose one from Agent Catalog first.",
+    teamEmptyState: t("agents.catalogTeamEmptyState"),
   } as const;
 }
 

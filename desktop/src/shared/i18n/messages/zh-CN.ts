@@ -199,10 +199,17 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.appearance.lang.en": "English",
   "settings.appearance.lang.zhCN": "简体中文",
   "settings.appearance.threadLayout": "话题布局",
+  "settings.appearance.threadLayoutAllCommunities": "（所有社区）",
   "settings.appearance.threadFocus": "聚焦",
   "settings.appearance.threadFocusDesc": "话题以全宽覆盖频道打开",
   "settings.appearance.threadSplit": "分栏",
   "settings.appearance.threadSplitDesc": "话题在频道旁侧栏打开",
+  "settings.appearance.linkPreviewTitle": "链接",
+  "settings.appearance.linkPreviewCompact": "紧凑",
+  "settings.appearance.linkPreviewCompactDesc": "以紧凑横向卡片展示链接",
+  "settings.appearance.linkPreviewRich": "丰富",
+  "settings.appearance.linkPreviewRichDesc":
+    "展开链接预览，显示更大图片与描述",
   "settings.appearance.accentColor": "强调色",
 
   "settings.agents.title": "智能体",
@@ -494,6 +501,22 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.mobile.stopped": "配对已停止：{reason}",
   "settings.mobile.codesMismatch": "验证码不一致，配对已取消。",
   "settings.mobile.canceled": "配对已取消。",
+  "settings.mobile.stepScanTitle": "扫描二维码",
+  "settings.mobile.stepScanDesc":
+    "在手机上打开 Buzz，扫描此处显示的二维码。",
+  "settings.mobile.stepConfirmTitle": "确认手机验证码",
+  "settings.mobile.stepConfirmDesc":
+    "确认两端显示的六位验证码一致后，再确认配对。",
+  "settings.mobile.stepDoneTitle": "已配对",
+  "settings.mobile.stepFinalTitle": "配对你的移动应用",
+  "settings.mobile.stepDoneDesc": "你的移动应用现已连接到此中继。",
+  "settings.mobile.stepFinalDesc": "确认验证码后，移动应用将完成连接。",
+  "settings.mobile.confirmationCodeLegend": "确认码 {code}",
+  "settings.mobile.pairingDevice": "正在配对移动设备…",
+  "settings.mobile.liveRegionSas":
+    "验证码 {code} 已就绪。请确认与手机上一致，然后确认验证码匹配。",
+  "settings.mobile.liveRegionTransferring": "验证码已确认，正在配对移动设备。",
+  "settings.mobile.liveRegionDone": "移动应用已完成配对。",
 
   "settings.experimental.title": "实验功能",
   "settings.experimental.description":
@@ -1083,6 +1106,7 @@ export const zhCN: Record<MessageKey, string> = {
   "composer.toggleFormatting": "切换格式",
   "composer.mention": "提及某人",
   "composer.attachImage": "附加图片",
+  "composer.attachFile": "附加文件",
   "composer.send": "发送消息",
   "composer.sending": "发送中",
   "composer.editingMessage": "正在编辑消息",
@@ -1113,7 +1137,12 @@ export const zhCN: Record<MessageKey, string> = {
   "msg.mentionOutsideOne": "{name} 不在此频道。可邀请加入，或直接发送不邀请。",
   "msg.mentionOutsideMany":
     "{names} 不在此频道。可邀请加入，或直接发送不邀请。",
+  "msg.mentionOutsideOneDenied":
+    "{name} 不在此频道。{denied} 你仍可直接发送而不邀请。",
+  "msg.mentionOutsideManyDenied":
+    "{names} 不在此频道。{denied} 你仍可直接发送而不邀请。",
   "msg.doNothing": "不邀请",
+  "msg.sendAnyway": "仍然发送",
   "msg.invite": "邀请",
   "msg.inviting": "邀请中…",
   "msg.noMessagesYet": "暂无消息",
@@ -1335,6 +1364,11 @@ export const zhCN: Record<MessageKey, string> = {
   "onboard.keyringMissing":
     "系统钥匙串中已找不到你的身份。请重新导入 nsec 以恢复。",
   "onboard.haveAccountHint": "如果你已有 Buzz 账户，请在下方输入私钥开始使用。",
+  "onboard.signInWithKeyPrefix": "粘贴私钥登录 Buzz。你也可以使用",
+  "onboard.signInWithKeyMiddle": "，或",
+  "onboard.signInWithKeySuffix": "。",
+  "onboard.backupFileLink": "备份文件",
+  "onboard.recoverFromPhoneLink": "从手机恢复",
   "onboard.startNewIdentity": "开始新身份",
   "onboard.confirmNewIdentity":
     "这将创建新身份并放弃先前的密钥，且无法撤销。是否继续？",
@@ -1777,6 +1811,19 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.catalogTitle": "智能体目录",
   "agents.catalogHint": "浏览此中继上分享的智能体。",
   "agents.catalogEmpty": "暂无分享中的智能体",
+  "agents.catalogEmptyHint": "分享的智能体会显示在这里。",
+  "agents.catalogAllSetTitle": "已全部添加",
+  "agents.catalogAllSetDescription": "智能体目录中的内容已全部在「我的智能体」中。",
+  "agents.catalogSelectedState": "已选择",
+  "agents.catalogAvailableState": "可用",
+  "agents.catalogDetailSelectedTitle": "已添加到「我的智能体」",
+  "agents.catalogDetailSelectedDescription":
+    "关闭后将从此应用的团队和智能体创建中移除该智能体。",
+  "agents.catalogDetailAvailableTitle": "在智能体目录中可用",
+  "agents.catalogDetailAvailableDescription":
+    "开启后可在团队和智能体创建中使用该智能体。",
+  "agents.catalogTeamEmptyState":
+    "「我的智能体」中还没有智能体。请先创建一个，或从智能体目录中选择。",
   "agents.addAgent": "添加智能体",
   "agents.addedToMyAgents": "已添加到「我的智能体」",
   "agents.choose": "选择",
@@ -1824,11 +1871,19 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.communityMember": "社区成员",
   "agents.startNamed": "启动 {label}",
   "agents.startingNamed": "正在启动 {label}",
+  "agents.startAgent": "启动智能体",
+  "agents.startingAgent": "正在启动智能体",
+  "agents.restartAgent": "重启智能体",
+  "agents.restartingAgent": "正在重启智能体",
+  "agents.start": "启动",
+  "agents.restart": "重启",
   "agents.respond.label": "谁可以发送指令",
   "agents.respond.onlyMe": "仅限我（默认）",
   "agents.respond.anyone": "任何人",
   "agents.respond.selectedPeople": "选定的人",
   "agents.respond.onlyYouHint": "只有你可以发送指令。",
+  "agents.respond.onlyYouAndAgentsHint":
+    "只有你和你的智能体可以发送指令。",
   "agents.respond.selectedCount": "已选 {count} 人",
   "agents.respond.ownerAlwaysBefore": "你（",
   "agents.respond.ownerAlwaysAfter":

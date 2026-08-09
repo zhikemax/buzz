@@ -57,13 +57,11 @@ export function AddCommunityDialog({
       relayUrl,
       inviteCode,
       policyReceipt,
-      token,
       communityName,
     }: {
       relayUrl: string;
       inviteCode?: string;
       policyReceipt?: string;
-      token?: string;
       communityName?: string;
     }) => {
       const started = communityOnboarding.start({
@@ -72,7 +70,6 @@ export function AddCommunityDialog({
         inviteCode,
         communityName: communityName ?? prefill?.name,
         policyReceipt,
-        token,
       });
       if (!started) {
         setJoinError(t("hosted.onboardingInProgressShort"));
@@ -187,9 +184,7 @@ export function AddCommunityDialog({
                 setJoinError(null);
                 setMode("choose");
               }}
-              onConnect={(relayUrl, token) =>
-                startConnection({ relayUrl, token })
-              }
+              onConnect={(relayUrl) => startConnection({ relayUrl })}
               onRedeem={(relayUrl, inviteCode, policyReceipt) =>
                 startConnection({ relayUrl, inviteCode, policyReceipt })
               }

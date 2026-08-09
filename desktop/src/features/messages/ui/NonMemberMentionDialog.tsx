@@ -8,8 +8,11 @@ import {
 } from "@/shared/ui/alert-dialog";
 import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
+import { PRIVATE_CHANNEL_ADD_DENIED_MESSAGE } from "@/features/channels/lib/channelMemberAdmission";
 
 type NonMemberMentionDialogProps = {
+  /** False in a private channel the viewer doesn't own/administer. */
+  canInvite: boolean;
   error: string | null;
   isInvitePending: boolean;
   names: string[];
@@ -20,6 +23,7 @@ type NonMemberMentionDialogProps = {
 };
 
 export function NonMemberMentionDialog({
+  canInvite,
   error,
   isInvitePending,
   names,
@@ -45,9 +49,19 @@ export function NonMemberMentionDialog({
             {t("msg.mentionOutsideTitle")}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {names.length === 1
-              ? t("msg.mentionOutsideOne", { name: joinedNames })
-              : t("msg.mentionOutsideMany", { names: joinedNames })}
+            {canInvite
+              ? names.length === 1
+                ? t("msg.mentionOutsideOne", { name: joinedNames })
+                : t("msg.mentionOutsideMany", { names: joinedNames })
+              : names.length === 1
+                ? t("msg.mentionOutsideOneDenied", {
+                    name: joinedNames,
+                    denied: PRIVATE_CHANNEL_ADD_DENIED_MESSAGE,
+                  })
+                : t("msg.mentionOutsideManyDenied", {
+                    names: joinedNames,
+                    denied: PRIVATE_CHANNEL_ADD_DENIED_MESSAGE,
+                  })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (
@@ -63,16 +77,18 @@ export function NonMemberMentionDialog({
             type="button"
             variant="outline"
           >
-            {t("msg.doNothing")}
+            {canInvite ? t("msg.doNothing") : t("msg.sendAnyway")}
           </Button>
-          <Button
-            disabled={isInvitePending}
-            onClick={onInvite}
-            size="sm"
-            type="button"
-          >
-            {isInvitePending ? t("msg.inviting") : t("msg.invite")}
-          </Button>
+          {canInvite ? (
+            <Button
+              disabled={isInvitePending}
+              onClick={onInvite}
+              size="sm"
+              type="button"
+            >
+              {isInvitePending ? t("msg.inviting") : t("msg.invite")}
+            </Button>
+          ) : null}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

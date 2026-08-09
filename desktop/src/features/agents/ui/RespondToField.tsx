@@ -40,6 +40,12 @@ import type { PersonaDropdownOption } from "./agentConfigOptions";
  * than an explanation, and stays one sentence — Only me already owns the line
  * below the control.
  *
+ * The line below Only me says "Only you and your agents", because the harness
+ * gate admits the owner and every verified same-owner agent, not the owner
+ * alone (see `managed_agents/access_policy.rs`). The dropdown label stays
+ * "Only me": it is the audience the user picks, and it has meant this since
+ * before agents could instruct each other.
+ *
  * Which machine and stakes it names follow the optional `runLocation` prop, and
  * an unknown location falls back to the local wording rather than hedging with
  * "computer or server" — see `lib/agentAccessWarning.ts` for the copy and the
@@ -76,6 +82,9 @@ const RESPOND_TO_OPTIONS: ReadonlyArray<{
   { labelKey: "agents.respond.selectedPeople", value: "allowlist" },
 ];
 
+export const OWNER_ONLY_ACCESS_DISABLED_REASON =
+  "This build disallows changing this setting.";
+
 export function CreateAgentRespondToField({
   mode,
   allowlist,
@@ -83,6 +92,7 @@ export function CreateAgentRespondToField({
   onAllowlistChange,
   ownerPubkey,
   disabled,
+  disabledReason,
   variant,
   runLocation,
 }: {
@@ -97,6 +107,8 @@ export function CreateAgentRespondToField({
    */
   ownerPubkey?: string | null;
   disabled?: boolean;
+  /** Explanation shown when this access control is unavailable. */
+  disabledReason?: string;
   /** When "persona", uses PersonaDropdownField styling to match the persona dialog. */
   variant?: "default" | "persona";
   /**
@@ -231,10 +243,18 @@ export function CreateAgentRespondToField({
           ))}
         </select>
       )}
+      {disabledReason ? (
+        <p
+          className="text-xs text-muted-foreground"
+          data-testid="agent-respond-to-disabled-reason"
+        >
+          {disabledReason}
+        </p>
+      ) : null}
       {mode === "anyone" ? accessWarning : null}
       {mode === "owner-only" ? (
         <p className="text-xs text-muted-foreground">
-          {t("agents.respond.onlyYouHint")}
+          {t("agents.respond.onlyYouAndAgentsHint")}
         </p>
       ) : null}
       {mode === "allowlist" ? (

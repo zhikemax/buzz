@@ -106,13 +106,22 @@ export function AppSidebarPrimaryMenu({
       <SidebarMenu className="pb-2">
         <SidebarMenuItem>
           <SidebarMenuButton
+            className="data-[active=true]:font-normal"
             isActive={selectedView === "home"}
             onClick={onSelectHome}
             tooltip={inboxLabel}
             type="button"
           >
-            <Inbox className="h-4 w-4" />
-            <SidebarMenuLabel>{inboxLabel}</SidebarMenuLabel>
+            <Inbox
+              className={
+                selectedView !== "home" ? "h-4 w-4 opacity-80" : "h-4 w-4"
+              }
+            />
+            <SidebarMenuLabel
+              className={selectedView !== "home" ? "opacity-80" : undefined}
+            >
+              {inboxLabel}
+            </SidebarMenuLabel>
           </SidebarMenuButton>
           {homeBadgeCount > 0 ? (
             <SidebarMenuBadge
@@ -153,14 +162,23 @@ export function AppSidebarPrimaryMenu({
         </FeatureGate>
         <SidebarMenuItem>
           <SidebarMenuButton
+            className="data-[active=true]:font-normal"
             data-testid="open-agents-view"
             isActive={selectedView === "agents"}
             onClick={onSelectAgents}
             tooltip={agentsLabel}
             type="button"
           >
-            <Bot className="h-4 w-4" />
-            <SidebarMenuLabel>{agentsLabel}</SidebarMenuLabel>
+            <Bot
+              className={
+                selectedView !== "agents" ? "h-4 w-4 opacity-80" : "h-4 w-4"
+              }
+            />
+            <SidebarMenuLabel
+              className={selectedView !== "agents" ? "opacity-80" : undefined}
+            >
+              {agentsLabel}
+            </SidebarMenuLabel>
           </SidebarMenuButton>
         </SidebarMenuItem>
         <FeatureGate feature="workflows">

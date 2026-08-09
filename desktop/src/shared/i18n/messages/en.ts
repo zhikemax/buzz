@@ -203,12 +203,20 @@ export const en = {
   "settings.appearance.lang.en": "English",
   "settings.appearance.lang.zhCN": "简体中文",
   "settings.appearance.threadLayout": "Thread layout",
+  "settings.appearance.threadLayoutAllCommunities": "(all communities)",
   "settings.appearance.threadFocus": "Focus",
   "settings.appearance.threadFocusDesc":
     "Threads open over the channel, full width",
   "settings.appearance.threadSplit": "Split",
   "settings.appearance.threadSplitDesc":
     "Threads open in a side panel next to the channel",
+  "settings.appearance.linkPreviewTitle": "Links",
+  "settings.appearance.linkPreviewCompact": "Compact",
+  "settings.appearance.linkPreviewCompactDesc":
+    "Show links as compact horizontal cards",
+  "settings.appearance.linkPreviewRich": "Rich",
+  "settings.appearance.linkPreviewRichDesc":
+    "Unfurl links with larger images and descriptions",
   "settings.appearance.accentColor": "Accent color",
 
   "settings.agents.title": "Agents",
@@ -529,6 +537,25 @@ export const en = {
   "settings.mobile.codesMismatch":
     "The codes didn't match. Pairing was canceled.",
   "settings.mobile.canceled": "Pairing was canceled.",
+  "settings.mobile.stepScanTitle": "Scan QR code",
+  "settings.mobile.stepScanDesc":
+    "Open Buzz on your mobile device and scan the code shown here.",
+  "settings.mobile.stepConfirmTitle": "Confirm mobile code",
+  "settings.mobile.stepConfirmDesc":
+    "Check that the six-digit code matches on both devices, then confirm it.",
+  "settings.mobile.stepDoneTitle": "Paired",
+  "settings.mobile.stepFinalTitle": "Pair your mobile app",
+  "settings.mobile.stepDoneDesc":
+    "Your mobile app is now connected to this relay.",
+  "settings.mobile.stepFinalDesc":
+    "Your mobile app will connect after you confirm the code.",
+  "settings.mobile.confirmationCodeLegend": "Confirmation code {code}",
+  "settings.mobile.pairingDevice": "Pairing mobile device...",
+  "settings.mobile.liveRegionSas":
+    "Verification code {code} ready. Check that it matches on your mobile device, then confirm the codes match.",
+  "settings.mobile.liveRegionTransferring":
+    "Codes confirmed. Pairing your mobile device.",
+  "settings.mobile.liveRegionDone": "Your mobile app is now paired.",
 
   "settings.experimental.title": "Experiments",
   "settings.experimental.description":
@@ -1154,6 +1181,7 @@ export const en = {
   "composer.toggleFormatting": "Toggle formatting",
   "composer.mention": "Mention someone",
   "composer.attachImage": "Attach image",
+  "composer.attachFile": "Attach file",
   "composer.send": "Send message",
   "composer.sending": "Sending",
   "composer.editingMessage": "Editing message",
@@ -1186,7 +1214,12 @@ export const en = {
     "{name} is not in this channel. Invite them, or send without inviting them.",
   "msg.mentionOutsideMany":
     "{names} are not in this channel. Invite them, or send without inviting them.",
+  "msg.mentionOutsideOneDenied":
+    "{name} is not in this channel. {denied} You can still send without inviting them.",
+  "msg.mentionOutsideManyDenied":
+    "{names} are not in this channel. {denied} You can still send without inviting them.",
   "msg.doNothing": "Do nothing",
+  "msg.sendAnyway": "Send anyway",
   "msg.invite": "Invite",
   "msg.inviting": "Inviting...",
   "msg.noMessagesYet": "No messages yet",
@@ -1423,6 +1456,12 @@ export const en = {
     "Your identity is no longer in the system keyring. Re-import your nsec to restore it.",
   "onboard.haveAccountHint":
     "If you already have a Buzz account, enter your private key below to get started.",
+  "onboard.signInWithKeyPrefix":
+    "Paste your private key to sign in to Buzz. You can also use a",
+  "onboard.signInWithKeyMiddle": ", or",
+  "onboard.signInWithKeySuffix": ".",
+  "onboard.backupFileLink": "backup file",
+  "onboard.recoverFromPhoneLink": "recover from your phone",
   "onboard.startNewIdentity": "Start new identity",
   "onboard.confirmNewIdentity":
     "This will create a new identity and abandon your previous key. This cannot be undone. Continue?",
@@ -1898,6 +1937,20 @@ export const en = {
   "agents.catalogTitle": "Agent Catalog",
   "agents.catalogHint": "Browse agents shared to this relay.",
   "agents.catalogEmpty": "No agents are being shared",
+  "agents.catalogEmptyHint": "Shared agents will appear here.",
+  "agents.catalogAllSetTitle": "You're all set",
+  "agents.catalogAllSetDescription":
+    "Everything in Agent Catalog is already in My Agents.",
+  "agents.catalogSelectedState": "Selected",
+  "agents.catalogAvailableState": "Available",
+  "agents.catalogDetailSelectedTitle": "Selected for My Agents",
+  "agents.catalogDetailSelectedDescription":
+    "Turn this off to remove the agent from teams and agent creation in this app.",
+  "agents.catalogDetailAvailableTitle": "Available in Agent Catalog",
+  "agents.catalogDetailAvailableDescription":
+    "Turn this on to make the agent available for teams and agent creation.",
+  "agents.catalogTeamEmptyState":
+    "No agents in My Agents yet. Create one or choose one from Agent Catalog first.",
   "agents.addAgent": "Add agent",
   "agents.addedToMyAgents": "Added to My Agents",
   "agents.choose": "Choose",
@@ -1947,11 +2000,19 @@ export const en = {
   "agents.communityMember": "Community member",
   "agents.startNamed": "Start {label}",
   "agents.startingNamed": "Starting {label}",
+  "agents.startAgent": "Start Agent",
+  "agents.startingAgent": "Starting Agent",
+  "agents.restartAgent": "Restart Agent",
+  "agents.restartingAgent": "Restarting Agent",
+  "agents.start": "Start",
+  "agents.restart": "Restart",
   "agents.respond.label": "Who can send instructions",
   "agents.respond.onlyMe": "Only me (default)",
   "agents.respond.anyone": "Anyone",
   "agents.respond.selectedPeople": "Selected people",
   "agents.respond.onlyYouHint": "Only you can send instructions.",
+  "agents.respond.onlyYouAndAgentsHint":
+    "Only you and your agents can send instructions.",
   "agents.respond.selectedCount": "{count} selected",
   "agents.respond.ownerAlwaysBefore": "You (",
   "agents.respond.ownerAlwaysAfter":

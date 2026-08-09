@@ -410,29 +410,27 @@ export function BackupStep({
         </div>
       )}
 
-      {created ? (
-        <OnboardingFooter className={REVEAL_ANIMATION_CLASS}>
-          <Button
-            className={ONBOARDING_PRIMARY_CTA_CLASS}
-            data-testid="onboarding-next"
-            disabled={backupNextDisabled()}
-            onClick={onNext}
-            type="button"
-          >
-            {t("common.next")}
-          </Button>
+      <OnboardingFooter className={REVEAL_ANIMATION_CLASS}>
+        <Button
+          className={ONBOARDING_PRIMARY_CTA_CLASS}
+          data-testid="onboarding-next"
+          disabled={!created || backupNextDisabled()}
+          onClick={onNext}
+          type="button"
+        >
+          {t("common.next")}
+        </Button>
 
-          <Button
-            className={ONBOARDING_SECONDARY_CTA_CLASS}
-            data-testid="onboarding-back"
-            onClick={onBack}
-            type="button"
-            variant="ghost"
-          >
-            {t("common.back")}
-          </Button>
-        </OnboardingFooter>
-      ) : null}
+        <Button
+          className={ONBOARDING_SECONDARY_CTA_CLASS}
+          data-testid="onboarding-back"
+          onClick={onBack}
+          type="button"
+          variant="ghost"
+        >
+          {t("common.back")}
+        </Button>
+      </OnboardingFooter>
     </OnboardingSlideTransition>
   );
 }

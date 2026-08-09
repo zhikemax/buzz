@@ -28,7 +28,7 @@ type WelcomeTransitionMode = "initial" | OnboardingTransitionDirection;
 type WelcomeSetupProps = {
   initialPage?: WelcomeSetupPage;
   initialTransitionMode?: WelcomeTransitionMode;
-  onBack: () => void;
+  onBack?: () => void;
 };
 
 const COMMUNITY_OPTION_CARD_CLASS =
@@ -178,17 +178,19 @@ export function WelcomeSetup({
                   </button>
                 </Card>
               </div>
-              <OnboardingFooter>
-                <Button
-                  className="h-9 rounded-full bg-foreground/10 px-6 hover:bg-foreground/15"
-                  data-testid="welcome-setup-back"
-                  onClick={onBack}
-                  type="button"
-                  variant="ghost"
-                >
-                  {t("common.back")}
-                </Button>
-              </OnboardingFooter>
+              {onBack ? (
+                <OnboardingFooter>
+                  <Button
+                    className="h-9 rounded-full bg-foreground/10 px-6 hover:bg-foreground/15"
+                    data-testid="welcome-setup-back"
+                    onClick={onBack}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {t("common.back")}
+                  </Button>
+                </OnboardingFooter>
+              ) : null}
             </OnboardingSlideTransition>
           ) : page === "existing" ? (
             <OnboardingSlideTransition
