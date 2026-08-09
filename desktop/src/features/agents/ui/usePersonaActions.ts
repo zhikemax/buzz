@@ -37,6 +37,7 @@ import { personaSaveNotice } from "@/features/agents/lib/personaSaveNotice";
 import { useCreatedAgentChannelAttachment } from "@/features/agents/useCreatedAgentChannelAttachment";
 import { useCommunities } from "@/features/communities/useCommunities";
 import { useIdentityQuery } from "@/shared/api/hooks";
+import { useT } from "@/shared/i18n";
 import type {
   SnapshotFormat,
   SnapshotMemoryLevel,
@@ -92,6 +93,7 @@ export function usePersonaActions() {
   const previewSnapshotImportMutation = usePreviewAgentSnapshotImportMutation();
   const confirmSnapshotImportMutation = useConfirmAgentSnapshotImportMutation();
 
+  const t = useT();
   const [personaDialogState, setPersonaDialogState] =
     React.useState<PersonaDialogState | null>(null);
   const [personaToDelete, setPersonaToDelete] =
@@ -426,13 +428,13 @@ export function usePersonaActions() {
   function openEdit(persona: AgentPersona) {
     clearFeedback("library");
     setShouldLoadAcpRuntimes(true);
-    setPersonaDialogState(editPersonaDialogState(persona));
+    setPersonaDialogState(editPersonaDialogState(persona, t));
   }
 
   function openDuplicate(persona: AgentPersona) {
     clearFeedback("library");
     setShouldLoadAcpRuntimes(true);
-    setPersonaDialogState(duplicatePersonaDialogState(persona));
+    setPersonaDialogState(duplicatePersonaDialogState(persona, t));
   }
 
   function openCatalog() {

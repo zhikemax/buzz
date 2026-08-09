@@ -30,6 +30,7 @@ import {
   type ReportType,
   type SeverityTier,
 } from "@/features/settings/lib/moderationQueue";
+import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { truncatePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
@@ -88,11 +89,12 @@ function statusForAction(action: ResolutionAction): "resolved" | "dismissed" {
  */
 async function resolveTargetAuthor(
   group: ModerationQueueGroup,
+  t: TranslateFn,
 ): Promise<string> {
   if (group.targetKind === "pubkey") return group.target;
   const event = await getEventById(group.target);
   if (!event?.pubkey) {
-    throw new Error("Could not resolve the message author.");
+    throw new Error(t("settings.moderation.errResolveAuthor"));
   }
   return event.pubkey;
 }
@@ -110,22 +112,27 @@ async function enforceResolution(
   group: ModerationQueueGroup,
   action: ResolutionAction,
   ban: (input: { pubkey: string; reason?: string }) => Promise<unknown>,
+  t: TranslateFn,
 ): Promise<void> {
   switch (action) {
     case "delete":
       // Gated to event targets with a channel (resolvableActions).
-      if (group.channelId == null) throw new Error("Report has no channel.");
+      if (group.channelId == null) {
+        throw new Error(t("settings.moderation.errNoChannel"));
+      }
       await deleteMessage(group.channelId, group.target);
       return;
     case "ban":
-      await ban({ pubkey: await resolveTargetAuthor(group) });
+      await ban({ pubkey: await resolveTargetAuthor(group, t) });
       return;
     case "kick":
       // Gated to event targets with a channel (resolvableActions).
-      if (group.channelId == null) throw new Error("Report has no channel.");
+      if (group.channelId == null) {
+        throw new Error(t("settings.moderation.errNoChannel"));
+      }
       await removeChannelMember(
         group.channelId,
-        await resolveTargetAuthor(group),
+        await resolveTargetAuthor(group, t),
       );
       return;
     case "escalate":
@@ -133,44 +140,44 @@ async function enforceResolution(
       return;
     case "timeout":
       // Dropped from one-click until the resolve flow collects a duration.
-      throw new Error("Timeout is not available from the queue yet.");
+      throw new Error(t("settings.moderation.errTimeoutUnavailable"));
   }
 }
 
 const RESOLUTION_OPTIONS: {
   action: ResolutionAction;
-  label: string;
-  description: string;
+  labelKey: MessageKey;
+  descriptionKey: MessageKey;
 }[] = [
   {
     action: "delete",
-    label: "Delete content",
-    description: "Remove the reported content and resolve.",
+    labelKey: "settings.moderation.action.delete",
+    descriptionKey: "settings.moderation.action.deleteDesc",
   },
   {
     action: "kick",
-    label: "Kick author",
-    description: "Remove the author from the community.",
+    labelKey: "settings.moderation.action.kick",
+    descriptionKey: "settings.moderation.action.kickDesc",
   },
   {
     action: "ban",
-    label: "Ban author",
-    description: "Block the author from the community.",
+    labelKey: "settings.moderation.action.ban",
+    descriptionKey: "settings.moderation.action.banDesc",
   },
   {
     action: "timeout",
-    label: "Time out author",
-    description: "Temporarily mute the author.",
+    labelKey: "settings.moderation.action.timeout",
+    descriptionKey: "settings.moderation.action.timeoutDesc",
   },
   {
     action: "escalate",
-    label: "Escalate",
-    description: "Route to the platform-safety lane.",
+    labelKey: "settings.moderation.action.escalate",
+    descriptionKey: "settings.moderation.action.escalateDesc",
   },
   {
     action: "dismiss",
-    label: "Dismiss",
-    description: "No violation — close without action.",
+    labelKey: "settings.moderation.action.dismiss",
+    descriptionKey: "settings.moderation.action.dismissDesc",
   },
 ];
 
@@ -191,15 +198,15 @@ const SEVERITY_BADGE: Record<SeverityTier, string> = {
   normal: "bg-muted text-muted-foreground",
 };
 
-function targetLabel(group: ModerationQueueGroup): string {
+function targetLabel(group: ModerationQueueGroup, t: TranslateFn): string {
   const short = truncatePubkey(group.target);
   switch (group.targetKind) {
     case "event":
-      return `Message ${short}`;
+      return t("settings.moderation.target.event", { short });
     case "pubkey":
-      return `Member ${short}`;
+      return t("settings.moderation.target.pubkey", { short });
     case "blob":
-      return `Attachment ${short}`;
+      return t("settings.moderation.target.blob", { short });
   }
 }
 
@@ -210,15 +217,19 @@ function ReporterLine({
   report: ModerationReport;
   displayName?: string | null;
 }) {
+  const t = useT();
   const who = displayName?.trim() || truncatePubkey(report.reporterPubkey);
   return (
     <div className="rounded-md border border-border/50 bg-background/50 px-2.5 py-1.5">
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <span className="font-medium">
-          {reportTypeLabel(report.reportType)}
+          {t(reportTypeLabel(report.reportType))}
         </span>
         <span className="text-muted-foreground">
-          reported by {who} · {formatTimestamp(report.createdAt)}
+          {t("settings.moderation.reportedBy", {
+            who,
+            when: formatTimestamp(report.createdAt),
+          })}
         </span>
       </div>
       {report.note ? (
@@ -237,6 +248,7 @@ function ResolveMenu({
   disabled: boolean;
   onResolve: (action: ResolutionAction) => void;
 }) {
+  const t = useT();
   const options = RESOLUTION_OPTIONS.filter((option) =>
     allowed.includes(option.action),
   );
@@ -249,12 +261,14 @@ function ResolveMenu({
           size="sm"
           type="button"
         >
-          Resolve
+          {t("settings.moderation.resolve")}
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>Resolution</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          {t("settings.moderation.resolution")}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map((option) => (
           <DropdownMenuItem
@@ -263,9 +277,11 @@ function ResolveMenu({
             onSelect={() => onResolve(option.action)}
           >
             <div className="flex flex-col">
-              <span className="text-sm font-medium">{option.label}</span>
+              <span className="text-sm font-medium">
+                {t(option.labelKey)}
+              </span>
               <span className="text-xs text-muted-foreground">
-                {option.description}
+                {t(option.descriptionKey)}
               </span>
             </div>
           </DropdownMenuItem>
@@ -286,8 +302,18 @@ function QueueGroupCard({
   onResolve: (group: ModerationQueueGroup, action: ResolutionAction) => void;
   disabled: boolean;
 }) {
+  const t = useT();
   const topType = groupTopReportType(group);
   const tier = severityTier(topType);
+  const reportCountKey =
+    group.reports.length === 1
+      ? "settings.moderation.reportOne"
+      : "settings.moderation.reportMany";
+  const priorCount = group.priorActions.length;
+  const priorKey =
+    priorCount === 1
+      ? "settings.moderation.priorOne"
+      : "settings.moderation.priorMany";
   return (
     <div
       className="space-y-2.5 rounded-lg border border-border/60 bg-background/60 p-3"
@@ -305,14 +331,13 @@ function QueueGroupCard({
               {tier === "critical" ? (
                 <ShieldAlert className="mr-1 h-3 w-3" />
               ) : null}
-              {reportTypeLabel(topType)}
+              {t(reportTypeLabel(topType))}
             </span>
             <span className="truncate font-mono text-xs text-muted-foreground">
-              {targetLabel(group)}
+              {targetLabel(group, t)}
             </span>
             <span className="text-xs text-muted-foreground">
-              · {group.reports.length}{" "}
-              {group.reports.length === 1 ? "report" : "reports"}
+              · {t(reportCountKey, { count: group.reports.length })}
             </span>
           </div>
         </div>
@@ -338,17 +363,17 @@ function QueueGroupCard({
         ))}
       </div>
 
-      {group.priorActions.length > 0 ? (
+      {priorCount > 0 ? (
         <div className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            {group.priorActions.length} prior action
-            {group.priorActions.length === 1 ? "" : "s"} against this target
-            {" — "}
-            {group.priorActions
-              .slice(0, 3)
-              .map((a) => a.action)
-              .join(", ")}
+            {t(priorKey, {
+              count: priorCount,
+              actions: group.priorActions
+                .slice(0, 3)
+                .map((a) => a.action)
+                .join(", "),
+            })}
           </span>
         </div>
       ) : null}
@@ -357,6 +382,7 @@ function QueueGroupCard({
 }
 
 function QueueTab() {
+  const t = useT();
   const reportsQuery = useModerationReportsQuery({ status: "open" });
   const auditQuery = useModerationAuditQuery();
   const resolveMutation = useResolveReportMutation();
@@ -399,7 +425,7 @@ function QueueTab() {
       // on" — if enforcement fails we must not send that lie, and we leave the
       // report open (retryable, no orphan decision row). Only after the paired
       // 9040/9005/9001 lands do we resolve every open report about this target.
-      await enforceResolution(group, action, banMutation.mutateAsync);
+      await enforceResolution(group, action, banMutation.mutateAsync, t);
       await Promise.all(
         openReports.map((report) =>
           resolveMutation.mutateAsync({
@@ -410,11 +436,15 @@ function QueueTab() {
         ),
       );
       toast.success(
-        status === "dismissed" ? "Report dismissed" : "Report resolved",
+        status === "dismissed"
+          ? t("settings.moderation.reportDismissed")
+          : t("settings.moderation.reportResolved"),
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to resolve the report",
+        error instanceof Error
+          ? error.message
+          : t("settings.moderation.resolveFailed"),
       );
     }
   }
@@ -427,12 +457,16 @@ function QueueTab() {
     );
   }
   if (reportsQuery.isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading reports…</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t("settings.moderation.loadingReports")}
+      </p>
+    );
   }
   if (groups.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-        No open reports. The queue is clear.
+        {t("settings.moderation.emptyQueue")}
       </p>
     );
   }
@@ -458,6 +492,7 @@ function AuditRow({
   action: ModerationAction;
   actorName?: string | null;
 }) {
+  const t = useT();
   const who = actorName?.trim() || truncatePubkey(action.actorPubkey);
   const targetShort = action.targetPubkey
     ? truncatePubkey(action.targetPubkey)
@@ -479,7 +514,10 @@ function AuditRow({
           </span>
         ) : null}
         <span className="text-xs text-muted-foreground">
-          by {who} · {formatTimestamp(action.createdAt)}
+          {t("settings.moderation.auditBy", {
+            who,
+            when: formatTimestamp(action.createdAt),
+          })}
         </span>
       </div>
       {action.publicReason ? (
@@ -490,6 +528,7 @@ function AuditRow({
 }
 
 function AuditTab() {
+  const t = useT();
   const auditQuery = useModerationAuditQuery();
 
   const actions = auditQuery.data ?? EMPTY_ACTIONS;
@@ -518,12 +557,16 @@ function AuditTab() {
     );
   }
   if (auditQuery.isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading audit log…</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t("settings.moderation.loadingAudit")}
+      </p>
+    );
   }
   if (actions.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-        No moderation actions yet.
+        {t("settings.moderation.emptyAudit")}
       </p>
     );
   }
@@ -541,6 +584,7 @@ function AuditTab() {
 }
 
 export function ModerationQueueCard() {
+  const t = useT();
   const membershipQuery = useMyRelayMembershipQuery();
   const role = membershipQuery.data?.role;
   const isModerator = role === "owner" || role === "admin";
@@ -551,26 +595,28 @@ export function ModerationQueueCard() {
       data-testid="settings-moderation"
     >
       <SettingsSectionHeader
-        title="Moderation"
-        description="Review reported content and take action. Visible to community moderators only."
+        title={t("settings.moderation.title")}
+        description={t("settings.moderation.description")}
       />
 
       {!isModerator ? (
         membershipQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Checking access…</p>
+          <p className="text-sm text-muted-foreground">
+            {t("settings.moderation.checkingAccess")}
+          </p>
         ) : (
           <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-            The moderation queue is available to community moderators only.
+            {t("settings.moderation.modOnly")}
           </p>
         )
       ) : (
         <Tabs defaultValue="queue">
           <TabsList>
             <TabsTrigger data-testid="moderation-tab-queue" value="queue">
-              Queue
+              {t("settings.moderation.tabQueue")}
             </TabsTrigger>
             <TabsTrigger data-testid="moderation-tab-audit" value="audit">
-              Audit log
+              {t("settings.moderation.tabAudit")}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="queue">

@@ -5,41 +5,66 @@
  * - `formatFullDateTime` — verbose string for tooltips
  *   ("Wednesday, April 2, 2026 at 2:34 PM").
  * - `formatDayHeading` — label for day dividers / sticky headers.
- *   Returns "Today", "Yesterday", or a date like "Monday, March 31st".
+ *   Returns "Today", "Yesterday", or a localized date.
  * - `isSameDay` — compare two unix-second timestamps.
+ *
+ * Locale follows `setDateFormatLocale` (wired from LocaleProvider).
  */
 
-const TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  hour: "numeric",
-  minute: "2-digit",
-});
+import {
+  getDateFormatLocale,
+  intlDateLocale,
+} from "@/shared/i18n/dateLocale";
+import { translate, type MessageKey } from "@/shared/i18n/locale";
 
-const DAY_PERIOD_SUFFIX_RE = /[\s\u00a0\u202f]*(?:AM|PM)$/i;
+function t(
+  key: MessageKey,
+  params?: Record<string, string | number>,
+): string {
+  return translate(getDateFormatLocale(), key, params);
+}
 
-const FULL_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
+function timeFormatter(): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
-const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-});
+function fullDateTimeFormatter(): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
-const LONG_MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  month: "long",
-});
+function weekdayFormatter(): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    weekday: "long",
+  });
+}
 
-const SHORT_MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-});
+function longMonthFormatter(): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    month: "long",
+  });
+}
+
+function shortMonthFormatter(): Intl.DateTimeFormat {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    month: "short",
+  });
+}
+
+const DAY_PERIOD_SUFFIX_RE = /[\s\u00a0\u202f]*(?:AM|PM|上午|下午)$/i;
 
 /** Short clock time, e.g. "2:34 PM". */
 export function formatTime(unixSeconds: number): string {
-  return TIME_FORMATTER.format(new Date(unixSeconds * 1_000));
+  return timeFormatter().format(new Date(unixSeconds * 1_000));
 }
 
 /** Short clock time with the AM/PM marker removed, e.g. "2:34". */
@@ -49,31 +74,42 @@ export function formatTimeWithoutDayPeriod(time: string): string {
 
 /** Full date + time for tooltips, e.g. "Wednesday, April 2, 2026 at 2:34 PM". */
 export function formatFullDateTime(unixSeconds: number): string {
-  return FULL_DATE_TIME_FORMATTER.format(new Date(unixSeconds * 1_000));
+  return fullDateTimeFormatter().format(new Date(unixSeconds * 1_000));
 }
 
 /**
  * Human-friendly day label for dividers and sticky headers.
- * Returns "Today", "Yesterday", a current-year date like "Monday, March 31st",
- * or a prior-year date like "Monday, March 31st, 2025".
+ * Returns "Today", "Yesterday", or a localized calendar date.
  */
 export function formatDayHeading(unixSeconds: number): string {
   const date = new Date(unixSeconds * 1_000);
   const now = new Date();
 
   if (isSameDayDate(date, now)) {
-    return "Today";
+    return t("time.today");
   }
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   if (isSameDayDate(date, yesterday)) {
-    return "Yesterday";
+    return t("time.yesterday");
   }
 
-  const dateLabel = `${WEEKDAY_FORMATTER.format(date)}, ${formatMonthDayOrdinal(
+  if (getDateFormatLocale() === "zh-CN") {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    };
+    if (date.getFullYear() !== now.getFullYear()) {
+      options.year = "numeric";
+    }
+    return new Intl.DateTimeFormat("zh-CN", options).format(date);
+  }
+
+  const dateLabel = `${weekdayFormatter().format(date)}, ${formatMonthDayOrdinal(
     date,
-    LONG_MONTH_FORMATTER,
+    longMonthFormatter(),
   )}`;
   return date.getFullYear() === now.getFullYear()
     ? dateLabel
@@ -97,12 +133,41 @@ export function startOfLocalDaySeconds(unixSeconds: number): number {
   return Math.floor(date.getTime() / 1_000);
 }
 
-/** Short month + ordinal day, e.g. "May 19th". */
+/** Short month + ordinal day, e.g. "May 19th" (en) or "5月19日" (zh-CN). */
 export function formatShortMonthDayOrdinal(unixSeconds: number): string {
-  return formatMonthDayOrdinal(
-    new Date(unixSeconds * 1_000),
-    SHORT_MONTH_FORMATTER,
-  );
+  const date = new Date(unixSeconds * 1_000);
+  if (getDateFormatLocale() === "zh-CN") {
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "long",
+      day: "numeric",
+    }).format(date);
+  }
+  return formatMonthDayOrdinal(date, shortMonthFormatter());
+}
+
+/**
+ * Compact relative time for lists (forum, pulse, search-style): "just now",
+ * "3m ago", "2h ago", "5d ago", or a short calendar date for older items.
+ */
+export function formatRelativeTimeCompact(unixSeconds: number): string {
+  const nowSeconds = Math.floor(Date.now() / 1_000);
+  const diff = Math.max(0, nowSeconds - unixSeconds);
+
+  if (diff < 60) return t("search.justNow");
+  if (diff < 3_600) {
+    return t("search.minutesAgo", { count: Math.floor(diff / 60) });
+  }
+  if (diff < 86_400) {
+    return t("search.hoursAgo", { count: Math.floor(diff / 3_600) });
+  }
+  if (diff < 604_800) {
+    return t("search.daysAgo", { count: Math.floor(diff / 86_400) });
+  }
+
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(unixSeconds * 1_000));
 }
 
 /**
@@ -115,12 +180,23 @@ export function formatThreadSummaryLastReplyTime(
 ): string {
   const diff = Math.max(0, nowSeconds - unixSeconds);
 
-  if (diff < 60) return "just now";
-  if (diff < 3_600) return formatAgo(Math.floor(diff / 60), "minute");
-  if (diff < 86_400) return formatAgo(Math.floor(diff / 3_600), "hour");
-  if (diff < 604_800) return formatAgo(Math.floor(diff / 86_400), "day");
+  if (diff < 60) return t("time.justNow");
+  if (diff < 3_600) {
+    const count = Math.floor(diff / 60);
+    return count === 1
+      ? t("time.minuteAgo")
+      : t("time.minutesAgo", { count });
+  }
+  if (diff < 86_400) {
+    const count = Math.floor(diff / 3_600);
+    return count === 1 ? t("time.hourAgo") : t("time.hoursAgo", { count });
+  }
+  if (diff < 604_800) {
+    const count = Math.floor(diff / 86_400);
+    return count === 1 ? t("time.dayAgo") : t("time.daysAgo", { count });
+  }
 
-  return `on ${formatShortMonthDayOrdinal(unixSeconds)}`;
+  return t("time.onDate", { date: formatShortMonthDayOrdinal(unixSeconds) });
 }
 
 function isSameDayDate(a: Date, b: Date): boolean {
@@ -138,10 +214,6 @@ function formatMonthDayOrdinal(
   return `${monthFormatter.format(date)} ${date.getDate()}${ordinalSuffix(
     date.getDate(),
   )}`;
-}
-
-function formatAgo(value: number, unit: string): string {
-  return `${value} ${unit}${value === 1 ? "" : "s"} ago`;
 }
 
 function ordinalSuffix(day: number): string {

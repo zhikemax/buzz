@@ -2,6 +2,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { rewriteRelayUrl } from "@/shared/lib/mediaUrl";
+import { translate } from "@/shared/i18n";
 
 export type AvatarPresentationState = "failed" | "pending" | "ready";
 
@@ -113,12 +114,12 @@ async function verifyPresentation(
     state: "failed",
   };
   emitChange();
-  toast.error("Avatar couldn’t finish uploading", {
+  toast.error(translate("avatar.uploadFailedToast"), {
     action: {
-      label: "Retry",
+      label: translate("avatar.retry"),
       onClick: () => retryAvatarPresentation(entry.remoteUrl),
     },
-    description: "Your default avatar is showing instead.",
+    description: translate("avatar.uploadFailedToastDesc"),
     id: toastId(entry.remoteUrl),
   });
 }

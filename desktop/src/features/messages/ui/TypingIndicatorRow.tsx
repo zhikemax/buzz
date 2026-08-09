@@ -9,6 +9,7 @@ import type { Channel } from "@/shared/api/types";
 import { cn } from "@/shared/lib/cn";
 import { Shimmer } from "@/shared/ui/Shimmer";
 import { truncatePubkey } from "@/shared/lib/pubkey";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 type TypingIndicatorRowProps = {
   channel: Channel | null;
@@ -35,20 +36,28 @@ function resolveFallbackName(channel: Channel | null, pubkey: string) {
   return channel.participants[participantIndex] ?? null;
 }
 
-function formatTypingLabel(names: string[]) {
+function formatTypingLabel(names: string[], t: TranslateFn) {
   if (names.length === 1) {
-    return `${names[0]} is typing...`;
+    return t("msg.typingOne", { name: names[0] });
   }
 
   if (names.length === 2) {
-    return `${names[0]} and ${names[1]} are typing...`;
+    return t("msg.typingTwo", { a: names[0], b: names[1] });
   }
 
   if (names.length === 3) {
-    return `${names[0]}, ${names[1]}, and ${names[2]} are typing...`;
+    return t("msg.typingThree", {
+      a: names[0],
+      b: names[1],
+      c: names[2],
+    });
   }
 
-  return `${names[0]}, ${names[1]}, and ${names.length - 2} others are typing...`;
+  return t("msg.typingMany", {
+    a: names[0],
+    b: names[1],
+    count: names.length - 2,
+  });
 }
 
 export function TypingIndicatorRow({
@@ -59,6 +68,7 @@ export function TypingIndicatorRow({
   typingPubkeys,
   variant = "default",
 }: TypingIndicatorRowProps) {
+  const t = useT();
   const isActivityVariant = variant === "activity";
   const labels = React.useMemo(
     () =>
@@ -132,7 +142,7 @@ export function TypingIndicatorRow({
             )}
             data-testid="message-typing-indicator-label"
           >
-            <Shimmer>{formatTypingLabel(labels)}</Shimmer>
+            <Shimmer>{formatTypingLabel(labels, t)}</Shimmer>
           </p>
         </div>
       )}

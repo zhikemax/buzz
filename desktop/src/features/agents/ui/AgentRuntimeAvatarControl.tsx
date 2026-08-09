@@ -11,6 +11,7 @@ import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { cn } from "@/shared/lib/cn";
 import { Spinner } from "@/shared/ui/spinner";
 import { IdentityInitialsAvatar } from "./IdentityInitialsAvatar";
+import { useT } from "@/shared/i18n";
 
 type AgentRuntimeAvatarControlProps = {
   activeTestId: string;
@@ -107,9 +108,12 @@ export function AgentRuntimeAvatarControl({
   onOpenError,
   onStart,
 }: AgentRuntimeAvatarControlProps) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const trimmedAvatarUrl = avatarUrl?.trim() || null;
-  const actionLabel = isStarting ? `Starting ${label}` : `Start ${label}`;
+  const actionLabel = isStarting
+    ? t("agents.startingNamed", { label })
+    : t("agents.startNamed", { label });
   const hasError = !isActive && !isStarting && Boolean(errorLabel);
   const errorActionLabel = `${label} has a runtime error. Open runtime details.`;
   const transition = shouldReduceMotion ? { duration: 0 } : MASK_TRANSITION;

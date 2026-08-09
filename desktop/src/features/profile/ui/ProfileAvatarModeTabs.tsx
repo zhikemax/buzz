@@ -4,14 +4,16 @@ import type {
   AvatarEditorPresentation,
   AvatarMode,
 } from "@/features/profile/ui/ProfileAvatarEditor.types";
+import { useT } from "@/shared/i18n";
+import type { MessageKey } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 const MODE_TAB_ORDER: AvatarMode[] = ["image", "emoji", "animated"];
-const MODE_TAB_LABELS: Record<AvatarMode, string> = {
-  animated: "Animated",
-  emoji: "Emoji",
-  image: "Image",
+const MODE_TAB_LABEL_KEYS: Record<AvatarMode, MessageKey> = {
+  animated: "avatar.modeAnimated",
+  emoji: "avatar.modeEmoji",
+  image: "avatar.modeImage",
 };
 
 type ProfileAvatarModeTabsProps = {
@@ -29,6 +31,7 @@ export function ProfileAvatarModeTabs({
   presentation,
   portalContainer,
 }: ProfileAvatarModeTabsProps) {
+  const t = useT();
   const isOnboardingModal = presentation === "onboarding-modal";
   const tabs = (
     <Tabs
@@ -39,7 +42,7 @@ export function ProfileAvatarModeTabs({
       value={mode}
     >
       <TabsList
-        aria-label="Avatar type"
+        aria-label={t("avatar.typeAria")}
         className={cn(
           isOnboardingModal
             ? "flex h-10 w-auto gap-2 rounded-none bg-transparent p-0 text-muted-foreground"
@@ -67,7 +70,7 @@ export function ProfileAvatarModeTabs({
             key={tabMode}
             value={tabMode}
           >
-            {MODE_TAB_LABELS[tabMode]}
+            {t(MODE_TAB_LABEL_KEYS[tabMode])}
           </TabsTrigger>
         ))}
       </TabsList>

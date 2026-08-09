@@ -4,6 +4,7 @@ import { Camera, Link2, Upload, X } from "lucide-react";
 import { MaskedAvatarBadgeFrame } from "@/features/profile/ui/MaskedAvatarBadgeFrame";
 import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { useAvatarUpload } from "@/features/profile/useAvatarUpload";
+import { useT } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { Spinner } from "@/shared/ui/spinner";
 
@@ -30,6 +31,7 @@ export function AvatarUpload({
   idleHint = "",
   testIdPrefix = "avatar",
 }: AvatarUploadProps) {
+  const t = useT();
   const [isDragging, setIsDragging] = React.useState(false);
 
   const onUploadSuccess = React.useCallback(
@@ -74,7 +76,7 @@ export function AvatarUpload({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm font-medium">Add a profile photo</p>
+      <p className="text-sm font-medium">{t("avatar.addProfilePhoto")}</p>
       <div className="flex items-center gap-4">
         <div className="relative h-20 w-20 shrink-0">
           <MaskedAvatarBadgeFrame
@@ -103,7 +105,7 @@ export function AvatarUpload({
               className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border border-background bg-destructive text-destructive-foreground shadow-xs transition-colors hover:bg-destructive/80"
               data-testid={`${testIdPrefix}-clear`}
               onClick={onClear}
-              title="Remove photo"
+              title={t("avatar.removePhoto")}
               type="button"
             >
               <X className="h-4 w-4" />
@@ -148,12 +150,12 @@ export function AvatarUpload({
           )}
           <span className="text-xs text-muted-foreground">
             {isUploading ? (
-              "Uploading..."
+              t("common.uploading")
             ) : (
               <>
-                Drop an image or{" "}
+                {t("avatar.dropImageOr")}{" "}
                 <span className="font-medium text-foreground underline underline-offset-2">
-                  browse
+                  {t("avatar.browse")}
                 </span>
               </>
             )}
@@ -176,7 +178,7 @@ export function AvatarUpload({
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium" htmlFor={`${testIdPrefix}-url`}>
-          Avatar URL
+          {t("avatar.avatarUrl")}
         </label>
         <div className="relative min-w-0">
           <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -194,7 +196,7 @@ export function AvatarUpload({
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Or paste a direct image URL.
+          {t("avatar.orPasteDirectUrl")}
         </p>
       </div>
 

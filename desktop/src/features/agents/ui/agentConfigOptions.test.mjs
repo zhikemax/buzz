@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
+
 import {
   getDefaultPersonaRuntime,
   getPersonaModelOptions,
@@ -10,6 +12,9 @@ import {
   runtimeSupportsLlmProviderSelection,
 } from "./agentConfigOptions.tsx";
 import { formatModelDiscoveryErrorStatus } from "./personaModelDiscoveryStatus.ts";
+
+
+const t = (key, params) => translate("en", key, params);
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,7 +32,7 @@ function makeRuntime(id, availability = "available") {
 // ── getPersonaProviderOptions — hideProviderIds ───────────────────────────────
 
 test("getPersonaProviderOptions returns databricks v1 and v2 when hideProviderIds is empty", () => {
-  const options = getPersonaProviderOptions("", "buzz-agent", "", new Set());
+  const options = getPersonaProviderOptions("", "buzz-agent", t, "", new Set());
   const ids = options.map((o) => o.id);
   assert.ok(ids.includes("databricks"), "databricks v1 present");
   assert.ok(ids.includes("databricks_v2"), "databricks v2 present");
@@ -37,6 +42,7 @@ test("getPersonaProviderOptions hides databricks v1 when it is in hideProviderId
   const options = getPersonaProviderOptions(
     "",
     "buzz-agent",
+    t,
     "",
     new Set(["databricks"]),
   );
@@ -50,6 +56,7 @@ test("getPersonaProviderOptions appends (current) tail for a saved databricks v1
   const options = getPersonaProviderOptions(
     "databricks",
     "buzz-agent",
+    t,
     "",
     new Set(["databricks"]),
   );
@@ -59,7 +66,7 @@ test("getPersonaProviderOptions appends (current) tail for a saved databricks v1
 });
 
 test("getPersonaProviderOptions with no hideProviderIds omits the tail for a known provider", () => {
-  const options = getPersonaProviderOptions("anthropic", "buzz-agent");
+  const options = getPersonaProviderOptions("anthropic", "buzz-agent", t);
   const tail = options.at(-1);
   // "anthropic" is a known id — no (current) tail appended
   assert.ok(
@@ -69,7 +76,7 @@ test("getPersonaProviderOptions with no hideProviderIds omits the tail for a kno
 });
 
 test("getPersonaProviderOptions appends (current) tail for an unknown saved provider", () => {
-  const options = getPersonaProviderOptions("my-custom-llm", "buzz-agent");
+  const options = getPersonaProviderOptions("my-custom-llm", "buzz-agent", t);
   const tail = options.at(-1);
   assert.equal(tail?.id, "my-custom-llm");
   assert.equal(tail?.label, "my-custom-llm (current)");

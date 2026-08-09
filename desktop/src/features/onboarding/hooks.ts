@@ -30,6 +30,7 @@ import {
   getChannels,
   updateChannel,
 } from "@/shared/api/tauri";
+import { translate } from "@/shared/i18n";
 
 const STARTER_CHANNEL_SETUP_TOAST_ID = "starter-channel-setup-error";
 
@@ -152,7 +153,7 @@ export async function initializeStarterChannels(
         reason:
           starterChannelsError instanceof Error
             ? starterChannelsError.message
-            : "Failed to set up starter channels",
+            : translate("onboard.starterChannelsSetupFailedFallback"),
       };
     }
     return { ok: true, focusChannelId };
@@ -163,7 +164,7 @@ export async function initializeStarterChannels(
       reason:
         error instanceof Error
           ? error.message
-          : "Failed to set up starter channels",
+          : translate("onboard.starterChannelsSetupFailedFallback"),
     };
   }
 }
@@ -596,10 +597,10 @@ export function useAppOnboardingState(isSharedIdentity: boolean) {
 
   const showStarterRetryToast = React.useCallback(
     (reason: string) => {
-      toast.error("Couldn't set up starter channels", {
+      toast.error(translate("onboard.starterChannelsSetupFailed"), {
         id: STARTER_CHANNEL_SETUP_TOAST_ID,
         action: {
-          label: "Retry",
+          label: translate("common.retry"),
           onClick: (event) => {
             event.preventDefault();
             void requestStarterChannels(true).then((result) => {

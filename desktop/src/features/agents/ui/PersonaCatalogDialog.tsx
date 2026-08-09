@@ -16,7 +16,8 @@ import { Skeleton } from "@/shared/ui/skeleton";
 import agentOutlineUrl from "../assets/agent-outline.svg";
 import { AgentDefinitionMetadata } from "./AgentDefinitionMetadata";
 import { PersonaAddedBy } from "./PersonaAddedBy";
-import { personaCatalogCopy } from "./personaLibraryCopy";
+import { getPersonaCatalogCopy } from "./personaLibraryCopy";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 type PersonaCatalogDialogProps = {
   error: Error | null;
@@ -53,6 +54,8 @@ export function PersonaCatalogDialog({
   open,
   personas,
 }: PersonaCatalogDialogProps) {
+  const t = useT();
+  const personaCatalogCopy = getPersonaCatalogCopy(t);
   const contentRef = React.useRef<HTMLDivElement | null>(null);
   const [selectedPersonaId, setSelectedPersonaId] = React.useState<
     string | null
@@ -287,13 +290,17 @@ export function resolveCatalogOwnerLabel(
     | { displayName?: string | null; name?: string | null }
     | null
     | undefined,
+  t: TranslateFn,
 ): string {
   return (
-    summary?.displayName?.trim() || summary?.name?.trim() || "Community member"
+    summary?.displayName?.trim() ||
+    summary?.name?.trim() ||
+    t("agents.communityMember")
   );
 }
 
 function PersonaCatalogDetail({ persona }: { persona: AgentPersona }) {
+  const t = useT();
   const isCommunityEntry =
     isCatalogPersona(persona) && !persona.catalogSource.isOwn;
   const ownerPubkey = isCommunityEntry
@@ -305,12 +312,12 @@ function PersonaCatalogDetail({ persona }: { persona: AgentPersona }) {
 
   let addedByLabel: string;
   if (!isCommunityEntry) {
-    addedByLabel = "You";
+    addedByLabel = t("inbox.you");
   } else {
     const summary = ownerPubkey
       ? ownerBatchQuery.data?.profiles[ownerPubkey.toLowerCase()]
       : undefined;
-    addedByLabel = resolveCatalogOwnerLabel(summary);
+    addedByLabel = resolveCatalogOwnerLabel(summary, t);
   }
 
   return (

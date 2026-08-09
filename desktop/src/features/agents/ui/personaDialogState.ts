@@ -4,6 +4,7 @@ import type {
   PersonaBehaviorInput,
   UpdatePersonaInput,
 } from "@/shared/api/types";
+import type { TranslateFn } from "@/shared/i18n";
 
 export type PersonaDialogState = {
   description: string;
@@ -37,11 +38,11 @@ export function parsePersonaNamePoolText(text: string): string[] {
     .filter((value) => value.length > 0);
 }
 
-export function createPersonaDialogState(): PersonaDialogState {
+export function createPersonaDialogState(t: TranslateFn): PersonaDialogState {
   return {
-    title: "Create agent",
-    description: "Create an agent and start it immediately.",
-    submitLabel: "Create agent",
+    title: t("agents.createTitle"),
+    description: t("agents.createHint"),
+    submitLabel: t("agents.createAgent"),
     initialValues: {
       displayName: "",
       avatarUrl: "",
@@ -54,12 +55,12 @@ export function createPersonaDialogState(): PersonaDialogState {
 
 export function duplicatePersonaDialogState(
   persona: AgentPersona,
+  t: TranslateFn,
 ): PersonaDialogState {
   return {
-    title: `Duplicate ${persona.displayName}`,
-    description:
-      "Create a new agent by copying this profile and adjusting it as needed.",
-    submitLabel: "Create agent",
+    title: t("agents.duplicateName", { name: persona.displayName }),
+    description: t("agents.duplicateHint"),
+    submitLabel: t("agents.createAgent"),
     initialValues: {
       displayName: `${persona.displayName} copy`,
       avatarUrl: persona.avatarUrl ?? "",
@@ -104,11 +105,12 @@ function behaviorEntry(
 
 export function editPersonaDialogState(
   persona: AgentPersona,
+  t: TranslateFn,
 ): PersonaDialogState {
   return {
-    title: "Edit agent",
+    title: t("agents.editTitle"),
     description: "",
-    submitLabel: "Save changes",
+    submitLabel: t("agents.saveChanges"),
     initialValues: {
       id: persona.id,
       displayName: persona.displayName,

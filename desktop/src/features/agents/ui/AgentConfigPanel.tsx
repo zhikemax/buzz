@@ -14,6 +14,7 @@ import {
   Server,
 } from "lucide-react";
 import { useAgentConfigSurface } from "../hooks";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import { Spinner } from "@/shared/ui/spinner";
@@ -179,6 +180,7 @@ function NormalizedRow({
   configFilePath: string | null;
   variant?: RowVariant;
 }) {
+  const t = useT();
   const Icon = NORMALIZED_ICONS[fieldKey];
   // ACP-sourced origins only become meaningful post-spawn
   const isAcpOnly =
@@ -189,7 +191,7 @@ function NormalizedRow({
       : (field.value ?? "—");
   const displayValue =
     fieldKey === "provider"
-      ? providerDisplayLabel(rawDisplayValue)
+      ? providerDisplayLabel(rawDisplayValue, t)
       : rawDisplayValue;
   const provenance = field.value
     ? provenanceSentence(field.origin, field.writeVia, configFilePath)

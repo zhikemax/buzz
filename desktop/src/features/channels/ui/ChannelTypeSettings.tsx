@@ -5,6 +5,8 @@ import {
   DEFAULT_EPHEMERAL_TTL_SECONDS,
   formatTtlDuration,
 } from "@/features/channels/lib/ephemeralChannel";
+import { useT } from "@/shared/i18n";
+import type { MessageKey } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -15,17 +17,20 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { ChannelTypePicker } from "./ChannelTypePicker";
 
-const EPHEMERAL_TIMEOUT_OPTIONS = [
-  { label: "30 minutes", seconds: 30 * 60 },
-  { label: "1 hour", seconds: 60 * 60 },
-  { label: "6 hours", seconds: 6 * 60 * 60 },
-  { label: "12 hours", seconds: 12 * 60 * 60 },
-  { label: "1 day", seconds: 24 * 60 * 60 },
-  { label: "3 days", seconds: 3 * 24 * 60 * 60 },
-  { label: "7 days", seconds: DEFAULT_EPHEMERAL_TTL_SECONDS },
-  { label: "14 days", seconds: 14 * 24 * 60 * 60 },
-  { label: "30 days", seconds: 30 * 24 * 60 * 60 },
-] as const;
+const EPHEMERAL_TIMEOUT_OPTIONS: {
+  labelKey: MessageKey;
+  seconds: number;
+}[] = [
+  { labelKey: "channel.ttl.30m", seconds: 30 * 60 },
+  { labelKey: "channel.ttl.1h", seconds: 60 * 60 },
+  { labelKey: "channel.ttl.6h", seconds: 6 * 60 * 60 },
+  { labelKey: "channel.ttl.12h", seconds: 12 * 60 * 60 },
+  { labelKey: "channel.ttl.1d", seconds: 24 * 60 * 60 },
+  { labelKey: "channel.ttl.3d", seconds: 3 * 24 * 60 * 60 },
+  { labelKey: "channel.ttl.7d", seconds: DEFAULT_EPHEMERAL_TTL_SECONDS },
+  { labelKey: "channel.ttl.14d", seconds: 14 * 24 * 60 * 60 },
+  { labelKey: "channel.ttl.30d", seconds: 30 * 24 * 60 * 60 },
+];
 
 const CHANNEL_TYPE_RESIZE_TRANSITION = {
   duration: 0.22,
@@ -34,7 +39,7 @@ const CHANNEL_TYPE_RESIZE_TRANSITION = {
 
 export function ChannelTypeSettings({
   disabled,
-  label = "Channel type",
+  label,
   onOpenChange,
   onTemporaryChange,
   onTtlSecondsChange,
@@ -53,6 +58,8 @@ export function ChannelTypeSettings({
   testIdPrefix: string;
   ttlSeconds: number;
 }) {
+  const t = useT();
+  const resolvedLabel = label ?? t("channel.typeLabel");
   const shouldReduceMotion = useReducedMotion();
   const channelTypeResizeTransition = shouldReduceMotion
     ? { duration: 0 }
@@ -61,13 +68,21 @@ export function ChannelTypeSettings({
     (option) => option.seconds === ttlSeconds,
   );
   const timeoutOptions = selectedTimeoutOption
-    ? EPHEMERAL_TIMEOUT_OPTIONS
+    ? EPHEMERAL_TIMEOUT_OPTIONS.map((option) => ({
+        label: t(option.labelKey),
+        seconds: option.seconds,
+      }))
     : [
         {
-          label: `Current (${formatTtlDuration(ttlSeconds)})`,
+          label: t("channel.ttlCurrent", {
+            duration: formatTtlDuration(ttlSeconds),
+          }),
           seconds: ttlSeconds,
         },
-        ...EPHEMERAL_TIMEOUT_OPTIONS,
+        ...EPHEMERAL_TIMEOUT_OPTIONS.map((option) => ({
+          label: t(option.labelKey),
+          seconds: option.seconds,
+        })),
       ];
 
   return (
@@ -79,7 +94,9 @@ export function ChannelTypeSettings({
         className="flex items-center justify-between gap-3 px-3 py-3"
         data-testid={`${testIdPrefix}-channel-type-row`}
       >
-        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="text-sm font-medium text-foreground">
+          {resolvedLabel}
+        </span>
         <ChannelTypePicker
           align="end"
           className="-mr-2.5"
@@ -109,12 +126,12 @@ export function ChannelTypeSettings({
                 className="text-sm font-medium"
                 htmlFor={`${testIdPrefix}-ttl`}
               >
-                Expires after
+                {t("channel.expiresAfter")}
               </label>
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    aria-label="Expires after"
+                    aria-label={t("channel.expiresAfter")}
                     className="-mr-2.5 ml-auto h-9 w-fit justify-end px-2.5 text-right text-sm font-medium text-foreground hover:bg-muted/50"
                     data-testid={`${testIdPrefix}-ttl`}
                     disabled={disabled}
@@ -123,8 +140,11 @@ export function ChannelTypeSettings({
                     variant="ghost"
                   >
                     <span className="text-right">
-                      {selectedTimeoutOption?.label ??
-                        `Current (${formatTtlDuration(ttlSeconds)})`}
+                      {selectedTimeoutOption
+                        ? t(selectedTimeoutOption.labelKey)
+                        : t("channel.ttlCurrent", {
+                            duration: formatTtlDuration(ttlSeconds),
+                          })}
                     </span>
                     <ChevronDown className="size-4 shrink-0 text-muted-foreground/70" />
                   </Button>

@@ -10,6 +10,7 @@ import type * as React from "react";
 import { toast } from "sonner";
 
 import type { Channel } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { writeTextToClipboard } from "@/shared/lib/clipboard";
 
@@ -125,20 +126,21 @@ export function CopyFieldRow({
   value: string;
   testId?: string;
 }) {
+  const t = useT();
   async function handleCopy() {
     await writeTextToClipboard(value);
-    toast.success(`Copied ${label.toLowerCase()}`);
+    toast.success(t("channel.copiedField", { label: label.toLowerCase() }));
   }
 
   return (
     <button
-      aria-label={`Copy ${label}`}
+      aria-label={t("channel.copyField", { label })}
       className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
       data-testid={testId}
       onClick={() => {
         void handleCopy();
       }}
-      title={`Copy ${label}`}
+      title={t("channel.copyField", { label })}
       type="button"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60">

@@ -5,9 +5,11 @@ import {
   setPersistentAgentAudienceEnabled,
   usePersistentAgentAudience,
 } from "@/features/messages/lib/persistentAgentAudience";
+import { useT } from "@/shared/i18n";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 
 export function PreventSleepSettingsCard() {
+  const t = useT();
   const { enabled, setEnabled, hasRunningAgents, expired, clearExpired } =
     usePreventSleepContext();
   const persistentAudience = usePersistentAgentAudience(null);
@@ -15,8 +17,8 @@ export function PreventSleepSettingsCard() {
   return (
     <section className="min-w-0" data-testid="settings-agents">
       <SettingsSectionHeader
-        title="Agents"
-        description="Control how agents behave in conversations and run on this machine."
+        title={t("settings.agents.title")}
+        description={t("settings.agents.description")}
       />
 
       <SettingsOptionGroup>
@@ -26,11 +28,10 @@ export function PreventSleepSettingsCard() {
               className="text-sm font-medium"
               htmlFor="persistent-agent-audience-switch"
             >
-              Keep addressed agents active
+              {t("settings.agents.keepAddressed")}
             </label>
             <p className="text-sm font-normal text-muted-foreground">
-              Keep agents you address selected for future messages in the same
-              channel or thread. Remove them from the composer at any time.
+              {t("settings.agents.keepAddressedHint")}
             </p>
           </div>
           <Switch
@@ -47,12 +48,10 @@ export function PreventSleepSettingsCard() {
               className="text-sm font-medium"
               htmlFor="prevent-sleep-switch"
             >
-              Keep awake while agents are active
+              {t("settings.agents.keepAwake")}
             </label>
             <p className="text-sm font-normal text-muted-foreground">
-              Prevents your computer from sleeping while local agents are
-              running. Automatically releases when all agents stop or after 1
-              hour without agent activity.
+              {t("settings.agents.keepAwakeHint")}
             </p>
           </div>
           <Switch
@@ -71,15 +70,13 @@ export function PreventSleepSettingsCard() {
 
       {enabled && !hasRunningAgents && (
         <p className="mt-3 text-sm text-muted-foreground">
-          Waiting for agents to start
+          {t("settings.agents.waitingForAgents")}
         </p>
       )}
 
       {expired && (
         <p className="mt-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-700 dark:text-yellow-400">
-          Sleep prevention expired after 1 hour without agent activity. It will
-          resume on the next agent activity, or toggle off and on to re-enable
-          now.
+          {t("settings.agents.sleepExpired")}
         </p>
       )}
     </section>

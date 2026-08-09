@@ -34,6 +34,7 @@ import { OnboardingFooterProvider } from "./OnboardingFooter";
 import { OnboardingSlideTransition } from "./OnboardingSlideTransition";
 import { SetupStep } from "./SetupStep";
 import type { DefaultConfigDraft } from "./types";
+import { useT } from "@/shared/i18n";
 
 export type MachineOnboardingPage =
   | "identity"
@@ -71,6 +72,7 @@ export function MachineOnboardingFlow({
    */
   navigateAfterComplete?: (nav: PostOnboardingNavigation) => void;
 }) {
+  const t = useT();
   const [page, setPage] = React.useState<MachineOnboardingPage>(
     identityLost ? "key-import" : (initialPage ?? "identity"),
   );
@@ -121,7 +123,7 @@ export function MachineOnboardingFlow({
       setPage("backup");
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Failed to load identity",
+        cause instanceof Error ? cause.message : t("onboard.loadIdentityFailed"),
       );
     } finally {
       setIsPending(false);
@@ -130,7 +132,7 @@ export function MachineOnboardingFlow({
 
   const replaceLostIdentity = React.useCallback(async () => {
     const confirmed = window.confirm(
-      "This will create a new identity and abandon your previous key. This cannot be undone. Continue?",
+      t("onboard.confirmNewIdentity"),
     );
     if (!confirmed) return;
 
@@ -147,12 +149,12 @@ export function MachineOnboardingFlow({
       setPage("backup");
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Failed to save identity",
+        cause instanceof Error ? cause.message : t("onboard.saveIdentityFailed"),
       );
     } finally {
       setIsPending(false);
     }
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   const importExistingIdentity = React.useCallback(
     async (nsec: string, password?: string) => {
@@ -193,7 +195,7 @@ export function MachineOnboardingFlow({
             variant="ghost"
           >
             <ArrowUp className="h-4 w-4" aria-hidden="true" />
-            Return to onboarding
+            {t("onboard.returnToOnboarding")}
           </Button>
         </div>
       ) : page !== "identity" ? (
@@ -220,8 +222,9 @@ export function MachineOnboardingFlow({
                 src="/landing/buzz-wordmark.png"
               />
               <p className="mt-2 max-w-[560px] text-center text-2xl font-normal leading-none text-foreground">
-                Your people, your agents, your projects —<br />
-                all in one place.
+                {t("onboard.taglineLead")}
+                <br />
+                {t("onboard.taglineTrail")}
               </p>
               {error ? (
                 <p className="mt-4 text-sm text-destructive">{error}</p>
@@ -234,10 +237,10 @@ export function MachineOnboardingFlow({
                   type="button"
                 >
                   {isPending
-                    ? "Loading identity…"
+                    ? t("onboard.loadingIdentity")
                     : selectedPubkey
-                      ? "Continue setup"
-                      : "Create a new identity key"}
+                      ? t("onboard.continueSetup")
+                      : t("onboard.createNewKey")}
                 </Button>
                 <Button
                   className={`${ONBOARDING_SECONDARY_CTA_CLASS} px-5`}
@@ -250,8 +253,8 @@ export function MachineOnboardingFlow({
                   variant="ghost"
                 >
                   {selectedPubkey
-                    ? "Use a different key instead"
-                    : "Use an existing key"}
+                    ? t("onboard.useDifferentKey")
+                    : t("onboard.useExistingKey")}
                 </Button>
               </div>
               <IdentityKeyHelpDialog />
@@ -275,22 +278,22 @@ export function MachineOnboardingFlow({
               >
                 <h1 className="text-title font-normal text-foreground">
                   {keyImportStage === "backup-password"
-                    ? "Unlock your account"
+                    ? t("onboard.unlockAccount")
                     : identityLost
-                      ? "Re-import your key"
-                      : "Enter your private key"}
+                      ? t("onboard.reimportKey")
+                      : t("onboard.enterPrivateKey")}
                 </h1>
                 <p className="mt-5 max-w-[440px] text-sm leading-6 text-foreground/80">
                   {keyImportStage === "backup-password"
-                    ? "Enter your backup password to unlock your key and restore your identity."
+                    ? t("onboard.unlockWithPassword")
                     : identityLost
-                      ? "Your identity is no longer in the system keyring. Re-import your nsec to restore it."
-                      : "If you already have a Buzz account, enter your private key below to get started."}
+                      ? t("onboard.keyringMissing")
+                      : t("onboard.haveAccountHint")}
                 </p>
               </motion.div>
               <div className="buzz-onboarding-key-import-position w-full">
                 <NostrKeyImportForm
-                  backLabel={identityLost ? "Start new identity" : "Back"}
+                  backLabel={identityLost ? t("onboard.startNewIdentity") : t("common.back")}
                   onBack={
                     identityLost
                       ? () => void replaceLostIdentity()

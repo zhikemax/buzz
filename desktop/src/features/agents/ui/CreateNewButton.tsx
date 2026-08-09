@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
+import { useT } from "@/shared/i18n";
 
 type CreateNewButtonProps = {
   ariaLabel?: string;
@@ -13,10 +14,12 @@ type CreateNewButtonProps = {
 export function CreateNewButton({
   ariaLabel,
   disabled = false,
-  label = "New",
+  label,
   onClick,
   variant = "default",
 }: CreateNewButtonProps) {
+  const t = useT();
+  const resolvedLabel = label ?? t("common.new");
   return (
     <Button
       aria-label={ariaLabel}
@@ -27,7 +30,7 @@ export function CreateNewButton({
       variant={variant}
     >
       <Plus className="h-4 w-4" />
-      {label}
+      {resolvedLabel}
     </Button>
   );
 }

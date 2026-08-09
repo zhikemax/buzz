@@ -10,6 +10,7 @@ import {
   isWelcomeExperienceChannel,
 } from "@/features/onboarding/welcome";
 import type { Channel } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { HashSearch } from "@/shared/ui/icons";
 
 type ChannelIntroAction = {
@@ -41,6 +42,8 @@ export function useChannelIntro({
   onOpenMembers?: () => void;
   onWelcomeAddAgent?: () => void;
 }) {
+  const t = useT();
+
   return React.useMemo(() => {
     if (!activeChannel || activeChannel.channelType === "dm") {
       return null;
@@ -51,7 +54,7 @@ export function useChannelIntro({
       if (onBrowseChannels) {
         actions.push({
           icon: <HashSearch aria-hidden className="h-6 w-6" />,
-          label: "Browse channels",
+          label: t("channel.introBrowse"),
           onClick: onBrowseChannels,
           testId: "welcome-intro-action-browse-channels",
         });
@@ -60,7 +63,7 @@ export function useChannelIntro({
       if (onCreateChannel) {
         actions.push({
           icon: <Plus aria-hidden className="h-6 w-6" />,
-          label: "Create a channel",
+          label: t("channel.introCreateChannel"),
           onClick: onCreateChannel,
           testId: "welcome-intro-action-create-channel",
         });
@@ -69,7 +72,7 @@ export function useChannelIntro({
       if (onWelcomeAddAgent) {
         actions.push({
           icon: <Bot aria-hidden className="h-6 w-6" />,
-          label: "Create an agent",
+          label: t("channel.introCreateAgent"),
           onClick: onWelcomeAddAgent,
           testId: "welcome-intro-action-create-agent",
         });
@@ -78,7 +81,7 @@ export function useChannelIntro({
       return {
         actions,
         channelKindLabel: isWelcomeChannel(activeChannel)
-          ? "private welcome channel"
+          ? t("channel.privateWelcome")
           : getChannelIntroKind(activeChannel),
         channelName: activeChannel.name,
         description: isWelcomeChannel(activeChannel)
@@ -91,9 +94,9 @@ export function useChannelIntro({
     if (!activeChannel.archivedAt && activeChannel.isMember) {
       if (onAddAgent) {
         actions.push({
-          description: "Add an agent here.",
+          description: t("channel.introAddAgent"),
           icon: <Bot aria-hidden className="h-6 w-6" />,
-          label: "Create agent",
+          label: t("channel.introCreateAgentShort"),
           onClick: onAddAgent,
           testId: "channel-intro-action-create-agent",
         });
@@ -101,9 +104,9 @@ export function useChannelIntro({
 
       if (onOpenMembers) {
         actions.push({
-          description: "Invite members.",
+          description: t("channel.introInviteMembers"),
           icon: <UserPlus aria-hidden className="h-6 w-6" />,
-          label: "Add people",
+          label: t("channel.introAddPeople"),
           onClick: onOpenMembers,
           testId: "channel-intro-action-add-people",
         });
@@ -123,5 +126,6 @@ export function useChannelIntro({
     onCreateChannel,
     onOpenMembers,
     onWelcomeAddAgent,
+    t,
   ]);
 }

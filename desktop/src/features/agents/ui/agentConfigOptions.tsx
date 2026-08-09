@@ -2,6 +2,7 @@ import type {
   AcpRuntimeCatalogEntry,
   GlobalAgentConfig,
 } from "@/shared/api/types";
+import type { TranslateFn } from "@/shared/i18n";
 import { BUZZ_AGENT_THINKING_EFFORT } from "./buzzAgentConfig";
 import type { RuntimeFileConfigSubset } from "@/shared/api/tauri";
 // Dialogs import getDefaultPersonaRuntime via this re-export; lib code imports
@@ -311,21 +312,26 @@ export function providerRequiresExplicitModel(
   );
 }
 
-export function providerDisplayLabel(providerId: string) {
+export function providerDisplayLabel(providerId: string, t: TranslateFn) {
   const trimmedProvider = providerId.trim();
-  return trimmedProvider === "relay-mesh"
-    ? "Buzz shared compute"
-    : trimmedProvider;
+  if (trimmedProvider === "relay-mesh") {
+    return t("settings.agents.provider.relayMesh");
+  }
+  if (trimmedProvider === "openai-compat") {
+    return t("settings.agents.provider.openaiCompat");
+  }
+  return trimmedProvider;
 }
 
 export function getDefaultLlmProviderLabel(
   _runtimeId: string,
-  globalProvider?: string,
+  globalProvider: string | undefined,
+  t: TranslateFn,
 ) {
   const trimmedGlobal = (globalProvider ?? "").trim();
   return trimmedGlobal
-    ? `Use agent defaults (${providerDisplayLabel(trimmedGlobal)})`
-    : "Select a provider\u2026";
+    ? `Use agent defaults (${providerDisplayLabel(trimmedGlobal, t)})`
+    : t("agents.config.selectProvider");
 }
 
 /** Returns the zero-value model option label.
@@ -334,11 +340,14 @@ export function getDefaultLlmProviderLabel(
  * `Use agent defaults (<model>)` so users can see which model will run.
  * Otherwise falls back to the generic `"Default model"` placeholder.
  */
-export function getDefaultLlmModelLabel(globalModel?: string) {
+export function getDefaultLlmModelLabel(
+  globalModel: string | undefined,
+  t: TranslateFn,
+) {
   const trimmedGlobal = (globalModel ?? "").trim();
   return trimmedGlobal
     ? `Use agent defaults (${trimmedGlobal})`
-    : "Default model";
+    : t("settings.agents.defaultModel");
 }
 
 /**
@@ -358,16 +367,23 @@ export function getDefaultLlmModelLabel(globalModel?: string) {
 export function buildTemplateModelDropdownOptions(
   modelOptions: readonly PersonaModelOption[],
   inheritedModel: string,
-  inheritedModelLabel = getDefaultLlmModelLabel(inheritedModel),
+  inheritedModelLabel?: string,
 ): PersonaDropdownOption[] {
   const trimmedInheritedModel = inheritedModel.trim();
+  // Callers with a locale should pass `getDefaultLlmModelLabel(model, t)`.
+  // The English fallback keeps pure unit tests free of a TranslateFn.
+  const resolvedLabel =
+    inheritedModelLabel ??
+    (trimmedInheritedModel
+      ? `Use agent defaults (${trimmedInheritedModel})`
+      : "Default model");
   const hasZeroValue = modelOptions.some((o) => o.id === "");
   const base: readonly PersonaModelOption[] =
     !hasZeroValue && trimmedInheritedModel.length > 0
-      ? [{ id: "", label: inheritedModelLabel }, ...modelOptions]
+      ? [{ id: "", label: resolvedLabel }, ...modelOptions]
       : modelOptions;
   return base.map((option) => ({
-    label: option.id === "" ? inheritedModelLabel : option.label,
+    label: option.id === "" ? resolvedLabel : option.label,
     value: option.id || AUTO_MODEL_DROPDOWN_VALUE,
   }));
 }
@@ -388,16 +404,25 @@ export function buildTemplateModelDropdownOptions(
 export function getPersonaProviderOptions(
   currentProvider: string,
   runtimeId: string,
+  t: TranslateFn,
   globalProvider?: string,
   hideProviderIds?: ReadonlySet<string>,
 ): readonly PersonaModelOption[] {
   const trimmedProvider = currentProvider.trim();
   const defaultProviderOptions = [
-    { id: "", label: getDefaultLlmProviderLabel(runtimeId, globalProvider) },
+    {
+      id: "",
+      label: getDefaultLlmProviderLabel(runtimeId, globalProvider, t),
+    },
   ];
-  const filteredOptions = hideProviderIds?.size
+  const baseOptions = hideProviderIds?.size
     ? PERSONA_LLM_PROVIDER_OPTIONS.filter((o) => !hideProviderIds.has(o.id))
     : PERSONA_LLM_PROVIDER_OPTIONS;
+  const filteredOptions = baseOptions.map((option) =>
+    option.id === "openai-compat" || option.id === "relay-mesh"
+      ? { ...option, label: providerDisplayLabel(option.id, t) }
+      : option,
+  );
   const options = [...defaultProviderOptions, ...filteredOptions];
   if (
     trimmedProvider.length === 0 ||
@@ -485,21 +510,23 @@ export function buildPersonaRuntimeDropdownOptions({
   runtime,
   runtimes,
   runtimesLoading,
+  t,
 }: {
   defaultRuntimeId?: string;
   isCreateMode: boolean;
   runtime: string;
   runtimes: AcpRuntimeCatalogEntry[];
   runtimesLoading: boolean;
+  t: TranslateFn;
 }): {
   blankRuntimeOptionLabel: string;
   runtimeDropdownOptions: PersonaDropdownOption[];
 } {
   const blankRuntimeOptionLabel = runtimesLoading
-    ? "Loading harnesses..."
+    ? t("agents.config.loadingHarnesses")
     : isCreateMode
-      ? "Choose a harness"
-      : "No preference (use app default)";
+      ? t("agents.config.chooseHarness")
+      : t("agents.config.noPreference");
   const runtimeDropdownOptions: PersonaDropdownOption[] = [
     ...(!isCreateMode
       ? [

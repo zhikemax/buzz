@@ -1,9 +1,11 @@
 import type { InboxItem } from "@/features/home/lib/inbox";
+import { translate, type TranslateFn } from "@/shared/i18n";
 
 export function getHomeMessageCapabilities(
   item: InboxItem | null,
   currentPubkey: string | undefined,
   availableChannelIds: ReadonlySet<string>,
+  t: TranslateFn = translate,
 ) {
   const canReact = Boolean(
     item?.item.channelId && availableChannelIds.has(item.item.channelId),
@@ -15,9 +17,9 @@ export function getHomeMessageCapabilities(
       ? null
       : item.item.channelId
         ? availableChannelIds.has(item.item.channelId)
-          ? "This item does not support inline replies yet."
-          : "Open the linked channel to reply."
-        : "This inbox item does not have a reply target.";
+          ? t("inbox.reply.unsupported")
+          : t("inbox.reply.openChannel")
+        : t("inbox.reply.noTarget");
 
   return {
     canDelete:

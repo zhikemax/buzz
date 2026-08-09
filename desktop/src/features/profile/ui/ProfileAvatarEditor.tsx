@@ -11,6 +11,7 @@ import { ProfileAvatarUploadPreview } from "@/features/profile/ui/ProfileAvatarU
 import { ProfileAvatarModeTabs } from "@/features/profile/ui/ProfileAvatarModeTabs";
 import { useAvatarSelection } from "@/features/profile/avatarPresentationStore";
 import { useAvatarUpload } from "@/features/profile/useAvatarUpload";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { useEmojiBurst } from "@/shared/ui/EmojiBurstProvider";
@@ -87,6 +88,7 @@ export function ProfileAvatarEditor({
   onAnimatedPreviewCaptionChange,
   presentation = "default",
 }: ProfileAvatarEditorProps) {
+  const t = useT();
   const { burstEmoji } = useEmojiBurst();
   const shouldReduceMotion = useReducedMotion();
   const initialEmojiAvatar = React.useMemo(
@@ -556,7 +558,7 @@ export function ProfileAvatarEditor({
         void handleFiles(event.dataTransfer.files);
       }}
     >
-      <legend className="sr-only">Avatar image picker</legend>
+      <legend className="sr-only">{t("avatar.imagePickerLegend")}</legend>
       <div
         className="relative"
         style={
@@ -654,16 +656,16 @@ export function ProfileAvatarEditor({
                       )}
                     >
                       {isUploading ? (
-                        "Uploading..."
+                        t("common.uploading")
                       ) : isImageDropActive ? (
-                        "Drop image here"
+                        t("avatar.dropImageHere")
                       ) : isOnboardingModal ? (
-                        "Drag or browse"
+                        t("avatar.dragOrBrowse")
                       ) : (
                         <>
-                          Drop or{" "}
+                          {t("avatar.dropOr")}{" "}
                           <span className="underline underline-offset-2">
-                            browse
+                            {t("avatar.browse")}
                           </span>
                         </>
                       )}
@@ -714,8 +716,8 @@ export function ProfileAvatarEditor({
                       }}
                       placeholder={
                         isOnboardingModal
-                          ? "Paste a URL"
-                          : "Paste a URL (Slack profile, etc.)"
+                          ? t("avatar.pasteUrl")
+                          : t("avatar.pasteUrlHint")
                       }
                       spellCheck={false}
                       type="url"
@@ -832,9 +834,11 @@ export function ProfileAvatarEditor({
                             aria-label={
                               isCustomSwatch
                                 ? selectedEmoji
-                                  ? "Choose custom avatar color"
-                                  : "Choose an emoji before custom avatar color"
-                                : `Use ${swatch} background`
+                                  ? t("avatar.chooseCustomColor")
+                                  : t("avatar.chooseEmojiBeforeCustomColor")
+                                : t("avatar.useColorBackground", {
+                                    color: swatch,
+                                  })
                             }
                             aria-pressed={isSelected}
                             className={cn(
@@ -948,10 +952,10 @@ export function ProfileAvatarEditor({
                           transition={DONE_BUTTON_CONTENT_TRANSITION}
                         >
                           <Spinner
-                            aria-label="Saving avatar"
+                            aria-label={t("avatar.savingAvatar")}
                             className="h-4 w-4 border-2"
                           />
-                          <span>Saving</span>
+                          <span>{t("common.saving")}</span>
                         </motion.span>
                       ) : (
                         <motion.span
@@ -970,7 +974,9 @@ export function ProfileAvatarEditor({
                           key="ready"
                           transition={DONE_BUTTON_CONTENT_TRANSITION}
                         >
-                          {isOnboardingModal ? "Save" : "Done"}
+                          {isOnboardingModal
+                            ? t("common.save")
+                            : t("common.done")}
                         </motion.span>
                       )}
                     </AnimatePresence>

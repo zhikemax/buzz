@@ -70,8 +70,9 @@ import { BuzzMark } from "@/shared/ui/buzz-logo/BuzzMark";
 import { FlappingBee } from "@/shared/ui/buzz-logo/FlappingBee";
 import { FuzzyLogo } from "@/shared/ui/buzz-logo/FuzzyLogo";
 import { StartupWindowDragRegion } from "@/shared/ui/StartupWindowDragRegion";
+import { useT } from "@/shared/i18n";
 
-const LOADING_TEXT = "Setting up your community...";
+const LOADING_TEXT_KEY = "app.loadingCommunity" as const;
 
 // Minimum time the cold-boot splash stays on screen. A real boot resolves the
 // community in well under 100ms, and the native window setup plus first paint
@@ -165,6 +166,7 @@ function BeeLoader({
 // its wings flapping (ported from the Buzz website's wing-flap). Replaces the
 // old "Setting up your community" text, which stays as an sr-only caption.
 function AppLoadingGate() {
+  const t = useT();
   return (
     <div
       className="buzz-setup-loading-shell flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6 py-10"
@@ -173,7 +175,7 @@ function AppLoadingGate() {
     >
       <StartupWindowDragRegion />
       <ThemeGrainientBackground />
-      <span className="sr-only">{LOADING_TEXT}</span>
+      <span className="sr-only">{t(LOADING_TEXT_KEY)}</span>
       <FlappingBee className="relative z-10 h-auto w-28" />
     </div>
   );
@@ -182,6 +184,8 @@ function AppLoadingGate() {
 // Quiet gate for switching between already-set-up communities: visually empty
 // unless the switch takes long, so fast switches don't flash the boot splash.
 function CommunitySwitchGate() {
+  const t = useT();
+  const switchingLabel = t("app.switchingCommunity");
   const [showSpinner, setShowSpinner] = useState(false);
 
   useEffect(() => {
@@ -196,10 +200,10 @@ function CommunitySwitchGate() {
       role="status"
     >
       <StartupWindowDragRegion />
-      <span className="sr-only">Switching community…</span>
+      <span className="sr-only">{switchingLabel}</span>
       {showSpinner ? (
         <BeeLoader
-          ariaLabel="Switching community…"
+          ariaLabel={switchingLabel}
           className="h-auto w-20"
           tintClassName="text-muted-foreground"
         />

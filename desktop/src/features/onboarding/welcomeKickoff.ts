@@ -28,6 +28,7 @@ import { sendManagedAgentChannelMessage } from "@/shared/api/tauriManagedAgentMe
 import { getPresence, listManagedAgents } from "@/shared/api/tauri";
 import { getProfile } from "@/shared/api/tauriProfiles";
 import type { Channel, ManagedAgent, RelayEvent } from "@/shared/api/types";
+import { translate } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -40,28 +41,32 @@ const openerMarker = welcomeKickoffMarker(WELCOME_KICKOFF_OPENER_MARKER);
 const closerMarker = welcomeKickoffMarker(WELCOME_KICKOFF_CLOSER_MARKER);
 const providerMarker = welcomeKickoffMarker(WELCOME_KICKOFF_PROVIDER_MARKER);
 
-export const WELCOME_KICKOFF_PROVIDER_MESSAGE =
-  "To get started with agents, connect to an AI provider in Settings. Once you're connected, come back here and we'll introduce the team.";
+export function getWelcomeKickoffProviderMessage() {
+  return translate("welcomeKickoff.providerMessage");
+}
 
-const WELCOME_KICKOFF_CTA =
-  "What can we help you build? Bring us something you're working on, or give us a quick challenge to see how we work together.";
+function welcomeKickoffCta() {
+  return translate("welcomeKickoff.cta");
+}
 
 function formatAgentNames(agents: readonly ManagedAgent[]) {
   if (agents.length === 0) return "";
   if (agents.length === 1) return agents[0]?.name ?? "";
+  const and = translate("welcomeKickoff.listAnd");
   return `${agents
     .slice(0, -1)
     .map((agent) => agent.name)
-    .join(", ")} and ${agents[agents.length - 1]?.name ?? ""}`;
+    .join(", ")}${and}${agents[agents.length - 1]?.name ?? ""}`;
 }
 
 function formatMentionNames(agents: readonly ManagedAgent[]) {
   if (agents.length === 0) return "";
   if (agents.length === 1) return `@${agents[0]?.name ?? ""}`;
+  const and = translate("welcomeKickoff.listAnd");
   return `${agents
     .slice(0, -1)
     .map((agent) => `@${agent.name}`)
-    .join(", ")} and @${agents[agents.length - 1]?.name ?? ""}`;
+    .join(", ")}${and}@${agents[agents.length - 1]?.name ?? ""}`;
 }
 export function createWelcomeKickoffCoordinator() {
   const controllers = new Map<string, AbortController>();
@@ -171,16 +176,32 @@ export function buildWelcomeKickoffOpener(
   // their Inbox mentions feed.
   const trimmedOwnerName = ownerName?.trim();
   const greeting = trimmedOwnerName
-    ? `Hi @${trimmedOwnerName}, I'm ${lead.name}.`
-    : `Hi, I'm ${lead.name}.`;
+    ? translate("welcomeKickoff.greetingNamed", {
+        name: trimmedOwnerName,
+        lead: lead.name,
+      })
+    : translate("welcomeKickoff.greeting", { lead: lead.name });
   const introNames = formatMentionNames(introTeammates);
   if (introTeammates.length === 0) {
     const teammateNames = formatAgentNames(allTeammates);
-    const teammatePhrase = teammateNames ? ` with ${teammateNames}` : "";
-    return `${greeting} Welcome to Buzz. This is your private home base, and I'm here${teammatePhrase} to help you get oriented or work through something you're building.\n\n${WELCOME_KICKOFF_CTA}`;
+    const teammatePhrase = teammateNames
+      ? translate("welcomeKickoff.withTeammates", { names: teammateNames })
+      : "";
+    return translate("welcomeKickoff.openerSolo", {
+      greeting,
+      teammatePhrase,
+      cta: welcomeKickoffCta(),
+    });
   }
 
-  return `${greeting} Welcome to Buzz. This is your private home base, and we're here to help you get oriented or work through something you're building.\n\n${introNames}, introduce ${introTeammates.length === 1 ? "yourself" : "yourselves"} in a sentence or two — share what you're good at and when to bring you in. Don't start any work yet.`;
+  return translate("welcomeKickoff.openerTeam", {
+    greeting,
+    introNames,
+    yourselves:
+      introTeammates.length === 1
+        ? translate("welcomeKickoff.yourself")
+        : translate("welcomeKickoff.yourselves"),
+  });
 }
 
 export function onlineWelcomeTeammates(
@@ -258,20 +279,31 @@ export function buildWelcomeKickoffCloser(
   failedNames: readonly string[],
   delayedNames: readonly string[] = [],
 ) {
+  const cta = welcomeKickoffCta();
   if (failedNames.length === 0 && delayedNames.length === 0) {
-    return WELCOME_KICKOFF_CTA;
+    return cta;
   }
+  const and = translate("welcomeKickoff.listAnd");
   if (failedNames.length === 1 && delayedNames.length === 0) {
-    return `${failedNames[0]} is having trouble starting — you can check on them in Agents.\n\n${WELCOME_KICKOFF_CTA}`;
+    return translate("welcomeKickoff.troubleStarting", {
+      name: failedNames[0] ?? "",
+      cta,
+    });
   }
   if (failedNames.length > 1 && delayedNames.length === 0) {
-    return `${failedNames.join(" and ")} couldn't start. You can check on them in Agents; I'm still here to help.\n\n${WELCOME_KICKOFF_CTA}`;
+    return translate("welcomeKickoff.couldntStart", {
+      names: failedNames.join(and),
+      cta,
+    });
   }
   if (failedNames.length === 0 && delayedNames.length === 1) {
-    return `${delayedNames[0]} is taking longer to reply — I'm still here to help.\n\n${WELCOME_KICKOFF_CTA}`;
+    return translate("welcomeKickoff.takingLonger", {
+      name: delayedNames[0] ?? "",
+      cta,
+    });
   }
-  const names = [...failedNames, ...delayedNames].join(" and ");
-  return `${names} are taking longer than expected. I'm still here to help.\n\n${WELCOME_KICKOFF_CTA}`;
+  const names = [...failedNames, ...delayedNames].join(and);
+  return translate("welcomeKickoff.takingLongerPlural", { names, cta });
 }
 
 function isReplyToOpener(event: RelayEvent, opener: RelayEvent) {
@@ -587,7 +619,7 @@ export function useWelcomeKickoff(
           await sendManagedAgentChannelMessage({
             agentPubkey: resolvedAgentSet.lead.pubkey,
             channelId,
-            content: WELCOME_KICKOFF_PROVIDER_MESSAGE,
+            content: getWelcomeKickoffProviderMessage(),
             marker: providerMarker,
             markerScope: "channel",
           });

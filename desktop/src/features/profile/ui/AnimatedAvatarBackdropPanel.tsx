@@ -1,10 +1,10 @@
-import { cn } from "@/shared/lib/cn";
-
 import {
   AVATAR_COLOR_SWATCHES,
   CUSTOM_AVATAR_COLOR_SWATCH,
   contrastColorForBackground,
 } from "@/features/profile/ui/ProfileAvatarEditor.utils";
+import { useT } from "@/shared/i18n";
+import { cn } from "@/shared/lib/cn";
 
 type AnimatedAvatarBackdropPanelProps = {
   backdropColor: string | null;
@@ -27,6 +27,7 @@ export function AnimatedAvatarBackdropPanel({
   onSelectColor,
   testIdPrefix,
 }: AnimatedAvatarBackdropPanelProps) {
+  const t = useT();
   return (
     <div
       className={cn(
@@ -46,8 +47,8 @@ export function AnimatedAvatarBackdropPanel({
           <button
             aria-label={
               isCustomSwatch
-                ? "Choose custom backdrop color"
-                : `Use ${swatch} backdrop`
+                ? t("avatar.chooseCustomBackdrop")
+                : t("avatar.useColorBackdrop", { color: swatch })
             }
             aria-pressed={isSelected}
             className={cn(

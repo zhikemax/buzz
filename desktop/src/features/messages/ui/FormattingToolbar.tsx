@@ -24,6 +24,7 @@ import {
 } from "@/features/messages/lib/selectionBlockFormatting";
 import { getEditorSpoilerRangeState } from "@/features/messages/lib/spoilerFormatting";
 import { SPOILER_MARK_NAME } from "@/features/messages/lib/spoilerMark";
+import { useT } from "@/shared/i18n";
 
 type FormattingToolbarProps = {
   editor: Editor | null;
@@ -129,6 +130,7 @@ export const FormattingToolbar = React.memo(function FormattingToolbar({
   disabled = false,
   onLinkButton,
 }: FormattingToolbarProps) {
+  const t = useT();
   const pendingSelectionRef = React.useRef<FormattingSelectionRange | null>(
     null,
   );
@@ -254,18 +256,18 @@ export const FormattingToolbar = React.memo(function FormattingToolbar({
     const hasSelection = from !== to;
 
     if (hasSelection) {
-      const url = window.prompt("Enter URL:");
+      const url = window.prompt(t("fmt.enterUrl"));
       if (url) {
         editor.chain().focus().setLink({ href: url }).run();
       }
     } else {
-      const url = window.prompt("Enter URL:");
+      const url = window.prompt(t("fmt.enterUrl"));
       if (url) {
-        const label = window.prompt("Link text:", url) || url;
+        const label = window.prompt(t("fmt.linkText"), url) || url;
         editor.chain().focus().insertContent(`[${label}](${url})`).run();
       }
     }
-  }, [editor, formattingChain, onLinkButton, restorePendingSelection]);
+  }, [editor, formattingChain, onLinkButton, restorePendingSelection, t]);
 
   const toggleBulletList = React.useCallback(() => {
     formattingChain()
@@ -320,66 +322,66 @@ export const FormattingToolbar = React.memo(function FormattingToolbar({
   const items = [
     {
       icon: Bold,
-      label: "Bold",
+      label: t("fmt.bold"),
       shortcut: "⌘B",
       action: toggleBold,
       active: activeStates.bold,
     },
     {
       icon: Italic,
-      label: "Italic",
+      label: t("fmt.italic"),
       shortcut: "⌘I",
       action: toggleItalic,
       active: activeStates.italic,
     },
     {
       icon: Strikethrough,
-      label: "Strikethrough",
+      label: t("fmt.strikethrough"),
       shortcut: "⌘⇧X",
       action: toggleStrike,
       active: activeStates.strike,
     },
     {
       icon: Code,
-      label: "Code",
+      label: t("fmt.code"),
       shortcut: "⌘E",
       action: toggleCode,
       active: activeStates.code,
     },
     {
       icon: SquareCode,
-      label: "Code block",
+      label: t("fmt.codeBlock"),
       action: toggleCodeBlock,
       active: activeStates.codeBlock,
     },
     {
       icon: Link,
-      label: "Link",
+      label: t("fmt.link"),
       shortcut: "⌘K",
       action: toggleLink,
       active: activeStates.link,
     },
     {
       icon: List,
-      label: "Bullet list",
+      label: t("fmt.bulletList"),
       action: toggleBulletList,
       active: activeStates.bulletList,
     },
     {
       icon: ListOrdered,
-      label: "Ordered list",
+      label: t("fmt.orderedList"),
       action: toggleOrderedList,
       active: activeStates.orderedList,
     },
     {
       icon: Quote,
-      label: "Quote",
+      label: t("fmt.quote"),
       action: toggleBlockquote,
       active: activeStates.blockquote,
     },
     {
       icon: HatGlasses,
-      label: "Spoiler",
+      label: t("fmt.spoiler"),
       action: toggleSpoiler,
       active: activeStates.spoiler,
     },

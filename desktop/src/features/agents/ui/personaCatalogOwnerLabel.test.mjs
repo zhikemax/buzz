@@ -3,41 +3,47 @@ import test from "node:test";
 
 import { resolveCatalogOwnerLabel } from "./PersonaCatalogDialog.tsx";
 
+const t = (key) =>
+  key === "agents.communityMember" ? "Community member" : key;
+
 // ── null / undefined summary ──────────────────────────────────────────────────
 
 test("test_null_summary_returns_community_member", () => {
-  assert.equal(resolveCatalogOwnerLabel(null), "Community member");
+  assert.equal(resolveCatalogOwnerLabel(null, t), "Community member");
 });
 
 test("test_undefined_summary_returns_community_member", () => {
-  assert.equal(resolveCatalogOwnerLabel(undefined), "Community member");
+  assert.equal(resolveCatalogOwnerLabel(undefined, t), "Community member");
 });
 
 // ── populated displayName ─────────────────────────────────────────────────────
 
 test("test_display_name_present_returns_display_name", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: "Alice", name: "alice" }),
+    resolveCatalogOwnerLabel({ displayName: "Alice", name: "alice" }, t),
     "Alice",
   );
 });
 
 test("test_display_name_present_without_name_returns_display_name", () => {
-  assert.equal(resolveCatalogOwnerLabel({ displayName: "Alice" }), "Alice");
+  assert.equal(
+    resolveCatalogOwnerLabel({ displayName: "Alice" }, t),
+    "Alice",
+  );
 });
 
 // ── empty / whitespace displayName with valid name ────────────────────────────
 
 test("test_empty_display_name_falls_through_to_name", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: "", name: "alice" }),
+    resolveCatalogOwnerLabel({ displayName: "", name: "alice" }, t),
     "alice",
   );
 });
 
 test("test_whitespace_only_display_name_falls_through_to_name", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: "   ", name: "alice" }),
+    resolveCatalogOwnerLabel({ displayName: "   ", name: "alice" }, t),
     "alice",
   );
 });
@@ -46,32 +52,32 @@ test("test_whitespace_only_display_name_falls_through_to_name", () => {
 
 test("test_both_null_returns_community_member", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: null, name: null }),
+    resolveCatalogOwnerLabel({ displayName: null, name: null }, t),
     "Community member",
   );
 });
 
 test("test_both_empty_returns_community_member", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: "", name: "" }),
+    resolveCatalogOwnerLabel({ displayName: "", name: "" }, t),
     "Community member",
   );
 });
 
 test("test_both_whitespace_returns_community_member", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: "  ", name: "\t" }),
+    resolveCatalogOwnerLabel({ displayName: "  ", name: "\t" }, t),
     "Community member",
   );
 });
 
 test("test_display_name_absent_name_present_returns_name", () => {
-  assert.equal(resolveCatalogOwnerLabel({ name: "alice" }), "alice");
+  assert.equal(resolveCatalogOwnerLabel({ name: "alice" }, t), "alice");
 });
 
 test("test_display_name_null_name_present_returns_name", () => {
   assert.equal(
-    resolveCatalogOwnerLabel({ displayName: null, name: "alice" }),
+    resolveCatalogOwnerLabel({ displayName: null, name: "alice" }, t),
     "alice",
   );
 });

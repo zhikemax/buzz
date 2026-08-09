@@ -18,6 +18,7 @@ import type {
   ModerationReport as ApiModerationReport,
   ResolutionAction,
 } from "@/shared/api/moderation";
+import type { MessageKey } from "@/shared/i18n";
 
 /** NIP-56 report categories accepted at ingest (relay `report.rs::REPORT_TYPES`). */
 export type ReportType =
@@ -186,23 +187,23 @@ export function isOpenReport(report: ModerationReport): boolean {
   return report.status === "open";
 }
 
-/** Human label for a NIP-56 report category. */
-export function reportTypeLabel(reportType: ReportType): string {
+/** Message key for a NIP-56 report category label. */
+export function reportTypeLabel(reportType: ReportType): MessageKey {
   switch (reportType) {
     case "illegal":
-      return "Illegal content";
+      return "settings.moderation.type.illegal";
     case "nudity":
-      return "Nudity";
+      return "settings.moderation.type.nudity";
     case "malware":
-      return "Malware";
+      return "settings.moderation.type.malware";
     case "spam":
-      return "Spam";
+      return "settings.moderation.type.spam";
     case "impersonation":
-      return "Impersonation";
+      return "settings.moderation.type.impersonation";
     case "profanity":
-      return "Profanity";
+      return "settings.moderation.type.profanity";
     case "other":
-      return "Other";
+      return "settings.moderation.type.other";
   }
 }
 

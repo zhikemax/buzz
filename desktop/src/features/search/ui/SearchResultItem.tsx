@@ -19,6 +19,7 @@ import {
 import type { Channel, SearchHit, UserSearchResult } from "@/shared/api/types";
 import { Badge } from "@/shared/ui/badge";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 export type SearchResult =
   | {
@@ -157,29 +158,29 @@ export function ChannelResultBody({ channel }: { channel: Channel }) {
   );
 }
 
-function describeSearchHit(hit: SearchHit) {
+function describeSearchHit(hit: SearchHit, t: TranslateFn) {
   switch (hit.kind) {
     case 1:
-      return "Note";
+      return t("search.kind.note");
     case 45001:
-      return "Forum post";
+      return t("search.kind.forumPost");
     case 45003:
-      return "Forum reply";
+      return t("search.kind.forumReply");
     case 43001:
-      return "Agent job";
+      return t("search.kind.agentJob");
     case 43003:
-      return "Agent update";
+      return t("search.kind.agentUpdate");
     case 46010:
-      return "Approval request";
+      return t("search.kind.approvalRequest");
     default:
-      return "Message";
+      return t("search.message");
   }
 }
 
-function truncateContent(content: string) {
+function truncateContent(content: string, t: TranslateFn) {
   const trimmed = content.trim();
   if (trimmed.length === 0) {
-    return "No message body.";
+    return t("search.noMessageBody");
   }
 
   if (trimmed.length <= 180) {
@@ -189,19 +190,19 @@ function truncateContent(content: string) {
   return `${trimmed.slice(0, 177)}...`;
 }
 
-function formatRelativeTime(unixSeconds: number) {
+function formatRelativeTime(unixSeconds: number, t: TranslateFn) {
   const diff = Math.floor(Date.now() / 1_000) - unixSeconds;
 
   if (diff < 60) {
-    return "just now";
+    return t("search.justNow");
   }
 
   if (diff < 60 * 60) {
-    return `${Math.floor(diff / 60)}m ago`;
+    return t("search.minutesAgo", { count: Math.floor(diff / 60) });
   }
 
   if (diff < 60 * 60 * 24) {
-    return `${Math.floor(diff / (60 * 60))}h ago`;
+    return t("search.hoursAgo", { count: Math.floor(diff / (60 * 60)) });
   }
 
   return new Intl.DateTimeFormat("en-US", {
@@ -221,6 +222,7 @@ export function MessageResultBody({
   hit: SearchHit;
   resultProfiles?: UserProfileLookup;
 }) {
+  const t = useT();
   const authorLabel = resolveUserLabel({
     pubkey: hit.pubkey,
     currentPubkey,
@@ -240,7 +242,7 @@ export function MessageResultBody({
         <p className="text-sm font-semibold tracking-tight">
           {hit.channelName}
         </p>
-        <Badge variant="secondary">{describeSearchHit(hit)}</Badge>
+        <Badge variant="secondary">{describeSearchHit(hit, t)}</Badge>
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <UserAvatar
             avatarUrl={avatarUrl}
@@ -250,7 +252,7 @@ export function MessageResultBody({
           {authorLabel}
         </span>
         <p className="ml-auto whitespace-nowrap text-xs text-muted-foreground">
-          {formatRelativeTime(hit.createdAt)}
+          {formatRelativeTime(hit.createdAt, t)}
         </p>
       </div>
       {authorSecondaryLabel ? (
@@ -259,7 +261,7 @@ export function MessageResultBody({
         </p>
       ) : null}
       <p className="mt-2 text-sm leading-6 text-foreground">
-        {truncateContent(hit.content)}
+        {truncateContent(hit.content, t)}
       </p>
     </div>
   );

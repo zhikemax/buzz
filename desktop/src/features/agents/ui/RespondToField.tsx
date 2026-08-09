@@ -10,6 +10,7 @@ import { useIsArchivedPredicate } from "@/features/identity-archive/hooks";
 import { useUserSearchQuery } from "@/features/profile/hooks";
 import type { RespondToMode, UserSearchResult } from "@/shared/api/types";
 import { cn } from "@/shared/lib/cn";
+import { useT, type MessageKey } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
@@ -66,10 +67,13 @@ function formatSearchUserSecondary(user: UserSearchResult) {
   return truncatePubkey(user.pubkey);
 }
 
-const RESPOND_TO_OPTIONS: PersonaDropdownOption[] = [
-  { label: "Only me (default)", value: "owner-only" },
-  { label: "Anyone", value: "anyone" },
-  { label: "Selected people", value: "allowlist" },
+const RESPOND_TO_OPTIONS: ReadonlyArray<{
+  labelKey: MessageKey;
+  value: RespondToMode;
+}> = [
+  { labelKey: "agents.respond.onlyMe", value: "owner-only" },
+  { labelKey: "agents.respond.anyone", value: "anyone" },
+  { labelKey: "agents.respond.selectedPeople", value: "allowlist" },
 ];
 
 export function CreateAgentRespondToField({
@@ -102,6 +106,7 @@ export function CreateAgentRespondToField({
    */
   runLocation?: AgentRunLocation | null;
 }) {
+  const t = useT();
   const [query, setQuery] = React.useState("");
   const [isDirectEntryOpen, setIsDirectEntryOpen] = React.useState(false);
   const [pasteText, setPasteText] = React.useState("");
@@ -154,6 +159,12 @@ export function CreateAgentRespondToField({
   }
 
   const isPersonaVariant = variant === "persona";
+  const respondToOptions: PersonaDropdownOption[] = RESPOND_TO_OPTIONS.map(
+    (option) => ({
+      label: t(option.labelKey),
+      value: option.value,
+    }),
+  );
 
   // An explicit prop wins; otherwise inherit from the dialog subtree. Surfaces
   // inside AgentDialog get it from context (see AgentRunLocationContext for
@@ -162,6 +173,7 @@ export function CreateAgentRespondToField({
   const warningText = agentAccessWarningText(
     mode,
     runLocation ?? inheritedRunLocation,
+    t
   );
 
   // Rendered in two positions: directly below the selector for Anyone, but
@@ -192,15 +204,15 @@ export function CreateAgentRespondToField({
         }
         htmlFor="agent-respond-to"
       >
-        Who can send instructions
+        {t("agents.respond.label")}
       </label>
       {isPersonaVariant ? (
         <PersonaDropdownField
           disabled={disabled}
           id="agent-respond-to"
           onValueChange={(value) => onModeChange(value as RespondToMode)}
-          options={RESPOND_TO_OPTIONS}
-          placeholder="Only me (default)"
+          options={respondToOptions}
+          placeholder={t("agents.respond.onlyMe")}
           value={mode}
         />
       ) : (
@@ -212,7 +224,7 @@ export function CreateAgentRespondToField({
           onChange={(e) => onModeChange(e.target.value as RespondToMode)}
           value={mode}
         >
-          {RESPOND_TO_OPTIONS.map((option) => (
+          {respondToOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -222,7 +234,7 @@ export function CreateAgentRespondToField({
       {mode === "anyone" ? accessWarning : null}
       {mode === "owner-only" ? (
         <p className="text-xs text-muted-foreground">
-          Only you can send instructions.
+          {t("agents.respond.onlyYouHint")}
         </p>
       ) : null}
       {mode === "allowlist" ? (
@@ -303,6 +315,7 @@ function AllowlistPicker({
   searchResults: UserSearchResult[];
   variant?: "default" | "persona";
 }) {
+  const t = useT();
   const isPersona = variant === "persona";
 
   // Detect if the query is a valid hex pubkey that's not already in the list.
@@ -321,21 +334,23 @@ function AllowlistPicker({
     >
       {!isPersona ? (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium">Selected people</span>
+          <span className="text-sm font-medium">
+            {t("agents.respond.selectedPeople")}
+          </span>
           <span className="rounded-full bg-background px-2 py-1 text-2xs font-medium leading-none text-muted-foreground">
-            {allowlist.length} selected
+            {t("agents.respond.selectedCount", { count: allowlist.length })}
           </span>
         </div>
       ) : null}
       {!isPersona && ownerPubkey ? (
         <p className="text-xs text-muted-foreground">
-          You (
-          <PubKey pubkey={ownerPubkey} />) can always use this agent. You
-          don&apos;t need to add yourself.
+          {t("agents.respond.ownerAlwaysBefore")}
+          <PubKey pubkey={ownerPubkey} />
+          {t("agents.respond.ownerAlwaysAfter")}
         </p>
       ) : !isPersona ? (
         <p className="text-xs text-muted-foreground">
-          You can always use this agent.
+          {t("agents.respond.ownerAlways")}
         </p>
       ) : null}
       <div className="rounded-lg border border-border/80 bg-background">
@@ -347,7 +362,9 @@ function AllowlistPicker({
             disabled={disabled}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder={
-              isPersona ? "Search people" : "Search by name or NIP-05."
+              isPersona
+                ? t("agents.respond.searchPeople")
+                : t("agents.respond.searchByName")
             }
             value={query}
           />
@@ -367,7 +384,9 @@ function AllowlistPicker({
                 />
                 <PubKey pubkey={pubkey} />
                 <button
-                  aria-label={`Remove ${truncatePubkey(pubkey)}`}
+                  aria-label={t("agents.respond.removeAria", {
+                    name: truncatePubkey(pubkey),
+                  })}
                   className="text-muted-foreground transition-colors hover:text-foreground"
                   disabled={disabled}
                   onClick={() => onRemove(pubkey)}
@@ -383,7 +402,7 @@ function AllowlistPicker({
           <div className="border-t border-border/70 px-2 py-2">
             {searchIsLoading ? (
               <p className="px-2 py-1 text-sm text-muted-foreground">
-                Searching…
+                {t("agents.respond.searching")}
               </p>
             ) : searchResults.length > 0 ? (
               <div className="max-h-44 space-y-1 overflow-y-auto">
@@ -410,7 +429,9 @@ function AllowlistPicker({
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">Add</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("agents.respond.add")}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -432,15 +453,17 @@ function AllowlistPicker({
                       {truncatePubkey(deferredQuery)}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      Add pubkey directly
+                      {t("agents.respond.addPubkeyDirectly")}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground">Add</span>
+                <span className="text-xs text-muted-foreground">
+                  {t("agents.respond.add")}
+                </span>
               </button>
             ) : (
               <p className="px-2 py-1 text-sm text-muted-foreground">
-                No matching users.
+                {t("agents.respond.noMatchingUsers")}
               </p>
             )}
           </div>
@@ -465,7 +488,7 @@ function AllowlistPicker({
                 isDirectEntryOpen && "rotate-180",
               )}
             />
-            <span>Paste pubkeys</span>
+            <span>{t("agents.respond.pastePubkeys")}</span>
           </button>
           {isDirectEntryOpen ? (
             <div
@@ -473,8 +496,7 @@ function AllowlistPicker({
               id="agent-respond-to-direct-panel"
             >
               <p className="text-xs text-muted-foreground">
-                One per line, or comma/space-separated. 64-char lowercase hex
-                only — npub decoding is not yet supported here.
+                {t("agents.respond.pasteHint")}
               </p>
               <Textarea
                 className="min-h-20 font-mono text-xs"
@@ -486,16 +508,24 @@ function AllowlistPicker({
               />
               {pasteInvalid.length > 0 ? (
                 <p className="text-xs text-destructive">
-                  {pasteInvalid.length} entr
-                  {pasteInvalid.length === 1 ? "y is" : "ies are"} not 64-char
-                  hex and will be ignored.
+                  {t(
+                    pasteInvalid.length === 1
+                      ? "agents.respond.invalidEntryOne"
+                      : "agents.respond.invalidEntryMany",
+                    { count: pasteInvalid.length },
+                  )}
                 </p>
               ) : null}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs text-muted-foreground">
                   {pasteValidCount > 0
-                    ? `${pasteValidCount} valid pubkey${pasteValidCount === 1 ? "" : "s"} ready.`
-                    : "No valid pubkeys yet."}
+                    ? t(
+                        pasteValidCount === 1
+                          ? "agents.respond.validPubkeyOne"
+                          : "agents.respond.validPubkeyMany",
+                        { count: pasteValidCount },
+                      )
+                    : t("agents.respond.noValidPubkeys")}
                 </span>
                 <button
                   className="rounded-md border border-border/80 bg-background px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -504,7 +534,7 @@ function AllowlistPicker({
                   onClick={onAddFromPaste}
                   type="button"
                 >
-                  Add people
+                  {t("agents.respond.addPeople")}
                 </button>
               </div>
             </div>

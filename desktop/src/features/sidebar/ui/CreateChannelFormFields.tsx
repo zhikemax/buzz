@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { TemplateFormDialog } from "@/features/settings/ui/ChannelTemplatesSettingsCard";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -41,7 +42,12 @@ export function CreateChannelFormFields({
 }: {
   form: CreateChannelFormState;
 }) {
+  const t = useT();
   const { channelKind, kindLabel, isCreating } = form;
+  const translatedKind =
+    channelKind === "forum"
+      ? t("channel.kindForum")
+      : t("channel.kindChannel");
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = React.useState(false);
   const selectedTemplate = form.templates.find(
     (template) => template.id === form.selectedTemplateId,
@@ -51,8 +57,10 @@ export function CreateChannelFormFields({
   const selectedTemplateTeamCount = selectedTemplate?.agents.teams.length ?? 0;
   const selectedTemplateSummary = selectedTemplate
     ? [
-        form.visibility === "private" ? "Private" : "Open",
-        selectedTemplate.canvasTemplate ? "Canvas included" : null,
+        form.visibility === "private"
+          ? t("channel.visibilityPrivate")
+          : t("channel.visibilityOpen"),
+        selectedTemplate.canvasTemplate ? t("channel.canvasIncluded") : null,
         selectedTemplatePersonaCount > 0
           ? `${selectedTemplatePersonaCount} ${selectedTemplatePersonaCount === 1 ? "agent" : "agents"}`
           : null,
@@ -64,6 +72,12 @@ export function CreateChannelFormFields({
         .join(" · ")
     : null;
 
+  const englishCreateFailed = `Failed to create ${kindLabel}.`;
+  const displayError =
+    form.errorMessage === englishCreateFailed
+      ? t("channel.createFailed", { kind: translatedKind })
+      : form.errorMessage;
+
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
@@ -71,7 +85,7 @@ export function CreateChannelFormFields({
           className="text-sm font-medium text-foreground"
           htmlFor="create-channel-name"
         >
-          Name
+          {t("channel.fieldName")}
         </label>
         <div
           className={cn(
@@ -92,7 +106,9 @@ export function CreateChannelFormFields({
             id="create-channel-name"
             onChange={(event) => form.setName(event.target.value)}
             placeholder={
-              channelKind === "forum" ? "design-discussions" : "release-notes"
+              channelKind === "forum"
+                ? t("channel.placeholderNameForum")
+                : t("channel.placeholderNameChannel")
             }
             ref={form.nameInputRef}
             spellCheck={false}
@@ -106,8 +122,10 @@ export function CreateChannelFormFields({
           className="text-sm font-medium text-foreground"
           htmlFor="create-channel-description"
         >
-          Description
-          <span className={CREATE_LABEL_OPTIONAL_CLASS}>Optional</span>
+          {t("channel.fieldDescription")}
+          <span className={CREATE_LABEL_OPTIONAL_CLASS}>
+            {t("channel.fieldOptional")}
+          </span>
         </label>
         <div className={CHANNEL_FORM_FIELD_SHELL_CLASS}>
           <Textarea
@@ -119,7 +137,9 @@ export function CreateChannelFormFields({
             disabled={isCreating}
             id="create-channel-description"
             onChange={(event) => form.setDescription(event.target.value)}
-            placeholder={`What this ${kindLabel} is for`}
+            placeholder={t("channel.placeholderDescription", {
+              kind: translatedKind,
+            })}
             rows={2}
             value={form.description}
           />
@@ -128,7 +148,7 @@ export function CreateChannelFormFields({
 
       <ChannelTypeSettings
         disabled={isCreating}
-        label="Type"
+        label={t("channel.fieldType")}
         onOpenChange={form.setTypePopoverOpen}
         onTemporaryChange={form.setEphemeral}
         onTtlSecondsChange={form.setTtlSeconds}
@@ -153,13 +173,17 @@ export function CreateChannelFormFields({
         data-testid="create-channel-template-container"
       >
         <span className="text-sm font-medium text-foreground">
-          Template
-          <span className={CREATE_LABEL_OPTIONAL_CLASS}>Optional</span>
+          {t("channel.fieldTemplate")}
+          <span className={CREATE_LABEL_OPTIONAL_CLASS}>
+            {t("channel.fieldOptional")}
+          </span>
         </span>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
-              aria-label={`Template: ${selectedTemplate?.name ?? "None"}`}
+              aria-label={t("channel.templateAria", {
+                name: selectedTemplate?.name ?? t("channel.templateNone"),
+              })}
               className="-mr-2.5 ml-auto h-9 min-w-0 max-w-[60%] justify-end px-2.5 text-right text-sm font-medium text-foreground hover:bg-muted/50"
               data-testid="create-channel-template"
               disabled={isCreating}
@@ -168,7 +192,7 @@ export function CreateChannelFormFields({
               variant="ghost"
             >
               <span className="truncate text-right">
-                {selectedTemplate?.name ?? "None"}
+                {selectedTemplate?.name ?? t("channel.templateNone")}
               </span>
               <ChevronDown className="size-4 shrink-0 text-muted-foreground/70" />
             </Button>
@@ -189,7 +213,7 @@ export function CreateChannelFormFields({
               value={form.selectedTemplateId ?? NO_TEMPLATE_VALUE}
             >
               <DropdownMenuRadioItem value={NO_TEMPLATE_VALUE}>
-                None
+                {t("channel.templateNone")}
               </DropdownMenuRadioItem>
               {form.templates.map((template) => (
                 <DropdownMenuRadioItem key={template.id} value={template.id}>
@@ -200,7 +224,7 @@ export function CreateChannelFormFields({
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setIsCreateTemplateOpen(true)}>
               <Plus className="size-4" />
-              Create new channel template…
+              {t("channel.createTemplate")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -220,8 +244,8 @@ export function CreateChannelFormFields({
         </p>
       ) : null}
 
-      {form.errorMessage ? (
-        <p className="text-sm text-destructive">{form.errorMessage}</p>
+      {displayError ? (
+        <p className="text-sm text-destructive">{displayError}</p>
       ) : null}
     </div>
   );
@@ -238,7 +262,12 @@ export function CreateChannelFormFooter({
   form: CreateChannelFormState;
   submitLabel?: string;
 }) {
-  const { isCreating, kindLabel } = form;
+  const t = useT();
+  const { isCreating, channelKind } = form;
+  const translatedKind =
+    channelKind === "forum"
+      ? t("channel.kindForum")
+      : t("channel.kindChannel");
 
   return (
     <div className="flex w-full items-center justify-end gap-3">
@@ -248,7 +277,9 @@ export function CreateChannelFormFooter({
         form={CREATE_CHANNEL_FORM_ID}
         type="submit"
       >
-        {isCreating ? "Creating..." : (submitLabel ?? `Create ${kindLabel}`)}
+        {isCreating
+          ? t("channel.creating")
+          : (submitLabel ?? t("channel.createSubmit", { kind: translatedKind }))}
       </Button>
     </div>
   );

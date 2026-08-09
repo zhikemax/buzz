@@ -17,6 +17,7 @@ import {
   KIND_JOB_RESULT,
   KIND_REMINDER,
 } from "@/shared/constants/kinds";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 import { Button } from "@/shared/ui/button";
 import { Markdown } from "@/shared/ui/markdown";
@@ -57,56 +58,56 @@ function formatRelativeTime(unixSeconds: number) {
   }).format(new Date(unixSeconds * 1_000));
 }
 
-function feedHeadline(item: FeedItem) {
+function feedHeadline(item: FeedItem, t: TranslateFn) {
   switch (item.kind) {
     case KIND_REMINDER:
-      return "Reminder";
+      return t("inbox.type.reminder");
     case KIND_JOB_REQUEST:
-      return "Job requested";
+      return t("inbox.type.jobRequested");
     case KIND_JOB_ACCEPTED:
-      return "Job accepted";
+      return t("inbox.type.jobAccepted");
     case KIND_JOB_PROGRESS:
-      return "Progress update";
+      return t("inbox.type.progressUpdate");
     case KIND_JOB_RESULT:
-      return "Job result";
+      return t("inbox.type.jobResult");
     case KIND_JOB_CANCEL:
-      return "Job cancelled";
+      return t("inbox.type.jobCancelled");
     case KIND_JOB_ERROR:
-      return "Job failed";
+      return t("inbox.type.jobFailed");
     case KIND_FORUM_POST:
-      return "Forum post";
+      return t("inbox.type.forumPost");
     case KIND_FORUM_COMMENT:
-      return "Forum reply";
+      return t("inbox.type.forumReply");
     case KIND_APPROVAL_REQUEST:
-      return "Approval requested";
+      return t("inbox.type.approvalRequested");
     default:
       if (item.category === "mention") {
-        return "Mention";
+        return t("inbox.type.mention");
       }
 
       if (item.category === "agent_activity") {
-        return "Agent update";
+        return t("inbox.type.agentUpdate");
       }
 
-      return "Channel update";
+      return t("inbox.type.channelUpdate");
   }
 }
 
-function feedContent(item: FeedItem) {
+function feedContent(item: FeedItem, t: TranslateFn) {
   const content = item.content.trim();
   if (content.length > 0) {
     return content;
   }
 
   if (item.kind === KIND_APPROVAL_REQUEST) {
-    return "A workflow is waiting for approval.";
+    return t("inbox.feed.approvalWaiting");
   }
 
   if (item.kind === KIND_REMINDER) {
-    return "A reminder is waiting for you.";
+    return t("inbox.feed.reminderWaiting");
   }
 
-  return "No additional details were attached to this event.";
+  return t("inbox.feed.noDetails");
 }
 
 type FeedSectionProps = {
@@ -140,6 +141,8 @@ export function FeedSection({
   onMarkDone,
   onUndoDone,
 }: FeedSectionProps) {
+  const t = useT();
+
   return (
     <section>
       <div className="flex items-center gap-2 pb-2">
@@ -178,7 +181,9 @@ export function FeedSection({
               >
                 {canOpenChannel ? (
                   <button
-                    aria-label={`Open ${item.channelName || "channel"}`}
+                    aria-label={t("inbox.feed.openChannelAria", {
+                      channel: item.channelName || t("channel.kindChannel"),
+                    })}
                     className="absolute inset-0"
                     data-testid={`home-feed-open-${item.id}`}
                     onClick={() => {
@@ -192,7 +197,7 @@ export function FeedSection({
                   <span
                     className={`text-sm font-medium ${isDone ? "line-through text-muted-foreground" : ""}`}
                   >
-                    {feedHeadline(item)}
+                    {feedHeadline(item, t)}
                   </span>
                   <span className="inline-flex items-center gap-1 text-2xs text-muted-foreground">
                     <UserAvatar
@@ -227,7 +232,7 @@ export function FeedSection({
                 <div className="pointer-events-none relative mt-0.5 line-clamp-2">
                   <Markdown
                     className="max-w-none text-sm leading-snug text-muted-foreground"
-                    content={feedContent(item)}
+                    content={feedContent(item, t)}
                     mentionNames={mentionNames}
                     mentionPubkeysByName={mentionPubkeysByName}
                   />
@@ -235,7 +240,9 @@ export function FeedSection({
 
                 {showDoneAction ? (
                   <Button
-                    aria-label={isDone ? "Undo done" : "Mark done"}
+                    aria-label={
+                      isDone ? t("inbox.feed.undoDone") : t("inbox.feed.markDone")
+                    }
                     onClick={() => {
                       if (isDone) {
                         onUndoDone(item.id);

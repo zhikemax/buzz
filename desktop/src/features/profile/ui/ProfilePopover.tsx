@@ -10,11 +10,11 @@ import {
 import { PresenceDot } from "@/features/presence/ui/PresenceBadge";
 import {
   getPresenceChipClassName,
-  getPresenceLabel,
 } from "@/features/presence/lib/presence";
 import { SetStatusDialog } from "@/features/user-status/ui/SetStatusDialog";
 import { StatusEmoji } from "@/features/user-status/ui/StatusEmoji";
 import type { PresenceStatus } from "@/shared/api/types";
+import { presenceMessageKey, useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { isMacPlatform } from "@/shared/lib/platform";
 
@@ -67,10 +67,13 @@ export function ProfilePopover({
   triggerContainerRef,
   communitySwitcherSlot,
 }: ProfilePopoverProps) {
+  const t = useT();
   const [statusDialogOpen, setStatusDialogOpen] = React.useState(false);
   const [presenceMenuOpen, setPresenceMenuOpen] = React.useState(false);
   const hasUserStatus = Boolean(userStatusText || userStatusEmoji);
   const settingsShortcutLabel = isMacPlatform() ? "⌘," : "Ctrl+,";
+  const presenceLabel = (status: PresenceStatus) =>
+    t(presenceMessageKey(status));
 
   function handlePopoverOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -116,7 +119,7 @@ export function ProfilePopover({
               <MaskedAvatarBadgeFrame
                 badge={
                   <span
-                    aria-label={getPresenceLabel(currentStatus)}
+                    aria-label={presenceLabel(currentStatus)}
                     className="flex h-3.5 w-3.5 items-center justify-center rounded-full"
                     data-testid="profile-popover-current-status"
                     role="img"
@@ -162,7 +165,7 @@ export function ProfilePopover({
                       type="button"
                     >
                       <span className="truncate">
-                        {getPresenceLabel(currentStatus)}
+                        {presenceLabel(currentStatus)}
                       </span>
                     </button>
                   </PopoverTrigger>
@@ -187,7 +190,7 @@ export function ProfilePopover({
                             className="h-2.5 w-2.5"
                             status={status}
                           />
-                          <span>{getPresenceLabel(status)}</span>
+                          <span>{presenceLabel(status)}</span>
                         </button>
                       ))}
                     </div>
@@ -223,7 +226,7 @@ export function ProfilePopover({
                   </span>
                 ) : (
                   <span className="flex-1 truncate text-muted-foreground">
-                    Update your status
+                    {t("profile.updateStatus")}
                   </span>
                 )}
               </button>
@@ -254,7 +257,7 @@ export function ProfilePopover({
                 role="menuitem"
                 type="button"
               >
-                <span className="flex-1">Send feedback</span>
+                <span className="flex-1">{t("profile.sendFeedback")}</span>
               </button>
             ) : null}
 
@@ -271,7 +274,7 @@ export function ProfilePopover({
               role="menuitem"
               type="button"
             >
-              <span className="flex-1">Settings</span>
+              <span className="flex-1">{t("profile.settings")}</span>
               <kbd className="text-xs text-muted-foreground">
                 {settingsShortcutLabel}
               </kbd>

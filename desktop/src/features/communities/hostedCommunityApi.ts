@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { translate, type MessageKey } from "@/shared/i18n";
+
 export const HOSTED_COMMUNITY_SUFFIX = "communities.buzz.xyz";
 export const HOSTED_COMMUNITY_LIMIT = 5;
 export const VALID_HOSTED_COMMUNITY_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -60,28 +62,29 @@ export type HostedCommunityAccount = {
   identity: HostedNostrIdentity | null;
 };
 
+const HOSTED_ERROR_KEYS: Record<string, MessageKey> = {
+  missing_mapping: "hosted.errMissingMapping",
+  invalid_name: "hosted.errInvalidName",
+  taken: "hosted.errTaken",
+  limit_reached: "hosted.limitReached",
+  relay_unavailable: "hosted.errRelayUnavailable",
+  identity_already_bound: "hosted.errIdentityAlreadyBound",
+  pubkey_already_bound: "hosted.errPubkeyAlreadyBound",
+  not_owner: "hosted.errNotOwner",
+  transferee_not_registered: "hosted.errTransfereeNotRegistered",
+};
+
 export function hostedCommunityErrorMessage(
   error: HostedCommunityApiError | undefined,
   correlationId: string | undefined,
-  fallback: string,
+  fallbackKey: MessageKey = "hosted.couldNotCreate",
 ) {
-  const messages: Record<string, string> = {
-    missing_mapping: "Connect your Buzz identity before creating a community.",
-    invalid_name: "Use lowercase letters, numbers, and hyphens.",
-    taken: "That Buzz address is already taken.",
-    limit_reached: `You've reached the limit of ${HOSTED_COMMUNITY_LIMIT} hosted communities.`,
-    relay_unavailable: "Community provisioning is temporarily unavailable.",
-    identity_already_bound:
-      "This Builderlab account is connected to another Buzz identity.",
-    pubkey_already_bound:
-      "This Buzz identity is connected to another Builderlab account.",
-    not_owner: "Only the community owner can do that.",
-    transferee_not_registered:
-      "That person needs a connected Buzz identity before you can transfer ownership to them.",
-  };
-  const message = messages[error?.code ?? ""] ?? error?.message ?? fallback;
+  const key = HOSTED_ERROR_KEYS[error?.code ?? ""];
+  const message = key
+    ? translate(key, { count: HOSTED_COMMUNITY_LIMIT })
+    : (error?.message ?? translate(fallbackKey));
   return correlationId
-    ? `${message} Correlation ID: ${correlationId}`
+    ? `${message} ${translate("hosted.correlationId", { id: correlationId })}`
     : message;
 }
 
@@ -120,7 +123,7 @@ export async function loadHostedCommunityAccount(): Promise<HostedCommunityAccou
       hostedCommunityErrorMessage(
         identityResponse.error,
         identityResponse.correlation_id,
-        "Could not load the connected Buzz identity.",
+        "hosted.errLoadIdentity",
       ),
     );
   }
@@ -129,7 +132,7 @@ export async function loadHostedCommunityAccount(): Promise<HostedCommunityAccou
       hostedCommunityErrorMessage(
         communitiesResponse.error,
         communitiesResponse.correlation_id,
-        "Could not load communities.",
+        "hosted.errLoadCommunities",
       ),
     );
   }

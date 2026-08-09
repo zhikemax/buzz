@@ -14,6 +14,7 @@ import { AgentRunLocationProvider } from "./AgentRunLocationContext";
 import type { BackendIntent } from "../lib/instanceInputForDefinition";
 import type { AgentCreateIntent } from "./agentCreateIntent";
 import type { EditAgentFocusTarget } from "@/features/agents/openEditAgentEvent";
+import { useT } from "@/shared/i18n";
 import { AgentInstanceEditDialog } from "./AgentInstanceEditDialog";
 import { createPersonaDialogState } from "./personaDialogState";
 import {
@@ -128,13 +129,14 @@ function AgentCreateDialogRouter({
   runtimeCatalogStatus,
   onSubmitDefinition,
 }: AgentDialogCreateProps) {
+  const t = useT();
   const [runDraft, setRunDraft] = React.useState(emptyWhereToRunDraft);
   const initialValues = React.useMemo(
-    () => providedInitialValues ?? createPersonaDialogState().initialValues,
-    [providedInitialValues],
+    () => providedInitialValues ?? createPersonaDialogState(t).initialValues,
+    [providedInitialValues, t],
   );
 
-  const copy = createPersonaDialogState();
+  const copy = createPersonaDialogState(t);
 
   return (
     // The create flow is the one surface that knows where the agent will run,

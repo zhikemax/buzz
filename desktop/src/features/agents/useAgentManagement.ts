@@ -28,6 +28,7 @@ import { useChannelsQuery } from "@/features/channels/hooks";
 import { resolveManagedAgentAvatarUrl } from "./ui/managedAgentAvatar";
 import type { AgentCreateIntent } from "./ui/agentCreateIntent";
 import { editPersonaDialogState } from "./ui/personaDialogState";
+import { useT } from "@/shared/i18n";
 import type {
   CreatePersonaInput,
   UpdatePersonaInput,
@@ -58,6 +59,7 @@ function updateInputFromRequest(
 }
 
 export function useAgentManagement() {
+  const t = useT();
   const queryClient = useQueryClient();
   const personasQuery = usePersonasQuery();
   const managedAgentsQuery = useManagedAgentsQuery();
@@ -275,10 +277,10 @@ export function useAgentManagement() {
     if (request?.action !== "update" || !currentPersona) return null;
     return updateInputFromRequest(
       request,
-      editPersonaDialogState(currentPersona)
+      editPersonaDialogState(currentPersona, t)
         .initialValues as UpdatePersonaInput,
     );
-  }, [currentPersona, request]);
+  }, [currentPersona, request, t]);
 
   const editError = React.useMemo(() => {
     if (request?.action !== "update") return error;

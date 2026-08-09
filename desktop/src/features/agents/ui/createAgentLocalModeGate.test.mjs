@@ -18,6 +18,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+import { translate } from "../../../shared/i18n/locale.ts";
+
 import {
   buildTemplateModelDropdownOptions,
   computeLocalModeGate,
@@ -41,6 +43,9 @@ import {
   getBakedProviderInheritLabel,
   resolveInheritedDefault,
 } from "./bakedEnvHelpers.ts";
+
+
+const t = (key, params) => translate("en", key, params);
 
 // ── Core predicate: provider-selection support ─────────────────────────────
 
@@ -818,7 +823,7 @@ test("localMode_requiredKey_stays_in_requiredEnvKeys_when_locally_filled", () =>
 
 test("providerDefaultLabel_noGlobal_returnsSelectAProvider", () => {
   // No global provider → placeholder signals user must choose.
-  const label = getDefaultLlmProviderLabel("buzz-agent", undefined);
+  const label = getDefaultLlmProviderLabel("buzz-agent", undefined, t);
   assert.equal(
     label,
     "Select a provider\u2026",
@@ -828,7 +833,7 @@ test("providerDefaultLabel_noGlobal_returnsSelectAProvider", () => {
 
 test("providerDefaultLabel_emptyGlobal_returnsSelectAProvider", () => {
   // Empty string treated the same as absent.
-  const label = getDefaultLlmProviderLabel("buzz-agent", "");
+  const label = getDefaultLlmProviderLabel("buzz-agent", "", t);
   assert.equal(
     label,
     "Select a provider\u2026",
@@ -839,7 +844,7 @@ test("providerDefaultLabel_emptyGlobal_returnsSelectAProvider", () => {
 test("providerDefaultLabel_globalSet_returnsInheritLabel", () => {
   // Global provider set → label shows the provider name so the user
   // knows what they're inheriting.
-  const label = getDefaultLlmProviderLabel("buzz-agent", "anthropic");
+  const label = getDefaultLlmProviderLabel("buzz-agent", "anthropic", t);
   assert.equal(
     label,
     "Use agent defaults (anthropic)",
@@ -849,7 +854,7 @@ test("providerDefaultLabel_globalSet_returnsInheritLabel", () => {
 
 test("providerDefaultLabel_globalSetWithWhitespace_trimsAndReturnsInherit", () => {
   // Surrounding whitespace is stripped before building the label.
-  const label = getDefaultLlmProviderLabel("buzz-agent", "  openai  ");
+  const label = getDefaultLlmProviderLabel("buzz-agent", "  openai  ", t);
   assert.equal(
     label,
     "Use agent defaults (openai)",
@@ -859,7 +864,7 @@ test("providerDefaultLabel_globalSetWithWhitespace_trimsAndReturnsInherit", () =
 
 test("providerDefaultLabel_sharedCompute_neverLeaksInternalId", () => {
   assert.equal(
-    getDefaultLlmProviderLabel("buzz-agent", "relay-mesh"),
+    getDefaultLlmProviderLabel("buzz-agent", "relay-mesh", t),
     "Use agent defaults (Buzz shared compute)",
   );
 });
@@ -887,7 +892,7 @@ test("bakedDefaults_emptyGlobal_usesBuildValuesForCreateAndEditLabels", () => {
     bakedEnv,
     "BUZZ_AGENT_THINKING_EFFORT",
   );
-  const providerOptions = getPersonaProviderOptions("", "buzz-agent");
+  const providerOptions = getPersonaProviderOptions("", "buzz-agent", t);
 
   assert.deepEqual(provider, { source: "build", value: "databricks_v2" });
   assert.equal(
@@ -950,7 +955,7 @@ test("advancedSummary_excludesCredentialNamesAndValues", () => {
 
 test("modelDefaultLabel_noGlobal_returnsDefaultModel", () => {
   // No global model → generic placeholder.
-  const label = getDefaultLlmModelLabel(undefined);
+  const label = getDefaultLlmModelLabel(undefined, t);
   assert.equal(
     label,
     "Default model",
@@ -960,7 +965,7 @@ test("modelDefaultLabel_noGlobal_returnsDefaultModel", () => {
 
 test("modelDefaultLabel_emptyGlobal_returnsDefaultModel", () => {
   // Empty string treated the same as absent.
-  const label = getDefaultLlmModelLabel("");
+  const label = getDefaultLlmModelLabel("", t);
   assert.equal(
     label,
     "Default model",
@@ -971,7 +976,7 @@ test("modelDefaultLabel_emptyGlobal_returnsDefaultModel", () => {
 test("modelDefaultLabel_globalSet_returnsInheritLabel", () => {
   // Global model set → label shows the model name so the user
   // knows what they're inheriting.
-  const label = getDefaultLlmModelLabel("claude-opus-4-5");
+  const label = getDefaultLlmModelLabel("claude-opus-4-5", t);
   assert.equal(
     label,
     "Use agent defaults (claude-opus-4-5)",
@@ -981,7 +986,7 @@ test("modelDefaultLabel_globalSet_returnsInheritLabel", () => {
 
 test("modelDefaultLabel_globalSetWithWhitespace_trimsAndReturnsInherit", () => {
   // Surrounding whitespace is stripped before building the label.
-  const label = getDefaultLlmModelLabel("  gpt-4o  ");
+  const label = getDefaultLlmModelLabel("  gpt-4o  ", t);
   assert.equal(
     label,
     "Use agent defaults (gpt-4o)",
@@ -1136,12 +1141,12 @@ test("f3_templateDialog_globalModelSet_zeroValueLabelIsInherit", () => {
   // "Use agent defaults (<model>)" not the generic "Default model".
   // getDefaultLlmModelLabel is what AgentDefinitionDialog now uses for that slot.
   assert.equal(
-    getDefaultLlmModelLabel("claude-opus-4-5"),
+    getDefaultLlmModelLabel("claude-opus-4-5", t),
     "Use agent defaults (claude-opus-4-5)",
     "zero-value model option label must show the global model name when set",
   );
   assert.equal(
-    getDefaultLlmModelLabel(""),
+    getDefaultLlmModelLabel("", t),
     "Default model",
     "zero-value model option label must be generic when no global model is set",
   );

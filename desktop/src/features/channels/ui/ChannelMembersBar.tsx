@@ -21,6 +21,7 @@ import {
 import { canStartHuddleInChannel } from "@/features/channels/lib/huddleAvailability";
 import { useUsersBatchQuery } from "@/features/profile/hooks";
 import type { Channel } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -51,6 +52,7 @@ export function ChannelMembersBar({
   onToggleMembers,
   variant = "inline",
 }: ChannelMembersBarProps) {
+  const t = useT();
   const [uncontrolledAddBotOpen, setUncontrolledAddBotOpen] =
     React.useState(false);
   const isAddBotOpen = isAddBotOpenProp ?? uncontrolledAddBotOpen;
@@ -185,7 +187,7 @@ export function ChannelMembersBar({
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
-            aria-label="Channel actions"
+            aria-label={t("channel.actions")}
             data-testid="channel-actions-menu-trigger"
             size="icon"
             type="button"
@@ -200,7 +202,7 @@ export function ChannelMembersBar({
             onSelect={onToggleMembers}
           >
             <Users />
-            <span>Members</span>
+            <span>{t("channel.members")}</span>
             <span className="ml-auto text-xs text-muted-foreground">
               {memberCount}
             </span>
@@ -211,7 +213,7 @@ export function ChannelMembersBar({
             onSelect={onManageChannel}
           >
             <Settings2 />
-            <span>Manage channel</span>
+            <span>{t("channel.manage")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -220,7 +222,7 @@ export function ChannelMembersBar({
         <Tooltip disableHoverableContent>
           <TooltipTrigger asChild>
             <Button
-              aria-label={`View channel members (${memberCount})`}
+              aria-label={t("channel.viewMembersAria", { count: memberCount })}
               className="h-8 px-2.5"
               data-testid="channel-members-trigger"
               onClick={onToggleMembers}
@@ -233,7 +235,7 @@ export function ChannelMembersBar({
               </span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Channel members</TooltipContent>
+          <TooltipContent>{t("channel.membersTitle")}</TooltipContent>
         </Tooltip>
 
         {huddleIndicator}
@@ -241,7 +243,7 @@ export function ChannelMembersBar({
         <Tooltip disableHoverableContent>
           <TooltipTrigger asChild>
             <Button
-              aria-label="Manage channel"
+              aria-label={t("channel.manageAria")}
               data-testid="channel-management-trigger"
               onClick={onManageChannel}
               size="icon"
@@ -251,7 +253,7 @@ export function ChannelMembersBar({
               <EllipsisVertical />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Channel settings</TooltipContent>
+          <TooltipContent>{t("channel.settings")}</TooltipContent>
         </Tooltip>
       </div>
     );

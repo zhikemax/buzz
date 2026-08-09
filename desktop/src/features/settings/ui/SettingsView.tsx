@@ -14,6 +14,7 @@ import {
 } from "@/shared/features/useFeatureEnabled";
 import { topChromeBackdrop } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
+import { useT, type MessageKey } from "@/shared/i18n";
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +37,23 @@ import {
   type SettingsSection,
   type SettingsSectionDescriptor,
 } from "./SettingsPanels";
+
+function settingsSectionLabelKey(value: SettingsSection): MessageKey {
+  return `settings.section.${value}` as MessageKey;
+}
+
+function settingsGroupLabelKey(
+  label: "Personal" | "Communities" | "App",
+): MessageKey {
+  switch (label) {
+    case "Personal":
+      return "settings.group.personal";
+    case "Communities":
+      return "settings.group.communities";
+    case "App":
+      return "settings.group.app";
+  }
+}
 
 export {
   DEFAULT_SETTINGS_SECTION,
@@ -84,7 +102,9 @@ function SettingsSectionButton({
   onSelect: (section: SettingsSection) => void;
   section: (typeof settingsSections)[number];
 }) {
+  const t = useT();
   const Icon = section.icon;
+  const label = t(settingsSectionLabelKey(section.value));
 
   return (
     <SidebarMenuItem>
@@ -93,7 +113,7 @@ function SettingsSectionButton({
         data-testid={`settings-nav-${section.value}`}
         isActive={active}
         onClick={() => onSelect(section.value)}
-        tooltip={section.label}
+        tooltip={label}
         type="button"
       >
         <Icon
@@ -104,7 +124,7 @@ function SettingsSectionButton({
               : "text-sidebar-foreground/70",
           )}
         />
-        <SidebarMenuLabel>{section.label}</SidebarMenuLabel>
+        <SidebarMenuLabel>{label}</SidebarMenuLabel>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -127,9 +147,11 @@ export function SettingsView({
   onSetSoundForSlot,
   section,
 }: SettingsViewProps) {
+  const t = useT();
   const { isMobile, open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
   const myMembershipQuery = useMyRelayMembershipLookupQuery();
   const featureState = useFeatureSnapshot();
+  const backLabel = t("settings.backToApp");
   const visibleSections = React.useMemo(() => {
     return settingsSections.filter((s) => {
       // Feature gate check. Manifest is preview-only — if the gate id is in
@@ -227,11 +249,11 @@ export function SettingsView({
               <SidebarMenuButton
                 data-testid="settings-back-to-app"
                 onClick={onClose}
-                tooltip="Back to app"
+                tooltip={backLabel}
                 type="button"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span>Back to app</span>
+                <span>{backLabel}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -244,7 +266,7 @@ export function SettingsView({
               data-testid="community-access-loading"
             >
               <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-              Checking invite permissions…
+              {t("settings.checkingInvitePermissions")}
             </div>
           ) : null}
           {myMembershipQuery.isError ? (
@@ -254,7 +276,7 @@ export function SettingsView({
             >
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                Invite settings could not be checked.
+                {t("settings.inviteCheckFailed")}
               </div>
               <button
                 className="flex items-center gap-1.5 font-medium text-sidebar-foreground underline-offset-2 hover:underline"
@@ -262,7 +284,7 @@ export function SettingsView({
                 type="button"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                Try again
+                {t("settings.tryAgain")}
               </button>
             </div>
           ) : null}
@@ -272,27 +294,33 @@ export function SettingsView({
               data-testid="community-access-snapshot-missing"
             >
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-              Invite settings are unavailable. Relay recovery may still be in
-              progress.
+              {t("settings.inviteUnavailable")}
             </div>
           ) : null}
-          {visibleNavGroups.map((group) => (
-            <SidebarGroup key={group.label}>
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu aria-label={`${group.label} settings sections`}>
-                  {group.sections.map((entry) => (
-                    <SettingsSectionButton
-                      active={entry.value === section}
-                      key={entry.value}
-                      onSelect={onSectionChange}
-                      section={entry}
-                    />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+          {visibleNavGroups.map((group) => {
+            const groupLabel = t(
+              settingsGroupLabelKey(
+                group.label as "Personal" | "Communities" | "App",
+              ),
+            );
+            return (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupLabel>{groupLabel}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu aria-label={`${groupLabel} settings sections`}>
+                    {group.sections.map((entry) => (
+                      <SettingsSectionButton
+                        active={entry.value === section}
+                        key={entry.value}
+                        onSelect={onSectionChange}
+                        section={entry}
+                      />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          })}
         </SidebarContent>
 
         <SidebarFooter>

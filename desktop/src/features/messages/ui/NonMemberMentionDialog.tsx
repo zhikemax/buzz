@@ -6,6 +6,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 
 type NonMemberMentionDialogProps = {
@@ -27,6 +28,8 @@ export function NonMemberMentionDialog({
   onInvite,
   open,
 }: NonMemberMentionDialogProps) {
+  const t = useT();
+  const joinedNames = names.join(", ");
   return (
     <AlertDialog
       onOpenChange={(nextOpen) => {
@@ -39,11 +42,12 @@ export function NonMemberMentionDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Mention people outside this channel?
+            {t("msg.mentionOutsideTitle")}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {names.join(", ")} {names.length === 1 ? "is" : "are"} not in this
-            channel. Invite them to the channel, or send without inviting them.
+            {names.length === 1
+              ? t("msg.mentionOutsideOne", { name: joinedNames })
+              : t("msg.mentionOutsideMany", { names: joinedNames })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error ? (
@@ -59,7 +63,7 @@ export function NonMemberMentionDialog({
             type="button"
             variant="outline"
           >
-            Do nothing
+            {t("msg.doNothing")}
           </Button>
           <Button
             disabled={isInvitePending}
@@ -67,7 +71,7 @@ export function NonMemberMentionDialog({
             size="sm"
             type="button"
           >
-            {isInvitePending ? "Inviting..." : "Invite"}
+            {isInvitePending ? t("msg.inviting") : t("msg.invite")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

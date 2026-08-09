@@ -35,6 +35,7 @@ import {
   ContextMenuTrigger,
 } from "@/shared/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { getInitials } from "@/shared/lib/initials";
 import { writeTextToClipboard } from "@/shared/lib/clipboard";
@@ -229,6 +230,7 @@ function SortableCommunityButton({
   onMarkAllRead: (community: Community) => void;
   onSetEditingCommunity: (community: Community) => void;
 }) {
+  const t = useT();
   const {
     attributes,
     listeners,
@@ -256,7 +258,7 @@ function SortableCommunityButton({
           <>
             <ContextMenuItem onClick={() => onMarkAllRead(community)}>
               <CheckCheck className="h-4 w-4" />
-              Mark all as read
+              {t("sidebar.markAllAsRead")}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
@@ -265,17 +267,17 @@ function SortableCommunityButton({
               }}
             >
               <Link2 className="h-4 w-4" />
-              Copy community URL
+              {t("sidebar.copyCommunityUrl")}
             </ContextMenuItem>
             {canInvite ? (
               <ContextMenuItem onClick={onInvite}>
                 <Ticket className="h-4 w-4" />
-                Invite to community
+                {t("sidebar.inviteToCommunity")}
               </ContextMenuItem>
             ) : null}
             <ContextMenuItem onClick={() => onSetEditingCommunity(community)}>
               <Settings2 className="h-4 w-4" />
-              Community settings
+              {t("sidebar.communitySettings")}
             </ContextMenuItem>
           </>
         }
@@ -308,6 +310,7 @@ export function CommunityRail({
   onRemoveCommunity,
   onReorderCommunities,
 }: CommunityRailProps) {
+  const t = useT();
   const { unreadByCommunity, markCommunityRead } = useCommunityUnread(
     communities,
     activeCommunityId,
@@ -369,7 +372,7 @@ export function CommunityRail({
 
   return (
     <nav
-      aria-label="Communities"
+      aria-label={t("sidebar.communities")}
       className="relative z-0 flex w-14 shrink-0 flex-col items-center gap-2 overflow-y-auto bg-sidebar px-2.5 pb-5 pt-[calc(var(--buzz-top-chrome-height,40px)+7px)]"
       data-testid="community-rail"
     >
@@ -411,7 +414,7 @@ export function CommunityRail({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            aria-label="Add community"
+            aria-label={t("sidebar.addCommunity")}
             className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sidebar-accent/60 text-sidebar-foreground/70 outline-hidden transition-all hover:rounded-xl hover:bg-primary/80 hover:text-primary-foreground focus:outline-none focus-visible:outline-none"
             data-testid="community-rail-add"
             onClick={onAddCommunity}
@@ -420,7 +423,7 @@ export function CommunityRail({
             <Plus className="h-4 w-4" />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="right">Add community</TooltipContent>
+        <TooltipContent side="right">{t("sidebar.addCommunity")}</TooltipContent>
       </Tooltip>
       <EditCommunityDialog
         canRemove={communities.length > 1}

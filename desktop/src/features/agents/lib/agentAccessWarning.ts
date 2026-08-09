@@ -1,4 +1,5 @@
 import type { ManagedAgentBackend, RespondToMode } from "@/shared/api/types";
+import type { MessageKey, TranslateFn } from "@/shared/i18n";
 
 /**
  * Where an agent's process runs, as far as the calling surface can tell.
@@ -6,7 +7,7 @@ import type { ManagedAgentBackend, RespondToMode } from "@/shared/api/types";
  * Deliberately coarser than `ManagedAgentBackend`: the warning copy only needs
  * to know "this machine" vs "somewhere else", so surfaces resolve their own
  * backend shape down to this before handing it over. `null` means the surface
- * genuinely cannot tell — see `agentAccessWarningText` for how that is
+ * genuinely cannot tell — see `agentAccessWarningKey` for how that is
  * treated.
  */
 export type AgentRunLocation = "local" | "remote";
@@ -32,8 +33,8 @@ export function runLocationForRunOn(
 }
 
 /**
- * Copy for the shared-access warning in the respond-to field, or `null` for
- * modes that share nothing.
+ * Message key for the shared-access warning in the respond-to field, or `null`
+ * for modes that share nothing.
  *
  * Both `anyone` and `allowlist` hand the host's access to someone other than
  * the owner, so both warn; only the audience phrase differs.
@@ -46,18 +47,28 @@ export function runLocationForRunOn(
  * When it *is* remote the owner picked that host from the selector
  * deliberately, so naming a server is meaningful there.
  */
-export function agentAccessWarningText(
+export function agentAccessWarningKey(
   mode: RespondToMode,
   runLocation?: AgentRunLocation | null,
-): string | null {
+): MessageKey | null {
   if (mode !== "anyone" && mode !== "allowlist") return null;
-  const audience = mode === "anyone" ? "Anyone" : "Selected people";
-  // The two locations differ in more than the noun: a local agent reaches the
-  // owner's own files, while a remote host's files aren't theirs to describe —
-  // only the accounts and tools provisioned there.
-  const target =
-    runLocation === "remote"
-      ? "the server it runs on, including any accounts and tools available there"
-      : "your computer, including files, accounts, and connected tools";
-  return `${audience} can use this agent to access ${target}.`;
+  const isRemote = runLocation === "remote";
+  if (mode === "anyone") {
+    return isRemote
+      ? "agents.access.anyoneRemote"
+      : "agents.access.anyoneLocal";
+  }
+  return isRemote
+    ? "agents.access.allowlistRemote"
+    : "agents.access.allowlistLocal";
+}
+
+/** Localized warning copy, or `null` for modes that share nothing. */
+export function agentAccessWarningText(
+  mode: RespondToMode,
+  runLocation: AgentRunLocation | null | undefined,
+  t: TranslateFn,
+): string | null {
+  const key = agentAccessWarningKey(mode, runLocation);
+  return key ? t(key) : null;
 }

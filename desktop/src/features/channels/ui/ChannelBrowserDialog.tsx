@@ -51,15 +51,20 @@ import {
   CreateChannelFormFields,
   CreateChannelFormFooter,
 } from "@/features/sidebar/ui/CreateChannelFormFields";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 type BrowserTab = "all" | "joined" | "archived";
 type ChannelSort = ChannelSortMode | "members";
 
-const CHANNEL_SORT_OPTIONS: { label: string; value: ChannelSort }[] = [
-  { label: "Alphabetical", value: "alpha" },
-  { label: "Recent", value: "recent" },
-  { label: "Most members", value: "members" },
-];
+function getChannelSortOptions(
+  t: TranslateFn,
+): { label: string; value: ChannelSort }[] {
+  return [
+    { label: t("browser.sortAlphabetical"), value: "alpha" },
+    { label: t("browser.sortRecent"), value: "recent" },
+    { label: t("browser.sortMostMembers"), value: "members" },
+  ];
+}
 
 function BrowseState({
   icon: Icon,
@@ -109,6 +114,7 @@ export function ChannelBrowserDialog({
   onCreateChannel,
   isCreatingChannel = false,
 }: ChannelBrowserDialogProps) {
+  const t = useT();
   const [query, setQuery] = React.useState("");
   const [activeTab, setActiveTab] = React.useState<BrowserTab>("all");
   const [sort, setSort] = React.useState<ChannelSort>("alpha");
@@ -142,15 +148,17 @@ export function ChannelBrowserDialog({
   const isForumMode = channelTypeFilter === "forum";
   const canCreate = Boolean(onCreateChannel);
   const createKind = isForumMode ? "forum" : "stream";
-  const browseTitle = isForumMode ? "Add a forum" : "Browse channels";
+  const browseTitle = isForumMode
+    ? t("browser.titleForums")
+    : t("browser.titleChannels");
   const searchPlaceholder = canCreate
     ? isForumMode
-      ? "Search or create a forum"
-      : "Search or create a channel"
+      ? t("browser.searchOrCreateForum")
+      : t("browser.searchOrCreateChannel")
     : isForumMode
-      ? "Search forums by name or description"
-      : "Search channels by name or description";
-  const entityLabel = isForumMode ? "forum" : "channel";
+      ? t("browser.searchHintForum")
+      : t("browser.searchHintChannel");
+  const channelSortOptions = getChannelSortOptions(t);
 
   const noopCreate = React.useCallback(async () => {}, []);
   const createForm = useCreateChannelForm({
@@ -237,10 +245,12 @@ export function ChannelBrowserDialog({
   }, [isSearching, matchScoreById, sort, visibleChannels]);
 
   const selectedSortLabel =
-    CHANNEL_SORT_OPTIONS.find((option) => option.value === sort)?.label ??
-    "Alphabetical";
+    channelSortOptions.find((option) => option.value === sort)?.label ??
+    t("browser.sortAlphabetical");
 
-  const allTabLabel = isForumMode ? "All forums" : "All channels";
+  const allTabLabel = isForumMode
+    ? t("browser.filterAllForums")
+    : t("browser.filterAllChannels");
 
   // Whether an exact name match already exists — if so we don't offer to
   // create a duplicate, mirroring how you'd never make two "#general"s.
@@ -394,22 +404,38 @@ export function ChannelBrowserDialog({
       : undefined;
   const emptyTitle =
     deferredQuery.length > 0
-      ? `No ${entityLabel}s match your search`
+      ? isForumMode
+        ? t("browser.noMatchForums")
+        : t("browser.noMatchChannels")
       : activeTab === "archived"
-        ? `No archived ${entityLabel}s`
+        ? isForumMode
+          ? t("browser.noArchivedForums")
+          : t("browser.noArchivedChannels")
         : activeTab === "joined"
-          ? `No joined ${entityLabel}s`
-          : `No ${entityLabel}s to browse`;
+          ? isForumMode
+            ? t("browser.noJoinedForums")
+            : t("browser.noJoinedChannels")
+          : isForumMode
+            ? t("browser.noBrowseForums")
+            : t("browser.noBrowseChannels");
   const emptyDescription =
     deferredQuery.length > 0
       ? canCreate
-        ? `No ${entityLabel} by that name yet — create it to get started.`
-        : "Try a different name or keyword."
+        ? isForumMode
+          ? t("browser.createToStartForum")
+          : t("browser.createToStartChannel")
+        : t("browser.tryDifferent")
       : activeTab === "archived"
-        ? `Archived ${entityLabel}s you have joined will appear here.`
+        ? isForumMode
+          ? t("browser.archivedJoinedHintForum")
+          : t("browser.archivedJoinedHintChannel")
         : activeTab === "joined"
-          ? `${entityLabel[0].toUpperCase()}${entityLabel.slice(1)}s you join will appear here.`
-          : `All open ${entityLabel}s are available in the sidebar. Create a new ${entityLabel} to get started.`;
+          ? isForumMode
+            ? t("browser.joinedHintForum")
+            : t("browser.joinedHintChannel")
+          : isForumMode
+            ? t("browser.allOpenHintForum")
+            : t("browser.allOpenHintChannel");
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -429,8 +455,8 @@ export function ChannelBrowserDialog({
       >
         {mode === "create" ? (
           <ChannelCreateView
-            entityLabel={entityLabel}
             form={createForm}
+            isForumMode={isForumMode}
             onBack={exitCreateMode}
             onClose={() => onOpenChange(false)}
           />
@@ -441,7 +467,7 @@ export function ChannelBrowserDialog({
                 <DialogTitle>{browseTitle}</DialogTitle>
                 <DialogClose className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:outline-hidden focus:ring-1 focus:ring-ring">
                   <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">{t("browser.close")}</span>
                 </DialogClose>
               </div>
               <div className={MODAL_SEARCH_SHELL_CLASS}>
@@ -517,7 +543,15 @@ export function ChannelBrowserDialog({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      aria-label={`Sort ${entityLabel}s: ${selectedSortLabel}`}
+                      aria-label={
+                        isForumMode
+                          ? t("browser.sortForumsAria", {
+                              mode: selectedSortLabel,
+                            })
+                          : t("browser.sortChannelsAria", {
+                              mode: selectedSortLabel,
+                            })
+                      }
                       data-testid="channel-browser-sort"
                       size="icon-xs"
                       type="button"
@@ -527,7 +561,7 @@ export function ChannelBrowserDialog({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("browser.sortBy")}</DropdownMenuLabel>
                     <DropdownMenuRadioGroup
                       onValueChange={(value) => {
                         setSort(value as ChannelSort);
@@ -535,7 +569,7 @@ export function ChannelBrowserDialog({
                       }}
                       value={sort}
                     >
-                      {CHANNEL_SORT_OPTIONS.map((option) => (
+                      {channelSortOptions.map((option) => (
                         <DropdownMenuRadioItem
                           data-testid={`channel-browser-sort-${option.value}`}
                           key={option.value}
@@ -589,7 +623,7 @@ export function ChannelBrowserDialog({
                       }}
                       value="joined"
                     >
-                      Joined
+                      {t("browser.filterJoined")}
                     </TabsTrigger>
                     <TabsTrigger
                       className="rounded-none border-b-2 border-transparent bg-transparent px-0 py-2 text-sm font-medium shadow-none transition-colors duration-150 ease-out data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
@@ -598,7 +632,7 @@ export function ChannelBrowserDialog({
                       }}
                       value="archived"
                     >
-                      Archived
+                      {t("browser.filterArchived")}
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -607,7 +641,7 @@ export function ChannelBrowserDialog({
                   {showCreateRow ? (
                     <div className="mb-3">
                       <CreateChannelRow
-                        entityLabel={entityLabel}
+                        isForumMode={isForumMode}
                         isSelected={isCreateRowSelected}
                         onClick={() => enterCreateMode(trimmedQuery)}
                         query={trimmedQuery}
@@ -654,16 +688,17 @@ export function ChannelBrowserDialog({
 }
 
 function CreateChannelRow({
-  entityLabel,
+  isForumMode,
   isSelected,
   onClick,
   query,
 }: {
-  entityLabel: string;
+  isForumMode: boolean;
   isSelected: boolean;
   onClick: () => void;
   query: string;
 }) {
+  const t = useT();
   const hasQuery = query.length > 0;
   return (
     <button
@@ -681,15 +716,16 @@ function CreateChannelRow({
         <Plus className="h-4 w-4" />
       </span>
       {hasQuery ? (
-        <span className="min-w-0 text-sm">
-          <span className="font-medium text-foreground">
-            Create {entityLabel}{" "}
-          </span>
-          <span className="font-semibold text-foreground">“{query}”</span>
+        <span className="min-w-0 text-sm font-medium text-foreground">
+          {isForumMode
+            ? t("browser.createNamedForum", { query })
+            : t("browser.createNamedChannel", { query })}
         </span>
       ) : (
         <span className="min-w-0 text-sm font-medium text-foreground">
-          Create a new {entityLabel}
+          {isForumMode
+            ? t("browser.createNewForum")
+            : t("browser.createNewChannel")}
         </span>
       )}
     </button>
@@ -697,23 +733,24 @@ function CreateChannelRow({
 }
 
 function ChannelCreateView({
-  entityLabel,
   form,
+  isForumMode,
   onBack,
   onClose,
 }: {
-  entityLabel: string;
   form: ReturnType<typeof useCreateChannelForm>;
+  isForumMode: boolean;
   onBack: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex h-[min(72vh,38rem)] flex-col">
       <DialogHeader className="space-y-0 pb-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-2">
             <button
-              aria-label="Back to search"
+              aria-label={t("browser.backToSearch")}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
               data-testid="channel-browser-create-back"
               onClick={onBack}
@@ -722,17 +759,17 @@ function ChannelCreateView({
               <ArrowLeft className="h-4 w-4" />
             </button>
             <DialogTitle className="truncate">
-              {`New ${entityLabel}`}
+              {isForumMode ? t("browser.newForum") : t("browser.newChannel")}
             </DialogTitle>
           </div>
           <button
-            aria-label="Close"
+            aria-label={t("browser.close")}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
             onClick={onClose}
             type="button"
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t("browser.close")}</span>
           </button>
         </div>
       </DialogHeader>
@@ -767,8 +804,11 @@ function ChannelCard({
   onJoin?: () => void;
   onSelect: () => void;
 }) {
+  const t = useT();
   const memberLabel = `${channel.memberCount} ${
-    channel.memberCount === 1 ? "member" : "members"
+    channel.memberCount === 1
+      ? t("browser.memberOne")
+      : t("browser.memberMany")
   }`;
 
   return (
@@ -798,7 +838,7 @@ function ChannelCard({
             </p>
             {channel.archivedAt ? (
               <Badge className="ml-1 shrink-0" variant="warning">
-                archived
+                {t("browser.archived")}
               </Badge>
             ) : null}
           </div>
@@ -830,7 +870,7 @@ function ChannelCard({
           type="button"
           variant="default"
         >
-          {isJoining ? "Joining..." : "Join"}
+          {isJoining ? t("browser.joining") : t("browser.join")}
         </Button>
       ) : null}
     </div>

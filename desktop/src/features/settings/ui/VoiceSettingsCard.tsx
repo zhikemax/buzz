@@ -2,6 +2,7 @@ import * as React from "react";
 import { ChevronDown, Play, Trash2, Upload, Volume2 } from "lucide-react";
 
 import { invokeTauri } from "@/shared/api/tauri";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
@@ -43,6 +44,7 @@ type TtsVoiceMutation = {
 };
 
 export function VoiceSettingsCard() {
+  const t = useT();
   const [settings, setSettings] = React.useState<TtsSettings | null>(null);
   const [registry, setRegistry] = React.useState<VoiceRegistryEntry[]>([]);
   const [busy, setBusy] = React.useState(false);
@@ -68,65 +70,71 @@ export function VoiceSettingsCard() {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : "Voice settings could not be loaded.",
+              : t("settings.voice.loadFailed"),
           );
         }
       });
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [t]);
 
-  const saveEnabled = React.useCallback(async (enabled: boolean) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const saved = await invokeTauri<TtsSettings>("set_tts_enabled", {
-        enabled,
-      });
-      setSettings(saved);
-    } catch (saveError) {
+  const saveEnabled = React.useCallback(
+    async (enabled: boolean) => {
+      setBusy(true);
+      setError(null);
       try {
-        const state = await invokeTauri<{ tts_enabled: boolean }>(
-          "get_huddle_state",
+        const saved = await invokeTauri<TtsSettings>("set_tts_enabled", {
+          enabled,
+        });
+        setSettings(saved);
+      } catch (saveError) {
+        try {
+          const state = await invokeTauri<{ tts_enabled: boolean }>(
+            "get_huddle_state",
+          );
+          setSettings((current) =>
+            current
+              ? { ...current, agentTextToSpeech: state.tts_enabled }
+              : current,
+          );
+        } catch {
+          // Keep the last confirmed state when native reconciliation is
+          // unavailable; the visible save error makes the failure explicit.
+        }
+        setError(
+          saveError instanceof Error
+            ? saveError.message
+            : t("settings.voice.saveFailed"),
         );
-        setSettings((current) =>
-          current
-            ? { ...current, agentTextToSpeech: state.tts_enabled }
-            : current,
-        );
-      } catch {
-        // Keep the last confirmed state when native reconciliation is
-        // unavailable; the visible save error makes the failure explicit.
+      } finally {
+        setBusy(false);
       }
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Voice settings could not be saved.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+    },
+    [t],
+  );
 
-  const savePocketVoice = React.useCallback(async (voiceKey: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const saved = await invokeTauri<TtsSettings>("set_pocket_voice", {
-        voiceKey,
-      });
-      setSettings(saved);
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Voice settings could not be saved.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  const savePocketVoice = React.useCallback(
+    async (voiceKey: string) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const saved = await invokeTauri<TtsSettings>("set_pocket_voice", {
+          voiceKey,
+        });
+        setSettings(saved);
+      } catch (saveError) {
+        setError(
+          saveError instanceof Error
+            ? saveError.message
+            : t("settings.voice.saveFailed"),
+        );
+      } finally {
+        setBusy(false);
+      }
+    },
+    [t],
+  );
 
   const importPocketVoice = React.useCallback(async () => {
     setBusy(true);
@@ -143,34 +151,37 @@ export function VoiceSettingsCard() {
       setError(
         importError instanceof Error
           ? importError.message
-          : "Voice could not be imported.",
+          : t("settings.voice.importFailed"),
       );
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [t]);
 
-  const deletePocketVoice = React.useCallback(async (voiceKey: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await invokeTauri<TtsVoiceMutation>(
-        "delete_pocket_voice",
-        { voiceKey },
-      );
-      setSettings(result.settings);
-      setRegistry(result.registry);
-      setDeleteCandidate(null);
-    } catch (deleteError) {
-      setError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Voice could not be deleted.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+  const deletePocketVoice = React.useCallback(
+    async (voiceKey: string) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const result = await invokeTauri<TtsVoiceMutation>(
+          "delete_pocket_voice",
+          { voiceKey },
+        );
+        setSettings(result.settings);
+        setRegistry(result.registry);
+        setDeleteCandidate(null);
+      } catch (deleteError) {
+        setError(
+          deleteError instanceof Error
+            ? deleteError.message
+            : t("settings.voice.deleteFailed"),
+        );
+      } finally {
+        setBusy(false);
+      }
+    },
+    [t],
+  );
 
   const voices = voicesForBackend(registry, "pocket");
   const selectedVoice = selectedVoiceForBackend(
@@ -179,12 +190,13 @@ export function VoiceSettingsCard() {
   );
   const enabled = settings?.agentTextToSpeech ?? true;
   const controlsDisabled = !settings || busy || !enabled;
+  const selectedName = selectedVoice?.displayName ?? "Mary";
 
   return (
     <section className="min-w-0" data-testid="settings-voice">
       <SettingsSectionHeader
-        title="Voice"
-        description="Choose whether Buzz reads new agent responses aloud during an active huddle."
+        title={t("settings.voice.title")}
+        description={t("settings.voice.description")}
       />
 
       <div className="flex flex-col gap-4">
@@ -195,10 +207,10 @@ export function VoiceSettingsCard() {
                 className="text-sm font-medium"
                 htmlFor="agent-text-to-speech-switch"
               >
-                Agent text to speech
+                {t("settings.voice.agentTts")}
               </label>
               <p className="text-sm text-muted-foreground">
-                Read new agent messages aloud in the order they arrive.
+                {t("settings.voice.agentTtsHint")}
               </p>
             </div>
             <Switch
@@ -224,9 +236,11 @@ export function VoiceSettingsCard() {
           <SettingsOptionGroup>
             <SettingsOptionRow>
               <div className="min-w-0">
-                <p className="text-sm font-medium">Pocket TTS voice</p>
+                <p className="text-sm font-medium">
+                  {t("settings.voice.pocketVoice")}
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  Voice files stay private on this device.
+                  {t("settings.voice.pocketVoiceHint")}
                 </p>
               </div>
 
@@ -234,7 +248,9 @@ export function VoiceSettingsCard() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      aria-label={`Pocket TTS voice: ${selectedVoice?.displayName ?? "Mary"}`}
+                      aria-label={t("settings.voice.pocketVoiceAria", {
+                        name: selectedName,
+                      })}
                       className="min-w-32 justify-between"
                       data-testid="pocket-voice-selector"
                       disabled={controlsDisabled}
@@ -268,7 +284,9 @@ export function VoiceSettingsCard() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button
-                  aria-label={`Preview ${selectedVoice?.displayName ?? "Mary"}`}
+                  aria-label={t("settings.voice.previewAria", {
+                    name: selectedName,
+                  })}
                   data-testid="pocket-voice-preview"
                   disabled={controlsDisabled || previewing || !selectedVoice}
                   onClick={() => {
@@ -282,7 +300,7 @@ export function VoiceSettingsCard() {
                         setError(
                           previewError instanceof Error
                             ? previewError.message
-                            : "Voice preview could not be played.",
+                            : t("settings.voice.previewFailed"),
                         );
                       })
                       .finally(() => setPreviewing(false));
@@ -295,7 +313,7 @@ export function VoiceSettingsCard() {
                   ) : (
                     <Play className="h-4 w-4" />
                   )}
-                  Preview
+                  {t("settings.voice.preview")}
                 </Button>
                 <Button
                   data-testid="pocket-voice-import"
@@ -305,11 +323,13 @@ export function VoiceSettingsCard() {
                   variant="outline"
                 >
                   <Upload className="h-4 w-4" />
-                  Add voice
+                  {t("settings.voice.addVoice")}
                 </Button>
                 {selectedVoice?.key.startsWith("pocket:imported:") && (
                   <Button
-                    aria-label={`Delete ${selectedVoice.displayName}`}
+                    aria-label={t("settings.voice.deleteAria", {
+                      name: selectedVoice.displayName,
+                    })}
                     data-testid="pocket-voice-delete"
                     disabled={controlsDisabled}
                     onClick={() => setDeleteCandidate(selectedVoice)}
@@ -342,17 +362,24 @@ export function VoiceSettingsCard() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete imported voice?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("settings.voice.deleteTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {deleteCandidate
-                ? `${deleteCandidate.displayName} and its local audio file will be removed.`
-                : "This imported voice and its local audio file will be removed."}
-              {selectedVoice?.key === deleteCandidate?.key &&
-                " Mary will be selected instead."}
+                ? t("settings.voice.deleteNamed", {
+                    name: deleteCandidate.displayName,
+                  })
+                : t("settings.voice.deleteGeneric")}
+              {selectedVoice?.key === deleteCandidate?.key
+                ? t("settings.voice.deleteFallbackMary")
+                : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="confirm-pocket-voice-delete"
@@ -364,7 +391,7 @@ export function VoiceSettingsCard() {
                 }
               }}
             >
-              Delete voice
+              {t("settings.voice.deleteConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

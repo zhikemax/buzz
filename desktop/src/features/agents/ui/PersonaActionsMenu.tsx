@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import type { AgentPersona, ManagedAgent } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,7 @@ export function PersonaActionsMenu({
   onDeactivate: (persona: AgentPersona) => void;
   onDelete: (persona: AgentPersona) => void;
 }) {
+  const t = useT();
   const disabled = isActionPending || isPending;
   const canEdit = !persona.sourceTeam;
 
@@ -61,7 +63,7 @@ export function PersonaActionsMenu({
         {canEdit ? (
           <DropdownMenuItem disabled={disabled} onClick={() => onEdit(persona)}>
             <Pencil className="h-4 w-4" />
-            Edit
+            {t("common.edit")}
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem
@@ -69,20 +71,20 @@ export function PersonaActionsMenu({
           onClick={() => onDuplicate(persona)}
         >
           <CopyPlus className="h-4 w-4" />
-          Duplicate
+          {t("common.duplicate")}
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={disabled}
           onClick={() => onShare(persona, linkedAgent)}
         >
           <Share2 className="h-4 w-4" />
-          Share
+          {t("common.share")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         {persona.sourceTeam ? (
           <DropdownMenuItem disabled>
             <Trash2 className="h-4 w-4" />
-            Managed by team
+            {t("agents.managedByTeam")}
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
@@ -98,7 +100,7 @@ export function PersonaActionsMenu({
             }}
           >
             <Trash2 className="h-4 w-4" />
-            Delete
+            {t("common.delete")}
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

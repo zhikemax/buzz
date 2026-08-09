@@ -50,6 +50,7 @@ import { UnreadDivider } from "./UnreadDivider";
 import { useComposerHeightPadding } from "./useComposerHeightPadding";
 import { useAnchoredScroll } from "./useAnchoredScroll";
 import { selectDeferredListRenderState } from "@/features/messages/lib/timelineSnapshot";
+import { useT } from "@/shared/i18n";
 
 type MessageThreadPanelProps = ThreadPanelLayoutProps & {
   channel: Channel | null;
@@ -238,6 +239,7 @@ export function MessageThreadPanel({
   autoSendDraftKey = null,
   onAutoSubmitComplete,
 }: MessageThreadPanelProps) {
+  const t = useT();
   const threadBodyRef = React.useRef<HTMLDivElement>(null);
   const threadContentRef = React.useRef<HTMLDivElement>(null);
   const threadComposerWrapperRef = React.useRef<HTMLDivElement>(null);
@@ -453,8 +455,8 @@ export function MessageThreadPanel({
               depth: ancestor.message.depth,
               label:
                 ancestor.message.id === threadHead.id
-                  ? "Collapse thread"
-                  : "Collapse replies",
+                  ? t("msg.collapseThread")
+                  : t("msg.collapseReplies"),
               message: ancestor.message,
             }))
           : undefined;
@@ -493,6 +495,7 @@ export function MessageThreadPanel({
     firstUnreadReplyId,
     hoveredCollapseBranchId,
     isHuddleTranscript,
+    t,
     threadHead,
   ]);
 
@@ -710,7 +713,7 @@ export function MessageThreadPanel({
                       <MessageRow
                         channelId={channelId}
                         collapseDepthGuideActions={collapseDepthGuideActions}
-                        collapseDescendantsLabel="Collapse replies"
+                        collapseDescendantsLabel={t("msg.collapseReplies")}
                         connectDescendants={
                           shouldShowThreadBranchGuides && connectsToVisibleChild
                         }
@@ -817,10 +820,10 @@ export function MessageThreadPanel({
             // frame while a non-empty list streams in on the deferred commit.
             <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-6 text-center">
               <p className="text-sm font-medium text-foreground/80">
-                No replies in this branch yet
+                {t("msg.noRepliesYet")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Reply in the thread to continue this branch.
+                {t("msg.replyToContinue")}
               </p>
             </div>
           ) : // "pending": deferred list is empty but the live list has content —
@@ -846,8 +849,10 @@ export function MessageThreadPanel({
           >
             <ArrowDown aria-hidden />
             {newMessageCount > 0
-              ? `${newMessageCount} new message${newMessageCount === 1 ? "" : "s"}`
-              : "Jump to latest"}
+              ? newMessageCount === 1
+                ? t("msg.newMessageOne", { count: newMessageCount })
+                : t("msg.newMessageMany", { count: newMessageCount })
+              : t("msg.jumpToLatest")}
           </Button>
         </div>
       ) : null}
@@ -898,8 +903,8 @@ export function MessageThreadPanel({
               onSend={onSend}
               placeholder={
                 isHuddleTranscript
-                  ? "Message the huddle"
-                  : `Reply in thread to ${threadHead.author}`
+                  ? t("msg.messageTheHuddle")
+                  : t("msg.replyInThreadTo", { author: threadHead.author })
               }
               profiles={profiles}
               replyTarget={composerReplyTarget}
@@ -940,7 +945,7 @@ export function MessageThreadPanel({
   const threadHeaderContent = (
     <>
       <AuxiliaryPanelHeaderGroup
-        backButtonAriaLabel="Back to conversation"
+        backButtonAriaLabel={t("msg.backToConversation")}
         backButtonTestId="message-thread-back"
         // A focus drawer only sets `isSinglePanelView` to fill its container's
         // width — it isn't the narrow single-column view, and it has the scrimmed
@@ -949,7 +954,7 @@ export function MessageThreadPanel({
         leading={headerLeading}
         onBack={isSinglePanelView && !isFocusMode ? onClose : undefined}
       >
-        <AuxiliaryPanelTitle>Thread</AuxiliaryPanelTitle>
+        <AuxiliaryPanelTitle>{t("msg.thread")}</AuxiliaryPanelTitle>
       </AuxiliaryPanelHeaderGroup>
     </>
   );

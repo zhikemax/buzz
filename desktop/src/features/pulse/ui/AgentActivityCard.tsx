@@ -1,6 +1,7 @@
 import { Bot, ChevronDown, ChevronRight } from "lucide-react";
 import * as React from "react";
 
+import { formatRelativeTimeCompact as formatRelativeTime } from "@/features/messages/lib/dateFormatters";
 import type { AgentNoteGroup } from "@/features/pulse/lib/groupAgentNotes";
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import type { UserProfileSummary } from "@/shared/api/types";
@@ -13,21 +14,6 @@ type AgentActivityCardProps = {
   profile?: UserProfileSummary | null;
   agentStatus?: "online" | "away" | "offline";
 };
-
-function formatRelativeTime(unixSeconds: number): string {
-  const now = Date.now() / 1_000;
-  const diff = now - unixSeconds;
-
-  if (diff < 60) return "just now";
-  if (diff < 3_600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86_400) return `${Math.floor(diff / 3_600)}h ago`;
-  if (diff < 604_800) return `${Math.floor(diff / 86_400)}d ago`;
-
-  return new Date(unixSeconds * 1_000).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function StatusDot({ status }: { status: "online" | "away" | "offline" }) {
   const color =

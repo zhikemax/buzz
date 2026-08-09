@@ -18,6 +18,13 @@ import type {
   HomeFeedResponse,
   RelayEvent,
 } from "@/shared/api/types";
+import {
+  getDateFormatLocale,
+  intlDateLocale,
+  translate,
+  type MessageKey,
+  type TranslateFn,
+} from "@/shared/i18n";
 import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 
 export type InboxFilter =
@@ -58,7 +65,13 @@ export type InboxItem = {
 };
 
 export type InboxTypeLabel = {
-  text: string;
+  text: MessageKey;
+  textParams?: Record<string, string | number>;
+  /**
+   * When true, render as `t("inbox.type.labelIn", { label: t(text) })` so
+   * activity headlines can sit beside a channel chip ("Forum post in #general").
+   */
+  withInSuffix?: boolean;
   channelLabel: string | null;
 };
 
@@ -103,33 +116,43 @@ export type InboxGroup = {
 
 type InboxChannel = Pick<Channel, "channelType" | "id" | "name">;
 
-const listTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  hour: "numeric",
-  minute: "2-digit",
-});
+function listTimeFormatter() {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
-const fullTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
+function fullTimeFormatter() {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
-const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-});
+function shortDateFormatter() {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    month: "short",
+    day: "numeric",
+  });
+}
 
-const shortDateWithYearFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
+function shortDateWithYearFormatter() {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-const weekdayFormatter = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-});
+function weekdayFormatter() {
+  return new Intl.DateTimeFormat(intlDateLocale(), {
+    weekday: "long",
+  });
+}
 
 function startOfDay(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -157,6 +180,47 @@ function projectTypeLabel(item: FeedItem) {
   if (item.kind === 1618) return "Pull request";
   if (item.kind === 1621) return "Issue";
   return "Project update";
+}
+
+function projectTypeLabelKey(item: FeedItem): MessageKey {
+  if (item.kind === 1618) return "inbox.type.pullRequest";
+  if (item.kind === 1621) return "inbox.type.issue";
+  return "inbox.type.projectUpdate";
+}
+
+function activityHeadlineKey(item: FeedItem): MessageKey {
+  switch (item.kind) {
+    case 40007:
+      return "inbox.type.reminder";
+    case 43001:
+      return "inbox.type.jobRequested";
+    case 43002:
+      return "inbox.type.jobAccepted";
+    case 43003:
+      return "inbox.type.progressUpdate";
+    case 43004:
+      return "inbox.type.jobResult";
+    case 43005:
+      return "inbox.type.jobCancelled";
+    case 43006:
+      return "inbox.type.jobFailed";
+    case 45001:
+      return "inbox.type.forumPost";
+    case 45003:
+      return "inbox.type.forumReply";
+    case 46010:
+      return "inbox.type.approvalRequested";
+    default:
+      if (item.category === "mention") {
+        return "inbox.type.mention";
+      }
+
+      if (item.category === "agent_activity") {
+        return "inbox.type.agentUpdate";
+      }
+
+      return "inbox.type.channelUpdate";
+  }
 }
 
 function feedHeadline(item: FeedItem, groupItems: readonly FeedItem[] = []) {
@@ -261,10 +325,6 @@ function isItemUnread(
   return item.createdAt > Math.max(readAt ?? 0, messageReadAt ?? 0);
 }
 
-function activityHeadline(item: FeedItem) {
-  return feedHeadline(item);
-}
-
 function resolveItemChannel(
   item: FeedItem,
   channelById: ReadonlyMap<string, InboxChannel>,
@@ -299,53 +359,70 @@ export function getInboxTypeLabel(item: InboxItem): InboxTypeLabel {
   if (item.groupItems.some(isProjectInboxItem)) {
     const root = projectRootItem(item.item, item.groupItems);
     return {
-      text: projectTypeLabel(root),
+      text: projectTypeLabelKey(root),
       channelLabel: null,
     };
   }
 
   if (item.item.channelType === "dm") {
-    return {
-      text: item.senderLabel ? `DM from ${item.senderLabel}` : "DM",
-      channelLabel: null,
-    };
+    return item.senderLabel
+      ? {
+          text: "inbox.type.dmFrom",
+          textParams: { name: item.senderLabel },
+          channelLabel: null,
+        }
+      : {
+          text: "inbox.type.dm",
+          channelLabel: null,
+        };
   }
 
   const primaryCategory = item.item.category;
   if (primaryCategory === "mention") {
     return {
-      text: channelName ? "Mentioned in" : "Mentioned",
+      text: channelName ? "inbox.type.mentionedIn" : "inbox.type.mentioned",
       channelLabel: channelName,
     };
   }
 
   if (primaryCategory === "needs_action") {
     return {
-      text: channelName ? "Needs action in" : "Needs action",
+      text: channelName
+        ? "inbox.type.needsActionIn"
+        : "inbox.type.needsAction",
       channelLabel: channelName,
     };
   }
 
   if (isThreadActivityItem(item.item)) {
     return {
-      text: channelName ? "Thread in" : "Thread",
+      text: channelName ? "inbox.type.threadIn" : "inbox.type.thread",
       channelLabel: channelName,
     };
   }
 
   return {
-    text: channelName
-      ? `${activityHeadline(item.item)} in`
-      : activityHeadline(item.item),
+    text: activityHeadlineKey(item.item),
+    withInSuffix: Boolean(channelName),
     channelLabel: channelName,
   };
 }
 
-export function formatInboxTypeLabel(item: InboxItem) {
+/** Resolve an inbox type label's localized text (without the channel chip). */
+export function resolveInboxTypeLabelText(
+  label: InboxTypeLabel,
+  t: TranslateFn = translate,
+) {
+  const base = t(label.text, label.textParams);
+  return label.withInSuffix
+    ? t("inbox.type.labelIn", { label: base })
+    : base;
+}
+
+export function formatInboxTypeLabel(item: InboxItem, t: TranslateFn = translate) {
   const label = getInboxTypeLabel(item);
-  return label.channelLabel
-    ? `${label.text} #${label.channelLabel}`
-    : label.text;
+  const text = resolveInboxTypeLabelText(label, t);
+  return label.channelLabel ? `${text} #${label.channelLabel}` : text;
 }
 
 function categoryPriority(category: FeedItemCategory) {
@@ -450,22 +527,22 @@ function formatInboxTimestamp(unixSeconds: number) {
   const dayDiff = diffInDays(now, date);
 
   if (dayDiff === 0) {
-    return listTimeFormatter.format(date);
+    return listTimeFormatter().format(date);
   }
 
   if (dayDiff === 1) {
-    return "Yesterday";
+    return translate(getDateFormatLocale(), "time.yesterday");
   }
 
   if (now.getFullYear() === date.getFullYear()) {
-    return shortDateFormatter.format(date);
+    return shortDateFormatter().format(date);
   }
 
-  return shortDateWithYearFormatter.format(date);
+  return shortDateWithYearFormatter().format(date);
 }
 
 export function formatInboxFullTimestamp(unixSeconds: number) {
-  return fullTimeFormatter.format(new Date(unixSeconds * 1_000));
+  return fullTimeFormatter().format(new Date(unixSeconds * 1_000));
 }
 
 export function relayEventFromFeedItem(item: FeedItem): RelayEvent {
@@ -489,12 +566,12 @@ export function groupInboxItems(items: InboxItem[]): InboxGroup[] {
     const dayDiff = diffInDays(now, date);
     const label =
       dayDiff === 0
-        ? "Today"
+        ? translate(getDateFormatLocale(), "time.today")
         : dayDiff === 1
-          ? "Yesterday"
+          ? translate(getDateFormatLocale(), "time.yesterday")
           : dayDiff < 7
-            ? weekdayFormatter.format(date)
-            : shortDateWithYearFormatter.format(date);
+            ? weekdayFormatter().format(date)
+            : shortDateWithYearFormatter().format(date);
 
     const current = groups.get(label) ?? [];
     current.push(item);

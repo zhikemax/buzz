@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
+
 import {
   runtimeSupportsLlmProviderSelection,
   getPersonaProviderOptions,
@@ -13,6 +15,9 @@ import {
   resolveAgentCommandUpdate,
   shouldClearModelForRuntimeChange,
 } from "./personaRuntimeModel.ts";
+
+
+const t = (key, params) => translate("en", key, params);
 
 // ── LLM provider field visibility ──────────────────────────────────────────
 //
@@ -67,7 +72,7 @@ test("editAgent_providerFieldHidden_forBlankRuntime", () => {
 
 test("editAgent_providerOptions_includesDatabricksV2AndV1OnOSS", () => {
   // OSS builds: no hideProviderIds → both v1 and v2 appear.
-  const options = getPersonaProviderOptions("", "buzz-agent");
+  const options = getPersonaProviderOptions("", "buzz-agent", t);
   const ids = options.map((o) => o.id);
   assert.ok(ids.includes("databricks_v2"), "databricks_v2 must be present");
   assert.ok(
@@ -81,6 +86,7 @@ test("editAgent_providerOptions_hidesDatabricksV1OnInternalBuild", () => {
   const options = getPersonaProviderOptions(
     "",
     "buzz-agent",
+    t,
     "",
     new Set(["databricks"]),
   );
@@ -101,6 +107,7 @@ test("editAgent_providerOptions_includesDatabricksV1AsCurrentEvenWhenHidden", ()
   const options = getPersonaProviderOptions(
     "databricks",
     "buzz-agent",
+    t,
     "",
     new Set(["databricks"]),
   );
@@ -112,7 +119,7 @@ test("editAgent_providerOptions_includesDatabricksV1AsCurrentEvenWhenHidden", ()
 });
 
 test("editAgent_providerOptions_includesDefaultEntry", () => {
-  const options = getPersonaProviderOptions("", "buzz-agent");
+  const options = getPersonaProviderOptions("", "buzz-agent", t);
   // The first entry is the default (empty id) — clearing back to runtime default.
   assert.equal(
     options[0].id,
@@ -122,7 +129,7 @@ test("editAgent_providerOptions_includesDefaultEntry", () => {
 });
 
 test("editAgent_providerOptions_includesCurrentIfCustom", () => {
-  const options = getPersonaProviderOptions("my-custom-llm", "buzz-agent");
+  const options = getPersonaProviderOptions("my-custom-llm", "buzz-agent", t);
   const ids = options.map((o) => o.id);
   assert.ok(
     ids.includes("my-custom-llm"),

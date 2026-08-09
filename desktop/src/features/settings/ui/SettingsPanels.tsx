@@ -38,6 +38,7 @@ import {
   type ThreadViewMode,
 } from "@/features/channels/lib/threadViewModePreference";
 import { cn } from "@/shared/lib/cn";
+import { useLocale, useT, type Locale } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -418,6 +419,8 @@ const ACCENT_PICKER_TRANSITION = {
 };
 
 function ThemeSettingsCard() {
+  const t = useT();
+  const { locale, setLocale } = useLocale();
   const {
     setTheme,
     selectedThemeName,
@@ -525,17 +528,29 @@ function ThemeSettingsCard() {
       data-testid="settings-theme"
     >
       <SettingsSectionHeader
-        title="Appearance"
-        description="Choose a theme for Buzz."
+        title={t("settings.appearance.title")}
+        description={t("settings.appearance.description")}
       />
 
       {/* Mode selector: System / Light / Dark */}
       <div className="mb-4 flex gap-2">
         {(
           [
-            { mode: "system" as const, label: "System", Icon: SunMoon },
-            { mode: "light" as const, label: "Light", Icon: Sun },
-            { mode: "dark" as const, label: "Dark", Icon: Moon },
+            {
+              mode: "system" as const,
+              label: t("settings.appearance.system"),
+              Icon: SunMoon,
+            },
+            {
+              mode: "light" as const,
+              label: t("settings.appearance.light"),
+              Icon: Sun,
+            },
+            {
+              mode: "dark" as const,
+              label: t("settings.appearance.dark"),
+              Icon: Moon,
+            },
           ] as const
         ).map(({ mode, label, Icon }) => (
           <button
@@ -655,27 +670,51 @@ function ThemeSettingsCard() {
         </AnimatePresence>
       )}
 
+      <div className="mb-6 space-y-3" data-testid="settings-language">
+        <div>
+          <h3 className="text-sm font-medium text-foreground">
+            {t("settings.appearance.language")}
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("settings.appearance.languageDescription")}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {(
+            [
+              {
+                value: "en" as Locale,
+                label: t("settings.appearance.lang.en"),
+              },
+              {
+                value: "zh-CN" as Locale,
+                label: t("settings.appearance.lang.zhCN"),
+              },
+            ] as const
+          ).map((option) => (
+            <button
+              aria-pressed={locale === option.value}
+              className={cn(
+                "rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+                locale === option.value
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border/70 text-muted-foreground hover:border-border hover:text-foreground",
+              )}
+              data-testid={`appearance-locale-${option.value}`}
+              key={option.value}
+              onClick={() => setLocale(option.value)}
+              type="button"
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <ThreadLayoutSetting />
     </section>
   );
 }
-
-const THREAD_VIEW_MODE_OPTIONS: {
-  value: ThreadViewMode;
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: "focus",
-    label: "Focus",
-    description: "Threads open over the channel, full width",
-  },
-  {
-    value: "split",
-    label: "Split",
-    description: "Threads open in a side panel next to the channel",
-  },
-];
 
 /**
  * Thread layout picker. Uses the same dropdown radio group vocabulary as the
@@ -683,17 +722,31 @@ const THREAD_VIEW_MODE_OPTIONS: {
  * carry its own description.
  */
 function ThreadLayoutSetting() {
+  const t = useT();
   const threadViewMode = useThreadViewMode();
+  const threadOptions = [
+    {
+      value: "focus" as const,
+      label: t("settings.appearance.threadFocus"),
+      description: t("settings.appearance.threadFocusDesc"),
+    },
+    {
+      value: "split" as const,
+      label: t("settings.appearance.threadSplit"),
+      description: t("settings.appearance.threadSplitDesc"),
+    },
+  ];
   const activeOption =
-    THREAD_VIEW_MODE_OPTIONS.find(
-      (option) => option.value === threadViewMode,
-    ) ?? THREAD_VIEW_MODE_OPTIONS[0];
+    threadOptions.find((option) => option.value === threadViewMode) ??
+    threadOptions[0];
 
   return (
     <SettingsOptionGroup className="mt-8">
       <SettingsOptionRow>
         <div className="min-w-0">
-          <p className="text-sm font-medium">Thread layout</p>
+          <p className="text-sm font-medium">
+            {t("settings.appearance.threadLayout")}
+          </p>
           <p className="text-sm font-normal text-muted-foreground">
             {activeOption.description}
           </p>
@@ -718,7 +771,7 @@ function ThreadLayoutSetting() {
               }
               value={threadViewMode}
             >
-              {THREAD_VIEW_MODE_OPTIONS.map((option) => (
+              {threadOptions.map((option) => (
                 <DropdownMenuRadioItem
                   data-testid={`thread-layout-${option.value}`}
                   key={option.value}
@@ -750,9 +803,12 @@ function AccentPickerContent({
   isDark: boolean;
   setAccentColor: (value: string) => void;
 }) {
+  const t = useT();
   return (
     <div className="shrink-0 px-1 pb-2 pt-1">
-      <h3 className="mb-2 text-sm font-medium">Accent color</h3>
+      <h3 className="mb-2 text-sm font-medium">
+        {t("settings.appearance.accentColor")}
+      </h3>
       <div className="flex flex-wrap gap-2 p-1">
         {ACCENT_COLORS.map((color) => {
           const isNeutral = color.value === NEUTRAL_ACCENT;

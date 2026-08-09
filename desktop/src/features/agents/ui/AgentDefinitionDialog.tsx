@@ -86,6 +86,7 @@ import { useProviderApiKeyFieldState } from "./providerApiKeyFieldState";
 import { buildRuntimeModelProviderPayload } from "./agentDefinitionSubmitPayload";
 import { AgentDefinitionDialogFooter } from "./AgentDefinitionDialogFooter";
 import { AddCustomHarnessDialog } from "./AddCustomHarnessDialog";
+import { useT } from "@/shared/i18n";
 import {
   ADD_CUSTOM_HARNESS_OPTION,
   runtimeDropdownAction,
@@ -135,6 +136,7 @@ export function AgentDefinitionDialog({
   createRunSection,
   createSubmitBlocked = false,
 }: AgentDefinitionDialogProps) {
+  const t = useT();
   const runtimesLoading = runtimeCatalogStatus === "loading";
   const [displayName, setDisplayName] = React.useState("");
   const [aiDefaultsOpen, setAiDefaultsOpen] = React.useState(false);
@@ -561,6 +563,7 @@ export function AgentDefinitionDialog({
   const providerOptions = getPersonaProviderOptions(
     trimmedProvider,
     runtime,
+    t,
     inheritedProviderDefault.source === "global"
       ? inheritedProviderDefault.value
       : "",
@@ -579,6 +582,7 @@ export function AgentDefinitionDialog({
       runtime,
       runtimes,
       runtimesLoading,
+      t,
     });
   runtimeDropdownOptions.push(ADD_CUSTOM_HARNESS_OPTION);
   const runtimeSummaryLabel = selectedRuntime
@@ -591,7 +595,7 @@ export function AgentDefinitionDialog({
         label: option.label,
         value: option.id,
       })),
-    { label: "Custom provider...", value: CUSTOM_PROVIDER_DROPDOWN_VALUE },
+    { label: t("agents.customProvider"), value: CUSTOM_PROVIDER_DROPDOWN_VALUE },
   ];
   const modelDropdownOptions: PersonaDropdownOption[] =
     buildModelDropdownOptions({
@@ -606,17 +610,17 @@ export function AgentDefinitionDialog({
       )
       .map((option) =>
         isRelayMesh && option.value === AUTO_MODEL_DROPDOWN_VALUE
-          ? { ...option, label: "Automatic" }
+          ? { ...option, label: t("agents.automatic") }
           : option,
       );
-  const previewLabel = displayName.trim() || "Agent name";
+  const previewLabel = displayName.trim() || t("agents.agentName");
   const previewAvatarUrl = avatarUrl.trim() || null;
   const runtimeWarningText = selectedRuntime
     ? runtimeAvailabilityWarning(selectedRuntime)
     : null;
   const runtimeWarning = runtimeWarningText ? (
     <p className="text-xs text-warning">
-      {runtimeWarningText} Visit Settings &gt; Agents to set it up.
+      {runtimeWarningText} {t("agents.visitSettingsAgents")}
     </p>
   ) : null;
   const advancedFieldsTransition = shouldReduceMotion
@@ -782,7 +786,7 @@ export function AgentDefinitionDialog({
                 className="text-sm font-medium text-foreground"
                 htmlFor="persona-display-name"
               >
-                Agent name
+                {t("agents.agentName")}
               </label>
               <div
                 className={cn(
@@ -799,7 +803,7 @@ export function AgentDefinitionDialog({
                   disabled={isPending}
                   id="persona-display-name"
                   onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="Fizz"
+                  placeholder={t("agents.namePlaceholder")}
                   value={displayName}
                 />
               </div>
@@ -810,7 +814,7 @@ export function AgentDefinitionDialog({
                 className="text-sm font-medium text-foreground"
                 htmlFor="persona-system-prompt"
               >
-                Agent instructions
+                {t("agents.agentInstructions")}
               </label>
               <div className={PERSONA_FIELD_SHELL_CLASS}>
                 <Textarea
@@ -821,7 +825,7 @@ export function AgentDefinitionDialog({
                   disabled={isPending}
                   id="persona-system-prompt"
                   onChange={(event) => setSystemPrompt(event.target.value)}
-                  placeholder="Describe what this agent should do."
+                  placeholder={t("agents.instructionsPlaceholder")}
                   value={systemPrompt}
                 />
               </div>
@@ -868,7 +872,7 @@ export function AgentDefinitionDialog({
                     id="persona-llm-provider"
                     onValueChange={handleProviderDropdownChange}
                     options={providerDropdownOptions}
-                    placeholder="Choose a provider"
+                    placeholder={t("agents.chooseProvider")}
                     value={providerSelectValue}
                   />
                   {showCustomProviderInput ? (

@@ -16,6 +16,7 @@ import {
   THREAD_REPLY_ROW_MARGIN_INLINE_REM,
 } from "@/features/messages/lib/threadTreeLayout";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 
 const THREAD_SUMMARY_CONTENT_OFFSET_REM =
@@ -84,6 +85,7 @@ export function MessageThreadSummaryRow({
   summaryIndentOffsetRem?: number;
   unreadCount?: number;
 }) {
+  const t = useT();
   const indentRem = getThreadReplyIndentRem(depth);
   const hoverLeftRem =
     indentRem + THREAD_REPLY_ROW_MARGIN_INLINE_REM + summaryIndentOffsetRem;
@@ -94,10 +96,17 @@ export function MessageThreadSummaryRow({
   const surfaceInsetStart = `calc(${contentPaddingStart} - ${threadReplyLength(
     THREAD_SUMMARY_SURFACE_AVATAR_INSET_REM,
   )})`;
-  const replyLabel = summary.replyCount === 1 ? "reply" : "replies";
+  const replyLabel =
+    summary.replyCount === 1 ? t("msg.replyOne") : t("msg.replyMany");
+  const viewThreadAria = t("msg.viewThreadAria", {
+    count: summary.replyCount,
+    replies: replyLabel,
+  });
   const summaryAriaLabel = summary.lastReplyAt
-    ? `View thread with ${summary.replyCount} ${replyLabel}, last reply ${formatThreadSummaryLastReplyTime(summary.lastReplyAt)}`
-    : `View thread with ${summary.replyCount} ${replyLabel}`;
+    ? `${viewThreadAria}, ${t("msg.lastReply", {
+        when: formatThreadSummaryLastReplyTime(summary.lastReplyAt),
+      })}`
+    : viewThreadAria;
   const guideDepths = depthGuideDepths
     ? [...depthGuideDepths]
     : Array.from({ length: Math.max(0, depth - 1) }, (_, index) => index + 1);
@@ -243,11 +252,14 @@ export function MessageThreadSummaryRow({
         <div className="relative z-10 min-w-0">
           <div>
             <span className="font-medium transition-colors group-hover:text-foreground">
-              {summary.replyCount} {replyLabel}
+              {t("msg.nReplies", {
+                count: summary.replyCount,
+                replies: replyLabel,
+              })}
             </span>
             {unreadCount != null && unreadCount > 0 ? (
               <span className="ml-1" data-testid="thread-unread-badge">
-                ({unreadCount} new)
+                {t("msg.nNew", { count: unreadCount })}
               </span>
             ) : null}
             {summary.lastReplyAt ? (
@@ -260,14 +272,17 @@ export function MessageThreadSummaryRow({
                     className="col-start-1 row-start-1 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
                     data-testid="message-thread-summary-last-reply"
                   >
-                    last reply{" "}
-                    {formatThreadSummaryLastReplyTime(summary.lastReplyAt)}
+                    {t("msg.lastReply", {
+                      when: formatThreadSummaryLastReplyTime(
+                        summary.lastReplyAt,
+                      ),
+                    })}
                   </span>
                   <span
                     className="col-start-1 row-start-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
                     data-testid="message-thread-summary-hover-action"
                   >
-                    View thread
+                    {t("msg.viewThread")}
                   </span>
                 </span>
               </>

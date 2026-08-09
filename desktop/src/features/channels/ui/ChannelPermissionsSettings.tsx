@@ -1,6 +1,7 @@
 import { ChevronDown, LoaderCircle } from "lucide-react";
 
 import type { ChannelVisibility } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -24,7 +25,11 @@ export function ChannelPermissionsSettings({
   testIdPrefix: string;
   visibility: ChannelVisibility;
 }) {
-  const visibilityLabel = visibility === "private" ? "Private" : "Public";
+  const t = useT();
+  const visibilityLabel =
+    visibility === "private"
+      ? t("channel.visibilityPrivate")
+      : t("channel.visibilityPublic");
 
   return (
     <div
@@ -34,15 +39,17 @@ export function ChannelPermissionsSettings({
       )}
       data-testid={`${testIdPrefix}-permissions-container`}
     >
-      <span className="text-sm font-medium text-foreground">Visibility</span>
+      <span className="text-sm font-medium text-foreground">
+        {t("channel.visibility")}
+      </span>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
             aria-busy={isPending}
             aria-label={
               isPending
-                ? "Updating visibility"
-                : `Visibility: ${visibilityLabel}`
+                ? t("channel.visibilityUpdatingAria")
+                : t("channel.visibilityAria", { label: visibilityLabel })
             }
             className="-mr-2.5 ml-auto h-9 w-fit justify-end px-2.5 text-right text-sm font-medium text-foreground hover:bg-muted/50"
             data-testid={`${testIdPrefix}-permissions`}
@@ -51,7 +58,7 @@ export function ChannelPermissionsSettings({
             variant="ghost"
           >
             <span aria-live="polite" className="text-right">
-              {isPending ? "Updating…" : visibilityLabel}
+              {isPending ? t("channel.visibilityUpdating") : visibilityLabel}
             </span>
             {isPending ? (
               <LoaderCircle
@@ -82,13 +89,13 @@ export function ChannelPermissionsSettings({
               data-testid={`${testIdPrefix}-permissions-option-open`}
               value="open"
             >
-              Public
+              {t("channel.visibilityPublic")}
             </DropdownMenuRadioItem>
             <DropdownMenuRadioItem
               data-testid={`${testIdPrefix}-permissions-option-private`}
               value="private"
             >
-              Private
+              {t("channel.visibilityPrivate")}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>

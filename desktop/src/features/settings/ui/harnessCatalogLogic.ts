@@ -6,6 +6,7 @@
  */
 
 import type { AcpRuntimeCatalogEntry } from "@/shared/api/types";
+import type { MessageKey } from "@/shared/i18n";
 
 // Builtins that anchor the top of "Your runtimes" — mirrors the old
 // DoctorSettingsPanel RUNTIME_SORT_PRIORITY so the Buzz + Goose rows stay
@@ -135,23 +136,34 @@ export function stableRowOrder(
   return [...kept, ...appended];
 }
 
-/** Human status label for a catalog entry; null when nothing needs saying. */
-export function entryStatusLabel(entry: AcpRuntimeCatalogEntry): string | null {
-  if (entry.authStatus.status === "config_invalid") return "Config error";
+/** Human status label key for a catalog entry; null when nothing needs saying. */
+export function entryStatusLabel(
+  entry: AcpRuntimeCatalogEntry,
+): MessageKey | null {
+  if (entry.authStatus.status === "config_invalid") {
+    return "settings.agents.status.configError";
+  }
   switch (entry.availability) {
     case "adapter_missing":
-      return "Adapter needed";
+      return "settings.agents.status.adapterNeeded";
     case "adapter_outdated":
-      return "Update needed";
+      return "settings.agents.status.updateNeeded";
     case "cli_missing":
     case "not_installed":
-      return "CLI needed";
+      return "settings.agents.status.cliNeeded";
     case "available":
-      return entry.authStatus.status === "logged_out" ? "Sign-in needed" : null;
+      return entry.authStatus.status === "logged_out"
+        ? "settings.agents.status.signInNeeded"
+        : null;
     default:
       return null;
   }
 }
+
+export type AdapterUpdateWarning = {
+  key: MessageKey;
+  params?: Record<string, string | number>;
+};
 
 /**
  * Body copy for the confirmation dialog shown before replacing an
@@ -161,24 +173,22 @@ export function entryStatusLabel(entry: AcpRuntimeCatalogEntry): string | null {
  * contract; every other runtime gets generic, runtime-derived copy — Codex
  * package names must never appear for another runtime.
  */
-export function adapterUpdateWarning(entry: AcpRuntimeCatalogEntry): string {
+export function adapterUpdateWarning(
+  entry: AcpRuntimeCatalogEntry,
+): AdapterUpdateWarning {
   if (entry.id === "codex") {
-    return (
-      "This replaces the machine-wide codex-acp adapter. Older Buzz " +
-      "releases using the legacy adapter may lose community access until " +
-      "@zed-industries/codex-acp@0.16.0 is restored."
-    );
+    return { key: "settings.agents.adapterUpdate.codex" };
   }
   const adapter = entry.command?.trim() || entry.label;
-  return (
-    `This replaces the machine-wide ${adapter} adapter. Other tools using ` +
-    "the currently installed adapter will switch to the updated version."
-  );
+  return {
+    key: "settings.agents.adapterUpdate.generic",
+    params: { adapter },
+  };
 }
 
 export type CatalogPrimaryAction =
-  | { kind: "install"; label: string }
-  | { kind: "docs"; label: string }
+  | { kind: "install"; labelKey: MessageKey }
+  | { kind: "docs"; labelKey: MessageKey }
   | { kind: "none" };
 
 /**
@@ -194,11 +204,11 @@ export function isDownloadPageUrl(url: string): boolean {
   }
 }
 
-/** Label for a link that opens `installInstructionsUrl`. */
-export function installLinkLabel(entry: AcpRuntimeCatalogEntry): string {
+/** Label key for a link that opens `installInstructionsUrl`. */
+export function installLinkLabel(entry: AcpRuntimeCatalogEntry): MessageKey {
   return isDownloadPageUrl(entry.installInstructionsUrl)
-    ? "Download page"
-    : "Setup guide";
+    ? "settings.agents.downloadPage"
+    : "settings.agents.setupGuide";
 }
 
 /**
@@ -216,11 +226,14 @@ export function catalogPrimaryAction(
   if (entry.canAutoInstall && !entry.nodeRequired) {
     return {
       kind: "install",
-      label: entry.availability === "adapter_outdated" ? "Update" : "Install",
+      labelKey:
+        entry.availability === "adapter_outdated"
+          ? "settings.agents.update"
+          : "settings.agents.install",
     };
   }
   if (entry.installInstructionsUrl.trim().length > 0) {
-    return { kind: "docs", label: installLinkLabel(entry) };
+    return { kind: "docs", labelKey: installLinkLabel(entry) };
   }
   return { kind: "none" };
 }

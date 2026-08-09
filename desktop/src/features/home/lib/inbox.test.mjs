@@ -63,7 +63,7 @@ test("mention rows use the channel list when feed channelName is blank", () => {
   });
 
   assert.deepEqual(getInboxTypeLabel(inboxItem), {
-    text: "Mentioned in",
+    text: "inbox.type.mentionedIn",
     channelLabel: "buzz-bugs",
   });
 });
@@ -86,7 +86,7 @@ test("thread activity rows use the channel list when feed channelName is blank",
   });
 
   assert.deepEqual(getInboxTypeLabel(inboxItem), {
-    text: "Thread in",
+    text: "inbox.type.threadIn",
     channelLabel: "buzz-bugs",
   });
 });
@@ -124,7 +124,7 @@ test("thread groups are represented by the latest reply rather than the root", (
     ["root-event", "reply-event"],
   );
   assert.deepEqual(getInboxTypeLabel(inboxItem), {
-    text: "Thread in",
+    text: "inbox.type.threadIn",
     channelLabel: "buzz-bugs",
   });
 });
@@ -163,7 +163,7 @@ test("thread groups use the latest row label even when the root was a mention", 
     ["root-event", "reply-event"],
   );
   assert.deepEqual(getInboxTypeLabel(inboxItem), {
-    text: "Thread in",
+    text: "inbox.type.threadIn",
     channelLabel: "buzz-bugs",
   });
 });

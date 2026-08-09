@@ -4,6 +4,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { joinPolicyDocumentUrl, type JoinPolicy } from "@/shared/api/invites";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
+import { useT } from "@/shared/i18n";
 
 type JoinPolicyNoticeProps = {
   ageConfirmed: boolean;
@@ -33,6 +34,7 @@ export function JoinPolicyNotice({
   policy,
   relayWsUrl,
 }: JoinPolicyNoticeProps) {
+  const t = useT();
   const ageConfirmationId = React.useId();
   const agreementConfirmationId = React.useId();
 
@@ -52,7 +54,7 @@ export function JoinPolicyNotice({
             className="cursor-pointer text-xs leading-5 text-muted-foreground"
             htmlFor={ageConfirmationId}
           >
-            I am 18 years of age or older.
+            {t("onboard.iAmAdult")}
           </label>
         </div>
       ) : null}
@@ -71,7 +73,7 @@ export function JoinPolicyNotice({
             className="cursor-pointer text-xs leading-5 text-muted-foreground"
             htmlFor={agreementConfirmationId}
           >
-            I agree to the Buzz{" "}
+            {t("onboard.agreeBuzzTerms")}{" "}
             {policy.termsMarkdown ? (
               <Button
                 className="h-auto p-0 align-baseline text-xs no-underline hover:underline focus-visible:no-underline"
@@ -82,10 +84,12 @@ export function JoinPolicyNotice({
                 type="button"
                 variant="link"
               >
-                Terms of Service
+                {t("onboard.termsOfService")}
               </Button>
             ) : null}
-            {policy.termsMarkdown && policy.privacyMarkdown ? " and " : null}
+            {policy.termsMarkdown && policy.privacyMarkdown
+              ? ` ${t("onboard.and")} `
+              : null}
             {policy.privacyMarkdown ? (
               <Button
                 className="h-auto p-0 align-baseline text-xs no-underline hover:underline focus-visible:no-underline"
@@ -96,7 +100,7 @@ export function JoinPolicyNotice({
                 type="button"
                 variant="link"
               >
-                Privacy Policy
+                {t("onboard.privacyPolicy")}
               </Button>
             ) : null}
             .

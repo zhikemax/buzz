@@ -13,6 +13,8 @@ import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 import { Markdown } from "@/shared/ui/markdown";
 import { parseImetaTags } from "@/shared/ui/markdown/parseImeta";
 
+import { useT } from "@/shared/i18n";
+
 import { formatRelativeTime } from "../lib/time";
 import { DeleteActionMenu } from "./DeleteActionMenu";
 
@@ -37,6 +39,7 @@ export function ForumPostCard({
   onClick,
   onDelete,
 }: ForumPostCardProps) {
+  const t = useT();
   const authorLabel = resolveUserLabel({
     pubkey: post.pubkey,
     currentPubkey,
@@ -131,13 +134,21 @@ export function ForumPostCard({
         <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
           <MessageSquare className="h-4 w-4" />
           <span>
-            {summary.replyCount}{" "}
-            {summary.replyCount === 1 ? "reply" : "replies"}
+            {t("msg.nReplies", {
+              count: summary.replyCount,
+              replies: t(
+                summary.replyCount === 1 ? "msg.replyOne" : "msg.replyMany",
+              ),
+            })}
           </span>
           {summary.lastReplyAt ? (
             <>
               <span className="text-muted-foreground/50">·</span>
-              <span>last {formatRelativeTime(summary.lastReplyAt)}</span>
+              <span>
+                {t("forum.lastWhen", {
+                  when: formatRelativeTime(summary.lastReplyAt),
+                })}
+              </span>
             </>
           ) : null}
         </div>

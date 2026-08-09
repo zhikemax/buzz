@@ -8,12 +8,14 @@ import {
 import * as React from "react";
 
 import { ForumComposer } from "@/features/forum/ui/ForumComposer";
+import { formatRelativeTimeCompact as formatRelativeTime } from "@/features/messages/lib/dateFormatters";
 import { useUserProfileQuery } from "@/features/profile/hooks";
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import { useNoteByIdQuery } from "@/features/pulse/hooks";
 import { getReplyParent, noteSnippet } from "@/features/pulse/lib/replies";
 import type { UserNote } from "@/shared/api/socialTypes";
 import type { ChannelMember, UserProfileSummary } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { AnimatedCount } from "@/shared/ui/AnimatedCount";
 import { Markdown } from "@/shared/ui/markdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -55,6 +57,7 @@ function ReplyParentContext({
   parentId: string;
   profiles: Record<string, UserProfileSummary>;
 }) {
+  const t = useT();
   const parentNoteQuery = useNoteByIdQuery(parentId);
   const parentNote = parentNoteQuery.data ?? null;
   const cachedProfile = parentNote
@@ -85,7 +88,7 @@ function ReplyParentContext({
               <UserAvatar
                 avatarUrl={parentAvatarUrl}
                 className="!h-4 !w-4 shrink-0"
-                displayName={parentDisplayName ?? "Parent note author"}
+                displayName={parentDisplayName ?? t("pulse.parentAuthor")}
               />
             </button>
           </UserProfilePopover>
@@ -101,37 +104,22 @@ function ReplyParentContext({
                 {parentDisplayName}
               </button>
             </UserProfilePopover>
-            : {parentSnippet || "No text"}
+            : {parentSnippet || t("pulse.noText")}
           </span>
         </div>
       ) : parentNoteQuery.isLoading ? (
-        "Loading reply context…"
+        t("pulse.loadingReplyContext")
       ) : (
-        "Replying to an unavailable note"
+        t("pulse.unavailableNote")
       )}
     </div>
   );
 }
 
-function formatRelativeTime(unixSeconds: number): string {
-  const now = Date.now() / 1_000;
-  const diff = now - unixSeconds;
-
-  if (diff < 60) return "just now";
-  if (diff < 3_600) return `${Math.floor(diff / 60)}m`;
-  if (diff < 86_400) return `${Math.floor(diff / 3_600)}h`;
-  if (diff < 604_800) return `${Math.floor(diff / 86_400)}d`;
-
-  return new Date(unixSeconds * 1_000).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function NoteCard({
   note,
   profile,
-  currentUserDisplayName = "You",
+  currentUserDisplayName,
   currentUserProfile,
   composerProfiles = {},
   isAgent,
@@ -143,6 +131,9 @@ export function NoteCard({
   members = [],
   actions,
 }: NoteCardProps) {
+  const t = useT();
+  const resolvedCurrentUserDisplayName =
+    currentUserDisplayName ?? t("inbox.you");
   const displayName = profile?.displayName ?? truncatePubkey(note.pubkey);
   const avatarUrl = profile?.avatarUrl ?? null;
   const [isReplyComposerOpen, setIsReplyComposerOpen] = React.useState(false);
@@ -298,10 +289,10 @@ export function NoteCard({
                   <UserAvatar
                     avatarUrl={currentUserAvatarUrl}
                     className="!h-8 !w-8 shrink-0"
-                    displayName={currentUserDisplayName}
+                    displayName={resolvedCurrentUserDisplayName}
                   />
                   <span className="max-w-32 truncate text-sm font-medium text-foreground">
-                    {currentUserDisplayName}
+                    {resolvedCurrentUserDisplayName}
                   </span>
                 </div>
               }

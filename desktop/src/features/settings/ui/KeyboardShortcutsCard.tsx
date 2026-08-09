@@ -1,6 +1,8 @@
+import { useT } from "@/shared/i18n";
 import {
   getShortcutsByCategory,
   getPlatformKeys,
+  shortcutCategoryLabelKey,
   type KeyboardShortcut,
 } from "@/shared/lib/keyboard-shortcuts";
 import { SettingsOptionGroup, SettingsOptionRow } from "./SettingsOptionGroup";
@@ -29,20 +31,21 @@ function KeyCombo({ shortcut }: { shortcut: KeyboardShortcut }) {
 }
 
 export function KeyboardShortcutsCard() {
+  const t = useT();
   const categories = getShortcutsByCategory();
 
   return (
     <section className="min-w-0" data-testid="settings-shortcuts">
       <SettingsSectionHeader
-        title="Keyboard shortcuts"
-        description="All available keyboard shortcuts. Shortcuts are read-only."
+        title={t("settings.shortcuts.title")}
+        description={t("settings.shortcuts.description")}
       />
 
       <div className="space-y-4">
         {[...categories.entries()].map(([category, shortcuts]) => (
           <div key={category}>
             <h2 className="mb-2 text-lg font-semibold tracking-tight">
-              {category}
+              {t(shortcutCategoryLabelKey(category))}
             </h2>
             <SettingsOptionGroup>
               {shortcuts.map((shortcut) => (
@@ -52,10 +55,10 @@ export function KeyboardShortcutsCard() {
                 >
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-medium text-foreground">
-                      {shortcut.label}
+                      {t(shortcut.labelKey)}
                     </span>
                     <span className="ml-2 text-muted-foreground">
-                      {shortcut.description}
+                      {t(shortcut.descriptionKey)}
                     </span>
                   </div>
                   <KeyCombo shortcut={shortcut} />

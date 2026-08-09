@@ -1,4 +1,5 @@
 import { topChromeInset } from "@/shared/layout/chromeLayout";
+import { useT } from "@/shared/i18n";
 import { UnreadPill, unreadCountLabel } from "@/shared/ui/UnreadPill";
 
 export function MoreUnreadButton({
@@ -14,6 +15,7 @@ export function MoreUnreadButton({
   position: "top" | "bottom";
   testId: string;
 }) {
+  const t = useT();
   const positionClassName =
     position === "top" ? topChromeInset.top : bottomClassName;
 
@@ -23,7 +25,7 @@ export function MoreUnreadButton({
     >
       <UnreadPill
         direction={position === "top" ? "up" : "down"}
-        label={unreadCountLabel(count)}
+        label={unreadCountLabel(count, t)}
         onClick={onClick}
         testId={testId}
       />

@@ -17,6 +17,7 @@ import {
   OnboardingSlideTransition,
 } from "./OnboardingSlideTransition";
 import type { ProfileStepActions, ProfileStepState } from "./types";
+import { useT } from "@/shared/i18n";
 
 type AvatarStepProps = {
   actions: {
@@ -74,6 +75,7 @@ function AvatarPreview({
   avatarUrl: string;
   previewName: string;
 }) {
+  const t = useT();
   const emojiAvatar = parseEmojiAvatarDataUrl(avatarUrl);
   const hasAvatarUrl = avatarUrl.trim().length > 0;
 
@@ -81,7 +83,7 @@ function AvatarPreview({
     <div className="flex h-48 w-48 items-center justify-center">
       {emojiAvatar ? (
         <div
-          aria-label={`${previewName} avatar`}
+          aria-label={t("onboard.avatarLabel", { name: previewName })}
           className="relative flex h-full w-full shrink-0 items-center justify-center overflow-hidden rounded-full shadow-xs transition-colors duration-[250ms] ease-out"
           data-testid="onboarding-avatar-preview"
           role="img"
@@ -100,7 +102,7 @@ function AvatarPreview({
         </div>
       ) : !hasAvatarUrl ? (
         <div
-          aria-label="Add a display image"
+          aria-label={t("onboard.addDisplayImageShort")}
           className="flex h-full w-full shrink-0 items-center justify-center rounded-full border-2 border-dashed border-border bg-background text-primary shadow-xs"
           data-testid="onboarding-avatar-preview"
           role="img"
@@ -143,6 +145,7 @@ function AvatarStepActions({
   saveRecovery: ProfileStepState["saveRecovery"];
   showAlwaysSkip: boolean;
 }) {
+  const t = useT();
   const areNavigationActionsDisabled = isSaving || isUploadingAvatar;
 
   return (
@@ -174,11 +177,13 @@ function AvatarStepActions({
             >
               {isSaving || isUploadingAvatar ? (
                 <Spinner
-                  aria-label={isSaving ? "Saving profile" : "Uploading avatar"}
+                  aria-label={
+                    isSaving ? t("common.saving") : t("onboard.uploadingAvatar")
+                  }
                   className="h-4 w-4 border-2"
                 />
               ) : (
-                "Next"
+                t("common.next")
               )}
             </Button>
 
@@ -193,7 +198,7 @@ function AvatarStepActions({
                 type="button"
                 variant="ghost"
               >
-                Skip for now
+                {t("common.skip")}
               </Button>
             ) : showAlwaysSkip && !saveRecovery.errorMessage ? (
               // Normal path: advances to the theme step without saving an avatar.
@@ -205,7 +210,7 @@ function AvatarStepActions({
                 type="button"
                 variant="ghost"
               >
-                Skip for now
+                {t("common.skip")}
               </Button>
             ) : null}
 
@@ -218,7 +223,7 @@ function AvatarStepActions({
                 type="button"
                 variant="ghost"
               >
-                Continue without saving
+                {t("onboard.continueWithoutSaving")}
               </Button>
             ) : null}
 
@@ -230,7 +235,7 @@ function AvatarStepActions({
               type="button"
               variant="ghost"
             >
-              Back
+              {t("common.back")}
             </Button>
           </motion.div>
         )}
@@ -245,6 +250,7 @@ export function AvatarStep({
   showAlwaysSkip = false,
   state,
 }: AvatarStepProps) {
+  const t = useT();
   const {
     advanceWithoutSaving,
     back,
@@ -277,7 +283,7 @@ export function AvatarStep({
   const areActionsHidden =
     isCustomColorPickerOpen || shouldHideActionsForAnimatedAvatar;
   const previewName =
-    name.draftValue.trim() || name.savedValue.trim() || "Your avatar";
+    name.draftValue.trim() || name.savedValue.trim() || t("onboard.yourAvatar");
   const animateEmojiAvatarChange = React.useCallback(() => {
     setAvatarSquishKey((key) => key + 1);
   }, []);
@@ -330,10 +336,10 @@ export function AvatarStep({
         <div className="flex w-full flex-col items-center text-center lg:items-start lg:text-left">
           <div className="w-full max-w-[500px]">
             <h1 className="text-title font-normal text-foreground">
-              Next, add a display image
+              {t("onboard.addDisplayImage")}
             </h1>
             <p className="mt-5 text-sm leading-6 text-muted-foreground">
-              Choose an image or emoji as your avatar
+              {t("onboard.chooseAvatarHint")}
             </p>
           </div>
 

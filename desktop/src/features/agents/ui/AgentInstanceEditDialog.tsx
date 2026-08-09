@@ -18,6 +18,7 @@ import type {
   UpdateManagedAgentInput,
 } from "@/shared/api/types";
 import type { EditAgentFocusTarget } from "@/features/agents/openEditAgentEvent";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
@@ -118,6 +119,7 @@ export function AgentInstanceEditDialog({
   const configSurfaceQuery = useAgentConfigSurface(open ? agent.pubkey : null);
   const runtimes = runtimesQuery.data ?? [];
 
+  const t = useT();
   const [name, setName] = React.useState(agent.name);
   const [aiDefaultsOpen, setAiDefaultsOpen] = React.useState(false);
   const aiDefaultsTriggerRef = React.useRef<HTMLButtonElement>(null);
@@ -776,7 +778,7 @@ export function AgentInstanceEditDialog({
   const inheritedModelLabel =
     inheritedModelDefault.source === "build"
       ? getBakedModelInheritLabel(inheritedModelDefault.value)
-      : getDefaultLlmModelLabel(inheritedModelDefault.value);
+      : getDefaultLlmModelLabel(inheritedModelDefault.value, t);
   const {
     isRelayMesh,
     options: effectiveModelOptions,
@@ -801,6 +803,7 @@ export function AgentInstanceEditDialog({
     discoveredModelOptions,
     loading: modelDiscoveryLoading,
     status: modelDiscoveryStatus,
+    t,
   });
 
   // Provider field derived state
@@ -815,6 +818,7 @@ export function AgentInstanceEditDialog({
   const providerOptions = getPersonaProviderOptions(
     trimmedProvider,
     selectedRuntime?.id ?? "",
+    t,
     inheritedProviderDefault.source === "global"
       ? inheritedProviderDefault.value
       : "",

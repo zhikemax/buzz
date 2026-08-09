@@ -13,6 +13,7 @@ import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { useRemindLater } from "@/features/reminders/ui/RemindMeLaterProvider";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import type { Channel, FeedItem, HomeFeedResponse } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import { useNow } from "@/shared/lib/useNow";
 import { Markdown } from "@/shared/ui/markdown";
@@ -80,13 +81,14 @@ function ThreadPreviewRow({
   onOpen: () => void;
   onRemindLater: () => void;
 }) {
+  const t = useT();
   return (
     <div
       className="group/activity-row relative border-t border-border/50 first:border-t-0"
       data-testid={`channel-activity-item-${item.conversationId}`}
     >
       <button
-        aria-label={`Open thread from ${item.senderLabel}`}
+        aria-label={t("sidebar.openThreadFrom", { name: item.senderLabel })}
         className="absolute inset-0 z-0 w-full text-left"
         onClick={onOpen}
         type="button"
@@ -108,11 +110,11 @@ function ThreadPreviewRow({
             </span>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-xs leading-4 text-muted-foreground">
-            <span>Thread</span>
+            <span>{t("sidebar.thread")}</span>
             {item.unreadCount > 1 ? (
               <>
                 <span aria-hidden="true">·</span>
-                <span>{item.unreadCount} unread</span>
+                <span>{t("sidebar.unreadCount", { count: item.unreadCount })}</span>
               </>
             ) : null}
           </div>
@@ -125,10 +127,10 @@ function ThreadPreviewRow({
         </div>
       </div>
       <div className="pointer-events-none absolute right-2 top-2 z-20 flex items-center gap-0.5 rounded-full bg-muted/95 p-0.5 opacity-0 shadow-xs transition-opacity group-hover/activity-row:pointer-events-auto group-hover/activity-row:opacity-100 group-focus-within/activity-row:pointer-events-auto group-focus-within/activity-row:opacity-100">
-        <RowActionButton label="Mark as read" onClick={onMarkRead}>
+        <RowActionButton label={t("channelMenu.markAsRead")} onClick={onMarkRead}>
           <MailOpen />
         </RowActionButton>
-        <RowActionButton label="Remind me later" onClick={onRemindLater}>
+        <RowActionButton label={t("sidebar.remindLater")} onClick={onRemindLater}>
           <Clock />
         </RowActionButton>
       </div>
@@ -149,6 +151,7 @@ function WorkingAgentRow({
   onOpen: () => void;
   pubkey: string;
 }) {
+  const t = useT();
   return (
     <button
       className="flex w-full min-w-0 items-start gap-2.5 border-t border-border/50 px-3 py-3 text-left transition-colors first:border-t-0 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-hidden"
@@ -173,7 +176,7 @@ function WorkingAgentRow({
         </div>
         <span className="mt-0.5 flex items-center gap-1.5 text-xs leading-4 text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary/70" />
-          Working
+          {t("sidebar.working")}
         </span>
       </div>
     </button>
@@ -191,6 +194,7 @@ function WorkingAgentRows({
   onOpen: (pubkey: string, channelId: string) => void;
   profiles?: UserProfileLookup;
 }) {
+  const t = useT();
   const now = useNow(1000);
   const elapsed = formatElapsed(now - activeWorking.anchorAt);
   const alignedAgentNames =
@@ -203,7 +207,7 @@ function WorkingAgentRows({
     const name =
       profile?.displayName?.trim() ||
       alignedAgentNames?.[index] ||
-      `Agent ${truncatePubkey(pubkey)}`;
+      t("sidebar.agentFallback", { short: truncatePubkey(pubkey) });
     return (
       <WorkingAgentRow
         avatarUrl={profile?.avatarUrl ?? null}
@@ -226,6 +230,7 @@ export function ChannelActivityPopover({
   channel: Channel;
   children: React.ReactNode;
 }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const hoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -390,14 +395,14 @@ export function ChannelActivityPopover({
         sideOffset={8}
       >
         <section
-          aria-label="Channel activity"
+          aria-label={t("sidebar.channelActivityAria")}
           className="flex max-h-96 min-h-0 flex-col overflow-hidden"
         >
           <h3
             className="relative z-20 shrink-0 border-b border-border/70 bg-background/95 px-3 py-2 text-sm font-semibold text-foreground backdrop-blur-md supports-[backdrop-filter]:bg-background/90"
             data-testid="channel-activity-header"
           >
-            Channel activity
+            {t("sidebar.channelActivity")}
           </h3>
           <div
             className="buzz-channel-activity-scrollbar min-h-0 overflow-y-auto overscroll-contain"

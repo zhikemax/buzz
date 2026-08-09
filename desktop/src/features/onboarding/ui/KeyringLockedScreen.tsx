@@ -6,20 +6,22 @@ import { useSystemColorScheme } from "@/shared/theme/useSystemColorScheme";
 import { Button } from "@/shared/ui/button";
 import { StartupWindowDragRegion } from "@/shared/ui/StartupWindowDragRegion";
 import { NostrKeyImportForm } from "./NostrKeyImportForm";
+import { useT } from "@/shared/i18n";
 
 export function KeyringLockedScreen() {
+  const t = useT();
   const queryClient = useQueryClient();
   const systemColorScheme = useSystemColorScheme();
   const [showImport, setShowImport] = React.useState(false);
 
   const handleReimportClick = React.useCallback(() => {
     const confirmed = window.confirm(
-      "Importing a different nsec replaces the identity currently locked in the keyring for this install. The previous identity will no longer be accessible. Continue?",
+      t("onboard.confirmReplaceLocked"),
     );
     if (confirmed) {
       setShowImport(true);
     }
-  }, []);
+  }, [t]);
 
   const handleImport = React.useCallback(
     async (nsec: string, password?: string) => {
@@ -41,17 +43,15 @@ export function KeyringLockedScreen() {
       <StartupWindowDragRegion />
       <div className="relative flex w-full max-w-[500px] flex-col items-center text-center">
         <h1 className="text-3xl font-semibold tracking-tight">
-          Unlock your system keyring
+          {t("onboard.unlockKeyringTitle")}
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Your identity is safe in the OS keyring, but it's unreachable this
-          session. Unlock your keyring or sign into your desktop session, then
-          relaunch Buzz.
+          {t("onboard.unlockKeyringBody")}
         </p>
 
         {showImport ? (
           <NostrKeyImportForm
-            backLabel="Cancel"
+            backLabel={t("common.cancel")}
             onBack={() => setShowImport(false)}
             onImport={handleImport}
           />
@@ -65,7 +65,7 @@ export function KeyringLockedScreen() {
               }}
               type="button"
             >
-              Relaunch Buzz
+              {t("onboard.relaunchBuzz")}
             </Button>
             <Button
               className="h-10 w-full"
@@ -73,7 +73,7 @@ export function KeyringLockedScreen() {
               type="button"
               variant="secondary"
             >
-              Re-import your key instead
+              {t("onboard.reimportInstead")}
             </Button>
           </div>
         )}

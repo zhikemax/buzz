@@ -256,26 +256,26 @@ describe("entryStatusLabel", () => {
           authStatus: { status: "config_invalid", diagnostic: "boom" },
         }),
       ),
-      "Config error",
+      "settings.agents.status.configError",
     );
   });
 
   it("maps availability states", () => {
     assert.equal(
       entryStatusLabel(entry({ availability: "adapter_missing" })),
-      "Adapter needed",
+      "settings.agents.status.adapterNeeded",
     );
     assert.equal(
       entryStatusLabel(entry({ availability: "adapter_outdated" })),
-      "Update needed",
+      "settings.agents.status.updateNeeded",
     );
     assert.equal(
       entryStatusLabel(entry({ availability: "cli_missing" })),
-      "CLI needed",
+      "settings.agents.status.cliNeeded",
     );
     assert.equal(
       entryStatusLabel(entry({ availability: "not_installed" })),
-      "CLI needed",
+      "settings.agents.status.cliNeeded",
     );
   });
 
@@ -287,7 +287,7 @@ describe("entryStatusLabel", () => {
           authStatus: { status: "logged_out" },
         }),
       ),
-      "Sign-in needed",
+      "settings.agents.status.signInNeeded",
     );
   });
 
@@ -311,8 +311,7 @@ describe("adapterUpdateWarning", () => {
     const copy = adapterUpdateWarning(
       entry({ id: "codex", label: "Codex", command: "codex-acp" }),
     );
-    assert.match(copy, /codex-acp/);
-    assert.match(copy, /@zed-industries\/codex-acp@0\.16\.0/);
+    assert.equal(copy.key, "settings.agents.adapterUpdate.codex");
   });
 
   it("never leaks codex package copy into other runtimes", () => {
@@ -323,17 +322,17 @@ describe("adapterUpdateWarning", () => {
         command: "claude-agent-acp",
       }),
     );
-    assert.match(copy, /claude-agent-acp/);
-    assert.doesNotMatch(copy, /codex/i);
-    assert.doesNotMatch(copy, /zed-industries/);
+    assert.equal(copy.key, "settings.agents.adapterUpdate.generic");
+    assert.equal(copy.params?.adapter, "claude-agent-acp");
+    assert.doesNotMatch(String(copy.params?.adapter ?? ""), /codex/i);
   });
 
   it("falls back to the label when the command is missing", () => {
     const copy = adapterUpdateWarning(
       entry({ id: "mystery", label: "Mystery Harness", command: null }),
     );
-    assert.match(copy, /Mystery Harness/);
-    assert.doesNotMatch(copy, /codex/i);
+    assert.equal(copy.key, "settings.agents.adapterUpdate.generic");
+    assert.equal(copy.params?.adapter, "Mystery Harness");
   });
 });
 
@@ -350,7 +349,7 @@ describe("catalogPrimaryAction", () => {
   it("install for one-click installable", () => {
     assert.deepEqual(catalogPrimaryAction(entry({ canAutoInstall: true })), {
       kind: "install",
-      label: "Install",
+      labelKey: "settings.agents.install",
     });
   });
 
@@ -359,7 +358,7 @@ describe("catalogPrimaryAction", () => {
       catalogPrimaryAction(
         entry({ availability: "adapter_outdated", canAutoInstall: true }),
       ),
-      { kind: "install", label: "Update" },
+      { kind: "install", labelKey: "settings.agents.update" },
     );
   });
 
@@ -368,7 +367,7 @@ describe("catalogPrimaryAction", () => {
       catalogPrimaryAction(
         entry({ installInstructionsUrl: "https://example.com" }),
       ),
-      { kind: "docs", label: "Setup guide" },
+      { kind: "docs", labelKey: "settings.agents.setupGuide" },
     );
   });
 
@@ -377,7 +376,7 @@ describe("catalogPrimaryAction", () => {
       catalogPrimaryAction(
         entry({ installInstructionsUrl: "https://cursor.com/downloads" }),
       ),
-      { kind: "docs", label: "Download page" },
+      { kind: "docs", labelKey: "settings.agents.downloadPage" },
     );
   });
 
@@ -390,7 +389,7 @@ describe("catalogPrimaryAction", () => {
           installInstructionsUrl: "https://example.com",
         }),
       ),
-      { kind: "docs", label: "Setup guide" },
+      { kind: "docs", labelKey: "settings.agents.setupGuide" },
     );
   });
 

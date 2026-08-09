@@ -1,243 +1,256 @@
+import type { MessageKey } from "@/shared/i18n";
 import { isMacPlatform } from "@/shared/lib/platform";
 
-export type ShortcutCategory =
-  | "Navigation"
-  | "Messages"
-  | "Formatting"
-  | "Zoom";
+export type ShortcutCategoryId =
+  | "navigation"
+  | "messages"
+  | "formatting"
+  | "zoom";
 
 export type KeyboardShortcut = {
   id: string;
-  label: string;
-  description: string;
+  labelKey: MessageKey;
+  descriptionKey: MessageKey;
   keys: string;
   keysWindows: string;
-  category: ShortcutCategory;
+  category: ShortcutCategoryId;
 };
+
+const CATEGORY_LABEL_KEYS: Record<ShortcutCategoryId, MessageKey> = {
+  navigation: "settings.shortcuts.category.navigation",
+  messages: "settings.shortcuts.category.messages",
+  formatting: "settings.shortcuts.category.formatting",
+  zoom: "settings.shortcuts.category.zoom",
+};
+
+export function shortcutCategoryLabelKey(
+  category: ShortcutCategoryId,
+): MessageKey {
+  return CATEGORY_LABEL_KEYS[category];
+}
 
 export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // Navigation
   {
     id: "quick-search",
-    label: "Quick search",
-    description: "Open the search dialog",
+    labelKey: "settings.shortcuts.quickSearch.label",
+    descriptionKey: "settings.shortcuts.quickSearch.description",
     keys: "⌘K",
     keysWindows: "Ctrl+K",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "browse-channels",
-    label: "Browse channels",
-    description: "Open the channel browser",
+    labelKey: "settings.shortcuts.browseChannels.label",
+    descriptionKey: "settings.shortcuts.browseChannels.description",
     keys: "⇧⌘O",
     keysWindows: "Shift+Ctrl+O",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "browse-dms",
-    label: "New direct message",
-    description: "Open the new message composer",
+    labelKey: "settings.shortcuts.browseDms.label",
+    descriptionKey: "settings.shortcuts.browseDms.description",
     keys: "⇧⌘K",
     keysWindows: "Shift+Ctrl+K",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "new-channel",
-    label: "New channel",
-    description: "Open the create channel dialog",
+    labelKey: "settings.shortcuts.newChannel.label",
+    descriptionKey: "settings.shortcuts.newChannel.description",
     keys: "⇧⌘N",
     keysWindows: "Shift+Ctrl+N",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "open-settings",
-    label: "Settings",
-    description: "Open or close settings",
+    labelKey: "settings.shortcuts.openSettings.label",
+    descriptionKey: "settings.shortcuts.openSettings.description",
     keys: "⌘,",
     keysWindows: "Ctrl+,",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "go-back",
-    label: "Go back",
-    description: "Navigate to the previous page",
+    labelKey: "settings.shortcuts.goBack.label",
+    descriptionKey: "settings.shortcuts.goBack.description",
     keys: "⌘[",
     keysWindows: "Alt+←",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "go-forward",
-    label: "Go forward",
-    description: "Navigate to the next page",
+    labelKey: "settings.shortcuts.goForward.label",
+    descriptionKey: "settings.shortcuts.goForward.description",
     keys: "⌘]",
     keysWindows: "Alt+→",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "find-in-channel",
-    label: "Find in channel",
-    description: "Search messages in current channel",
+    labelKey: "settings.shortcuts.findInChannel.label",
+    descriptionKey: "settings.shortcuts.findInChannel.description",
     keys: "⌘F",
     keysWindows: "Ctrl+F",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "go-home",
-    label: "Home",
-    description: "Navigate to the home feed",
+    labelKey: "settings.shortcuts.goHome.label",
+    descriptionKey: "settings.shortcuts.goHome.description",
     keys: "⇧⌘A",
     keysWindows: "Shift+Ctrl+A",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "toggle-sidebar",
-    label: "Toggle sidebar",
-    description: "Show or hide the sidebar",
+    labelKey: "settings.shortcuts.toggleSidebar.label",
+    descriptionKey: "settings.shortcuts.toggleSidebar.description",
     keys: "⌘S",
     keysWindows: "Ctrl+S",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "mark-current-read",
-    label: "Mark as read",
-    description: "Mark the current conversation as read",
+    labelKey: "settings.shortcuts.markCurrentRead.label",
+    descriptionKey: "settings.shortcuts.markCurrentRead.description",
     keys: "Escape",
     keysWindows: "Escape",
-    category: "Navigation",
+    category: "navigation",
   },
   {
     id: "mark-all-read",
-    label: "Mark all as read",
-    description: "Mark all conversations as read",
+    labelKey: "settings.shortcuts.markAllRead.label",
+    descriptionKey: "settings.shortcuts.markAllRead.description",
     keys: "⇧Escape",
     keysWindows: "Shift+Escape",
-    category: "Navigation",
+    category: "navigation",
   },
 
   // Zoom
   {
     id: "zoom-in",
-    label: "Zoom in",
-    description: "Increase the zoom level",
+    labelKey: "settings.shortcuts.zoomIn.label",
+    descriptionKey: "settings.shortcuts.zoomIn.description",
     keys: "⌘+",
     keysWindows: "Ctrl+=",
-    category: "Zoom",
+    category: "zoom",
   },
   {
     id: "zoom-out",
-    label: "Zoom out",
-    description: "Decrease the zoom level",
+    labelKey: "settings.shortcuts.zoomOut.label",
+    descriptionKey: "settings.shortcuts.zoomOut.description",
     keys: "⌘-",
     keysWindows: "Ctrl+-",
-    category: "Zoom",
+    category: "zoom",
   },
   {
     id: "zoom-reset",
-    label: "Reset zoom",
-    description: "Reset zoom to default level",
+    labelKey: "settings.shortcuts.zoomReset.label",
+    descriptionKey: "settings.shortcuts.zoomReset.description",
     keys: "⌘0",
     keysWindows: "Ctrl+0",
-    category: "Zoom",
+    category: "zoom",
   },
 
   // Messages
   {
     id: "send-message",
-    label: "Send message",
-    description: "Send the current message",
+    labelKey: "settings.shortcuts.sendMessage.label",
+    descriptionKey: "settings.shortcuts.sendMessage.description",
     keys: "Enter",
     keysWindows: "Enter",
-    category: "Messages",
+    category: "messages",
   },
   {
     id: "new-line",
-    label: "New line",
-    description: "Insert a line break in the composer",
+    labelKey: "settings.shortcuts.newLine.label",
+    descriptionKey: "settings.shortcuts.newLine.description",
     keys: "Shift+Enter",
     keysWindows: "Shift+Enter",
-    category: "Messages",
+    category: "messages",
   },
   {
     id: "publish-note",
-    label: "Publish note",
-    description: "Publish a Pulse note",
+    labelKey: "settings.shortcuts.publishNote.label",
+    descriptionKey: "settings.shortcuts.publishNote.description",
     keys: "⌘Enter",
     keysWindows: "Ctrl+Enter",
-    category: "Messages",
+    category: "messages",
   },
   {
     id: "close-dialog",
-    label: "Close dialog",
-    description: "Close the current dialog or settings",
+    labelKey: "settings.shortcuts.closeDialog.label",
+    descriptionKey: "settings.shortcuts.closeDialog.description",
     keys: "Escape",
     keysWindows: "Escape",
-    category: "Messages",
+    category: "messages",
   },
   {
     id: "push-to-talk",
-    label: "Push to talk",
-    description: "Hold to unmute in a huddle",
+    labelKey: "settings.shortcuts.pushToTalk.label",
+    descriptionKey: "settings.shortcuts.pushToTalk.description",
     keys: "Ctrl+Space",
     keysWindows: "Ctrl+Space",
-    category: "Messages",
+    category: "messages",
   },
 
   // Formatting
   {
     id: "format-bold",
-    label: "Bold",
-    description: "Toggle bold formatting",
+    labelKey: "settings.shortcuts.formatBold.label",
+    descriptionKey: "settings.shortcuts.formatBold.description",
     keys: "⌘B",
     keysWindows: "Ctrl+B",
-    category: "Formatting",
+    category: "formatting",
   },
   {
     id: "format-italic",
-    label: "Italic",
-    description: "Toggle italic formatting",
+    labelKey: "settings.shortcuts.formatItalic.label",
+    descriptionKey: "settings.shortcuts.formatItalic.description",
     keys: "⌘I",
     keysWindows: "Ctrl+I",
-    category: "Formatting",
+    category: "formatting",
   },
   {
     id: "format-strikethrough",
-    label: "Strikethrough",
-    description: "Toggle strikethrough formatting",
+    labelKey: "settings.shortcuts.formatStrikethrough.label",
+    descriptionKey: "settings.shortcuts.formatStrikethrough.description",
     keys: "⌘⇧X",
     keysWindows: "Ctrl+Shift+X",
-    category: "Formatting",
+    category: "formatting",
   },
   {
     id: "format-code",
-    label: "Inline code",
-    description: "Toggle inline code formatting",
+    labelKey: "settings.shortcuts.formatCode.label",
+    descriptionKey: "settings.shortcuts.formatCode.description",
     keys: "⌘E",
     keysWindows: "Ctrl+E",
-    category: "Formatting",
+    category: "formatting",
   },
   {
     id: "format-link",
-    label: "Insert link",
-    description:
-      "Link the selected composer text, or edit the link under the caret",
+    labelKey: "settings.shortcuts.formatLink.label",
+    descriptionKey: "settings.shortcuts.formatLink.description",
     keys: "⌘K",
     keysWindows: "Ctrl+K",
-    category: "Formatting",
+    category: "formatting",
   },
 ];
 
-const CATEGORY_ORDER: ShortcutCategory[] = [
-  "Navigation",
-  "Messages",
-  "Formatting",
-  "Zoom",
+const CATEGORY_ORDER: ShortcutCategoryId[] = [
+  "navigation",
+  "messages",
+  "formatting",
+  "zoom",
 ];
 
 export function getShortcutsByCategory(): Map<
-  ShortcutCategory,
+  ShortcutCategoryId,
   KeyboardShortcut[]
 > {
-  const map = new Map<ShortcutCategory, KeyboardShortcut[]>();
+  const map = new Map<ShortcutCategoryId, KeyboardShortcut[]>();
   for (const cat of CATEGORY_ORDER) {
     map.set(
       cat,

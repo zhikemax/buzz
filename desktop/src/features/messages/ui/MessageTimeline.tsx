@@ -17,6 +17,7 @@ import { channelChrome } from "@/shared/layout/chromeLayout";
 import { Spinner } from "@/shared/ui/spinner";
 import { TooltipProvider } from "@/shared/ui/tooltip";
 import { UnreadPill, unreadCountLabel } from "@/shared/ui/UnreadPill";
+import { useT } from "@/shared/i18n";
 import { ChannelIntroBlock, type ChannelIntro } from "./ChannelIntroBlock";
 import { TimelineSkeleton, useTimelineSkeletonRows } from "./TimelineSkeleton";
 import { TimelineMessageList } from "./TimelineMessageList";
@@ -165,8 +166,8 @@ const MessageTimelineBase = React.forwardRef<
     isLoading = false,
     entranceMessageId = null,
     onEntranceMessageComplete,
-    emptyTitle = "No messages yet",
-    emptyDescription = "Send the first message to start the thread.",
+    emptyTitle: emptyTitleProp,
+    emptyDescription: emptyDescriptionProp,
     currentPubkey,
     fetchOlder,
     hasComposerOverlay = true,
@@ -211,6 +212,10 @@ const MessageTimelineBase = React.forwardRef<
   }: MessageTimelineProps,
   ref,
 ) {
+  const t = useT();
+  const emptyTitle = emptyTitleProp ?? t("msg.noMessagesYet");
+  const emptyDescription =
+    emptyDescriptionProp ?? t("msg.firstMessageHint");
   const internalScrollRef = React.useRef<HTMLDivElement>(null);
   const scrollContainerRef = externalScrollRef ?? internalScrollRef;
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -695,7 +700,7 @@ const MessageTimelineBase = React.forwardRef<
           >
             <UnreadPill
               direction="up"
-              label={unreadCountLabel(unreadCount)}
+              label={unreadCountLabel(unreadCount, t)}
               onClick={handleJumpToOldestUnread}
               testId="message-unread-pill"
             />
@@ -862,10 +867,10 @@ const MessageTimelineBase = React.forwardRef<
               direction="down"
               label={
                 bufferedTimeline.pendingCount > 0
-                  ? unreadCountLabel(bufferedTimeline.pendingCount)
+                  ? unreadCountLabel(bufferedTimeline.pendingCount, t)
                   : newMessageCount > 0
-                    ? unreadCountLabel(newMessageCount)
-                    : "Jump to latest"
+                    ? unreadCountLabel(newMessageCount, t)
+                    : t("msg.jumpToLatest")
               }
               onClick={() => {
                 setIsSemanticallyAtBottom(true);

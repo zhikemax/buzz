@@ -1,6 +1,7 @@
 import type { ChannelVisibility } from "@/shared/api/types";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
 import { Dialog } from "@/shared/ui/dialog";
+import { useT } from "@/shared/i18n";
 
 import {
   type CreateChannelInput,
@@ -34,6 +35,7 @@ export function CreateChannelDialog({
   onOpenChange,
   onCreate,
 }: CreateChannelDialogProps) {
+  const t = useT();
   const open = channelKind !== null;
 
   const form = useCreateChannelForm({
@@ -44,7 +46,7 @@ export function CreateChannelDialog({
     onCreated: () => onOpenChange(false),
   });
 
-  const kindLabel = channelKind === "forum" ? "forum" : "channel";
+  const isForum = channelKind === "forum";
 
   return (
     <Dialog
@@ -60,11 +62,15 @@ export function CreateChannelDialog({
         data-testid="create-channel-dialog"
         footerClassName="border-t-0 pt-0"
         headerClassName="pb-2"
-        title={`Create a new ${kindLabel}`}
+        title={
+          isForum
+            ? t("channel.createTitleForum")
+            : t("channel.createTitleChannel")
+        }
         description={
-          channelKind === "forum"
-            ? "Forums organize threaded discussions around a topic."
-            : "Channels are real-time streams for team conversation."
+          isForum
+            ? t("channel.createDescriptionForum")
+            : t("channel.createDescriptionChannel")
         }
         footer={<CreateChannelFormFooter form={form} />}
       >

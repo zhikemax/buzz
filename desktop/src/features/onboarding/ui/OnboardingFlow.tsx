@@ -28,6 +28,7 @@ import {
   OnboardingSlideTransition,
 } from "./OnboardingSlideTransition";
 import { ProfileStep } from "./ProfileStep";
+import { useT } from "@/shared/i18n";
 import type {
   OnboardingActions,
   OnboardingPage,
@@ -153,6 +154,7 @@ export function OnboardingFlow({
   identityLost = false,
   initialProfile,
 }: OnboardingFlowProps) {
+  const t = useT();
   const { complete, skipForNow } = actions;
   const { activeCommunity } = useCommunities();
   const queryClient = useQueryClient();
@@ -263,7 +265,7 @@ export function OnboardingFlow({
         if (membershipStatus === "error") {
           setMembershipError({
             kind: "error",
-            message: "Server error — try again",
+            message: t("onboard.serverError"),
           });
           return;
         }
@@ -314,6 +316,7 @@ export function OnboardingFlow({
       savedProfile,
       complete,
       showAvatarPage,
+      t,
     ],
   );
 
@@ -407,7 +410,7 @@ export function OnboardingFlow({
   // RelaunchRequiredScreen. No navigation needed here.
   const handleLostModeBack = React.useCallback(async () => {
     const confirmed = window.confirm(
-      "This will create a new identity and abandon your previous key. This cannot be undone. Continue?",
+      t("onboard.confirmNewIdentity"),
     );
     if (!confirmed) {
       return;
@@ -419,10 +422,10 @@ export function OnboardingFlow({
       setPersistError(
         error instanceof Error
           ? error.message
-          : "Failed to create a new identity. Please try again.",
+          : t("onboard.newIdentityFailed"),
       );
     }
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   if (currentPage === "membership-denied") {
     return (
@@ -470,10 +473,10 @@ export function OnboardingFlow({
                 {membershipError.kind === "unreachable" ? (
                   <>
                     <p className="font-medium text-destructive">
-                      Can't reach this relay
+                      {t("onboard.cantReachRelay")}
                     </p>
                     <p className="mt-1 text-muted-foreground">
-                      Check your connection or change your community.
+                      {t("onboard.checkConnection")}
                     </p>
                     <Button
                       className="mt-3"
@@ -481,16 +484,16 @@ export function OnboardingFlow({
                       size="sm"
                       variant="outline"
                     >
-                      Change community
+                      {t("onboard.changeCommunity")}
                     </Button>
                   </>
                 ) : (
                   <>
                     <p className="font-medium text-destructive">
-                      {membershipError.message ?? "Something went wrong"}
+                      {membershipError.message ?? t("onboard.somethingWrong")}
                     </p>
                     <p className="mt-1 text-muted-foreground">
-                      The relay returned an error. Try again.
+                      {t("onboard.relayError")}
                     </p>
                   </>
                 )}
@@ -529,24 +532,19 @@ export function OnboardingFlow({
                   {identityLost ? (
                     <>
                       <h1 className="text-title font-normal text-foreground">
-                        Re-import your key
+                        {t("onboard.reimportKey")}
                       </h1>
                       <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                        Your identity is no longer in the system keyring.
-                        Re-import your nsec to restore it — Buzz will restart to
-                        finish recovery. Or go back to start a new identity with
-                        a fresh key.
+                        {t("onboard.keyringMissing")}
                       </p>
                     </>
                   ) : (
                     <>
                       <h1 className="text-title font-normal text-foreground">
-                        Use your existing key
+                        {t("onboard.useYourExistingKey")}
                       </h1>
                       <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                        Import your Nostr private key to use that identity with
-                        Buzz. If this key already has a profile on the relay,
-                        your name and avatar are restored automatically.
+                        {t("onboard.existingKeyHint")}
                       </p>
                     </>
                   )}
@@ -559,7 +557,7 @@ export function OnboardingFlow({
                 ) : null}
 
                 <NostrKeyImportForm
-                  backLabel={identityLost ? "Start new identity" : undefined}
+                  backLabel={identityLost ? t("onboard.startNewIdentity") : undefined}
                   onBack={identityLost ? handleLostModeBack : showProfilePage}
                   onImport={importExistingKey}
                 />

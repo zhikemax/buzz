@@ -1,6 +1,7 @@
 import { ChevronDown, ClockFading, Hash } from "lucide-react";
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
@@ -20,7 +21,7 @@ export function ChannelTypePicker({
   onTemporaryChange,
   open,
   temporary,
-  temporaryOptionAriaLabel = "Temporary channel",
+  temporaryOptionAriaLabel,
   testId,
 }: {
   align?: React.ComponentProps<typeof DropdownMenuContent>["align"];
@@ -34,10 +35,13 @@ export function ChannelTypePicker({
   temporaryOptionAriaLabel?: string;
   testId?: string;
 }) {
+  const t = useT();
   const [internalOpen, setInternalOpen] = React.useState(false);
   const pickerOpen = open ?? internalOpen;
   const setPickerOpen = onOpenChange ?? setInternalOpen;
-  const label = temporary ? "Temporary" : "Ongoing";
+  const label = temporary
+    ? t("channel.typeTemporary")
+    : t("channel.typeOngoing");
   const Icon = temporary ? ClockFading : Hash;
 
   function selectType(nextType: string) {
@@ -49,7 +53,7 @@ export function ChannelTypePicker({
     <DropdownMenu modal={false} onOpenChange={setPickerOpen} open={pickerOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          aria-label={ariaLabel ?? `Channel type: ${label}`}
+          aria-label={ariaLabel ?? t("channel.typeAria", { label })}
           className={cn(
             "h-9 w-fit px-2.5 text-sm font-medium text-foreground hover:bg-muted/50",
             className,
@@ -75,14 +79,19 @@ export function ChannelTypePicker({
           onValueChange={selectType}
           value={temporary ? "temporary" : "ongoing"}
         >
-          <DropdownMenuRadioItem aria-label="Ongoing channel" value="ongoing">
-            Ongoing
+          <DropdownMenuRadioItem
+            aria-label={t("channel.typeOngoingAria")}
+            value="ongoing"
+          >
+            {t("channel.typeOngoing")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
-            aria-label={temporaryOptionAriaLabel}
+            aria-label={
+              temporaryOptionAriaLabel ?? t("channel.typeTemporaryAria")
+            }
             value="temporary"
           >
-            Temporary
+            {t("channel.typeTemporary")}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

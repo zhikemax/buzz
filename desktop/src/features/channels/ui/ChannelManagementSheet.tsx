@@ -36,6 +36,7 @@ import {
   formatTtlDuration,
 } from "@/features/channels/lib/ephemeralChannel";
 import type { Channel } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { useTheme } from "@/shared/theme/ThemeProvider";
 import { Button } from "@/shared/ui/button";
@@ -108,6 +109,7 @@ export function ChannelManagementSheet({
   open,
   transparentChrome = false,
 }: ChannelManagementSheetProps) {
+  const t = useT();
   const { isDark } = useTheme();
   const isSplitLayout = layout === "split";
   const auxiliaryPanelMode = getAuxiliaryPanelMode(
@@ -441,8 +443,9 @@ export function ChannelManagementSheet({
             <div className="flex max-h-[85vh] flex-col">
               <DialogHeader className="shrink-0 border-b border-border/60 px-6 py-5 pr-14">
                 <DialogTitle>
-                  Edit {currentVisibility === "private" ? "private" : "public"}{" "}
-                  channel
+                  {currentVisibility === "private"
+                    ? t("channel.editTitlePrivate")
+                    : t("channel.editTitlePublic")}
                 </DialogTitle>
               </DialogHeader>
 
@@ -453,7 +456,7 @@ export function ChannelManagementSheet({
                       className="text-sm font-medium text-foreground"
                       htmlFor="channel-name"
                     >
-                      Name
+                      {t("channel.fieldName")}
                     </label>
                     <div
                       className={cn(
@@ -482,7 +485,7 @@ export function ChannelManagementSheet({
                       className="text-sm font-medium text-foreground"
                       htmlFor="channel-description"
                     >
-                      Description
+                      {t("channel.fieldDescription")}
                     </label>
                     <div className={CHANNEL_FORM_FIELD_SHELL_CLASS}>
                       <Textarea
@@ -549,7 +552,7 @@ export function ChannelManagementSheet({
                   type="button"
                   variant="outline"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   data-testid="channel-management-save-changes"
@@ -558,7 +561,9 @@ export function ChannelManagementSheet({
                   size="sm"
                   type="button"
                 >
-                  {isSavingChannelEdits ? "Saving..." : "Save changes"}
+                  {isSavingChannelEdits
+                    ? t("channel.saving")
+                    : t("channel.saveChanges")}
                 </Button>
               </div>
             </div>
@@ -638,8 +643,20 @@ function ChannelManagementPanelContent({
   setIsEditDialogOpen,
   unarchiveChannelMutation,
 }: ChannelManagementPanelContentProps) {
+  const t = useT();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   useScrollBoundaryLock(scrollRef);
+
+  const channelTypeLabel =
+    resolvedChannel.channelType === "forum"
+      ? t("channel.typeForum")
+      : resolvedChannel.channelType === "dm"
+        ? t("channel.typeDm")
+        : t("channel.typeStream");
+  const visibilityLabel =
+    resolvedChannel.visibility === "private"
+      ? t("channel.visibilityPrivate")
+      : t("channel.visibilityOpen");
 
   const showModerationActions =
     activeView === "summary" &&
@@ -666,7 +683,7 @@ function ChannelManagementPanelContent({
         transparent={transparentChrome}
       >
         <AuxiliaryPanelHeaderGroup
-          backButtonAriaLabel="Back to channel"
+          backButtonAriaLabel={t("channel.backToChannel")}
           backButtonTestId="channel-management-back"
           mode={mode}
           onBack={
@@ -675,12 +692,14 @@ function ChannelManagementPanelContent({
         >
           <DialogPrimitive.Title asChild>
             <AuxiliaryPanelTitle>
-              {activeView === "canvas" ? "Canvas" : "Channel"}
+              {activeView === "canvas"
+                ? t("channel.canvas")
+                : t("channel.panelTitle")}
             </AuxiliaryPanelTitle>
           </DialogPrimitive.Title>
         </AuxiliaryPanelHeaderGroup>
         <DialogPrimitive.Description className="sr-only">
-          Channel settings
+          {t("channel.settings")}
         </DialogPrimitive.Description>
       </AuxiliaryPanelHeader>
 
@@ -712,10 +731,10 @@ function ChannelManagementPanelContent({
             <div className="flex flex-wrap items-start justify-center gap-6">
               <ChannelQuickAction
                 icon={Copy}
-                label="Copy ID"
+                label={t("channel.copyId")}
                 onClick={() => {
                   void writeTextToClipboard(resolvedChannel.id).then(() =>
-                    toast.success("Copied channel ID"),
+                    toast.success(t("channel.copiedChannelId")),
                   );
                 }}
                 testId="channel-management-copy-id-action"
@@ -725,7 +744,11 @@ function ChannelManagementPanelContent({
                   active
                   disabled={joinChannelMutation.isPending}
                   icon={DoorOpen}
-                  label={joinChannelMutation.isPending ? "Joining..." : "Join"}
+                  label={
+                    joinChannelMutation.isPending
+                      ? t("channel.joining")
+                      : t("channel.join")
+                  }
                   onClick={() => {
                     void joinChannelMutation.mutateAsync();
                   }}
@@ -737,7 +760,9 @@ function ChannelManagementPanelContent({
                   disabled={leaveChannelMutation.isPending}
                   icon={DoorClosed}
                   label={
-                    leaveChannelMutation.isPending ? "Leaving..." : "Leave"
+                    leaveChannelMutation.isPending
+                      ? t("channel.leaving")
+                      : t("channel.leave")
                   }
                   onClick={() => {
                     void leaveChannelMutation.mutateAsync().then(() => {
@@ -750,7 +775,7 @@ function ChannelManagementPanelContent({
               {canManageChannel ? (
                 <ChannelQuickAction
                   icon={Pencil}
-                  label="Edit"
+                  label={t("common.edit")}
                   onClick={() => setIsEditDialogOpen(true)}
                   testId="channel-management-edit"
                 />
@@ -775,7 +800,7 @@ function ChannelManagementPanelContent({
                 {resolvedChannel.description.trim() ? (
                   <NarrativeField
                     icon={FileText}
-                    label="Description"
+                    label={t("channel.fieldDescription")}
                     testId="channel-management-description"
                     value={resolvedChannel.description.trim()}
                   />
@@ -783,7 +808,7 @@ function ChannelManagementPanelContent({
                 {resolvedChannel.topic?.trim() ? (
                   <NarrativeField
                     icon={MessageSquare}
-                    label="Topic"
+                    label={t("channel.topic")}
                     testId="channel-management-topic"
                     value={resolvedChannel.topic.trim()}
                   />
@@ -791,7 +816,7 @@ function ChannelManagementPanelContent({
                 {resolvedChannel.purpose?.trim() ? (
                   <NarrativeField
                     icon={Zap}
-                    label="Purpose"
+                    label={t("channel.purpose")}
                     testId="channel-management-purpose"
                     value={resolvedChannel.purpose.trim()}
                   />
@@ -803,56 +828,58 @@ function ChannelManagementPanelContent({
               <IngressRow
                 description={canvasPreview}
                 icon={BookOpenText}
-                label="Canvas"
+                label={t("channel.canvas")}
                 onClick={() => setActiveView("canvas")}
                 testId="channel-canvas-ingress"
-                trailing={canvasQuery.isLoading ? "Loading..." : undefined}
+                trailing={
+                  canvasQuery.isLoading ? t("channel.loading") : undefined
+                }
               />
             ) : null}
 
             <FieldGroup>
               <CopyFieldRow
                 icon={Fingerprint}
-                label="Channel ID"
+                label={t("channel.channelId")}
                 testId="channel-management-channel-id"
                 value={resolvedChannel.id}
               />
               <InfoFieldRow
                 icon={Type}
-                label="Name"
+                label={t("channel.fieldName")}
                 testId="channel-management-name-row"
                 value={resolvedChannel.name}
               />
               <InfoFieldRow
                 icon={Radio}
-                label="Type"
+                label={t("channel.fieldType")}
                 testId="channel-management-type"
-                value={resolvedChannel.channelType}
+                value={channelTypeLabel}
               />
               <InfoFieldRow
                 icon={resolvedChannel.visibility === "private" ? Lock : Eye}
-                label="Visibility"
+                label={t("channel.visibility")}
                 testId="channel-management-visibility"
-                value={resolvedChannel.visibility}
+                value={visibilityLabel}
               />
               <InfoFieldRow
                 icon={Users}
-                label="Members"
+                label={t("channel.members")}
                 testId="channel-management-member-count"
                 value={`${memberCount}`}
               />
               {isArchived ? (
                 <InfoFieldRow
                   icon={Archive}
-                  label="Status"
+                  label={t("channel.status")}
                   testId="channel-management-archived"
-                  value="Archived"
+                  value={t("channel.archived")}
                 />
               ) : null}
               {resolvedChannel.ttlSeconds !== null ? (
                 <InfoFieldRow
                   icon={Archive}
-                  label="Ephemeral"
+                  label={t("channel.ephemeral")}
                   testId="channel-management-ephemeral-row"
                   value={formatTtlDuration(resolvedChannel.ttlSeconds)}
                 />

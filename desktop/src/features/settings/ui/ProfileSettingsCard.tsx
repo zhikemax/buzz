@@ -19,6 +19,7 @@ import {
   parseEmojiAvatarDataUrl,
 } from "@/features/profile/ui/ProfileAvatarEditor";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { Spinner } from "@/shared/ui/spinner";
 import { Textarea } from "@/shared/ui/textarea";
@@ -57,6 +58,7 @@ function IdentityRow({
   testId: string;
   copyValue?: string;
 }) {
+  const t = useT();
   return (
     <div className="flex min-h-16 items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0 space-y-1">
@@ -71,18 +73,18 @@ function IdentityRow({
       </div>
       {copyValue ? (
         <button
-          aria-label={`Copy ${label}`}
+          aria-label={t("profile.copyLabel", { label })}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           data-testid={`copy-${testId}`}
           onClick={async () => {
             await writeTextToClipboard(copyValue);
-            toast.success("Copied to clipboard");
+            toast.success(t("profile.copiedClipboard"));
           }}
-          title={`Copy ${label}`}
+          title={t("profile.copyLabel", { label })}
           type="button"
         >
           <Copy className="h-4 w-4 shrink-0" />
-          Copy
+          {t("profile.copy")}
         </button>
       ) : null}
     </div>
@@ -102,9 +104,12 @@ function EditProfileMetadataButton({
   disabled: boolean;
   isEditing: boolean;
 }) {
+  const t = useT();
   const Icon = isEditing ? Check : Pencil;
-  const actionLabel = isEditing ? "Done" : "Edit";
-  const accessibleLabel = isEditing ? `Done editing ${label}` : `Edit ${label}`;
+  const actionLabel = isEditing ? t("common.done") : t("profile.edit");
+  const accessibleLabel = isEditing
+    ? t("profile.doneEditing", { label })
+    : t("profile.editField", { label });
 
   return (
     <button
@@ -131,6 +136,7 @@ export function ProfileSettingsCard({
   currentPubkey,
   fallbackDisplayName,
 }: ProfileSettingsCardProps) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const profileQuery = useProfileQuery();
   const updateProfileMutation = useUpdateProfileMutation();
@@ -297,9 +303,9 @@ export function ProfileSettingsCard({
     nextDisplayName ||
     profile?.displayName ||
     fallbackDisplayName ||
-    "Your profile";
-  const resolvedPubkey = profile?.pubkey ?? currentPubkey ?? "Unavailable";
-  const nip05Handle = profile?.nip05Handle ?? "Not set";
+    t("profile.yourProfile");
+  const resolvedPubkey = profile?.pubkey ?? currentPubkey ?? t("profile.unavailable");
+  const nip05Handle = profile?.nip05Handle ?? t("profile.notSet");
   const emojiAvatarPreview = React.useMemo(
     () => parseEmojiAvatarDataUrl(avatarUrlDraft),
     [avatarUrlDraft],
@@ -398,13 +404,14 @@ export function ProfileSettingsCard({
     setDisplayNameDraft(updatePayload.displayName ?? currentDisplayName);
     setAvatarUrlDraft(updatePayload.avatarUrl ?? currentAvatarUrl);
     setAboutDraft(updatePayload.about ?? currentAbout);
-    toast.success("Profile saved");
+    toast.success(t("profile.saved"));
     return true;
   }, [
     canSave,
     currentAbout,
     currentAvatarUrl,
     currentDisplayName,
+    t,
     updatePayload,
     updateProfileMutation,
   ]);
@@ -481,8 +488,8 @@ export function ProfileSettingsCard({
     >
       <div>
         <SettingsSectionHeader
-          title="Profile"
-          description="Update how your name, avatar, and bio appear across Buzz."
+          title={t("settings.section.profile")}
+          description={t("profile.cardDescription")}
         />
 
         <div className="space-y-3">
@@ -557,8 +564,8 @@ export function ProfileSettingsCard({
                                 aria-expanded={isAvatarEditorOpen}
                                 aria-label={
                                   isAvatarEditorSaving
-                                    ? "Saving profile photo"
-                                    : "Edit profile photo"
+                                    ? t("profile.savingPhoto")
+                                    : t("profile.editPhoto")
                                 }
                                 className={avatarEditButtonClassName}
                                 data-testid="profile-avatar-edit"
@@ -566,14 +573,14 @@ export function ProfileSettingsCard({
                                 onClick={openAvatarEditor}
                                 title={
                                   isAvatarEditorSaving
-                                    ? "Saving profile photo"
-                                    : "Edit profile photo"
+                                    ? t("profile.savingPhoto")
+                                    : t("profile.editPhoto")
                                 }
                                 type="button"
                               >
                                 {isAvatarEditorSaving && !isAvatarEditorOpen ? (
                                   <Spinner
-                                    aria-label="Saving avatar"
+                                    aria-label={t("avatar.savingAvatar")}
                                     className="h-4 w-4 border-2"
                                   />
                                 ) : (
@@ -675,12 +682,12 @@ export function ProfileSettingsCard({
                         >
                           <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
                             <h2 className="text-lg font-semibold tracking-tight">
-                              Profile info
+                              {t("profile.info")}
                             </h2>
                             <EditProfileMetadataButton
                               disabled={updateProfileMutation.isPending}
                               isEditing={isEditingProfileMetadata}
-                              label="profile info"
+                              label={t("profile.infoLabel")}
                               onClick={handleProfileMetadataEdit}
                               testId="profile-metadata-edit"
                             />
@@ -692,7 +699,7 @@ export function ProfileSettingsCard({
                                 className="block text-sm font-medium"
                                 htmlFor="profile-display-name"
                               >
-                                Display name
+                                {t("profile.displayName")}
                               </label>
                               {isEditingProfileMetadata ? (
                                 <Input
@@ -703,7 +710,7 @@ export function ProfileSettingsCard({
                                   onChange={(event) =>
                                     setDisplayNameDraft(event.target.value)
                                   }
-                                  placeholder="Display name"
+                                  placeholder={t("profile.displayName")}
                                   ref={displayNameInputRef}
                                   value={displayNameDraft}
                                 />
@@ -711,9 +718,9 @@ export function ProfileSettingsCard({
                                 <p
                                   className="min-w-0 truncate text-sm text-muted-foreground"
                                   data-testid="profile-display-name-value"
-                                  title={displayNameDraft || "Not set"}
+                                  title={displayNameDraft || t("profile.notSet")}
                                 >
-                                  {displayNameDraft || "Not set"}
+                                  {displayNameDraft || t("profile.notSet")}
                                 </p>
                               )}
                             </div>
@@ -725,7 +732,7 @@ export function ProfileSettingsCard({
                                 className="block text-sm font-medium"
                                 htmlFor="profile-about"
                               >
-                                Profile description
+                                {t("profile.description")}
                               </label>
                               {isEditingProfileMetadata ? (
                                 <Textarea
@@ -736,7 +743,7 @@ export function ProfileSettingsCard({
                                   onChange={(event) =>
                                     setAboutDraft(event.target.value)
                                   }
-                                  placeholder="Profile description"
+                                  placeholder={t("profile.description")}
                                   ref={aboutTextareaRef}
                                   value={aboutDraft}
                                 />
@@ -749,9 +756,9 @@ export function ProfileSettingsCard({
                                       : "text-muted-foreground/55",
                                   )}
                                   data-testid="profile-about-value"
-                                  title={aboutDraft || "Not set"}
+                                  title={aboutDraft || t("profile.notSet")}
                                 >
-                                  {aboutDraft || "Not set"}
+                                  {aboutDraft || t("profile.notSet")}
                                 </p>
                               )}
                             </div>
@@ -769,11 +776,10 @@ export function ProfileSettingsCard({
                             >
                               <div className="min-w-0">
                                 <h2 className="text-lg font-semibold tracking-tight">
-                                  Identity
+                                  {t("profile.identity")}
                                 </h2>
                                 <p className="mt-1 text-sm font-normal text-muted-foreground">
-                                  Your keypair and NIP-05 handle are fixed for
-                                  this device.
+                                  {t("profile.identityHint")}
                                 </p>
                               </div>
                               <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-[color,transform] duration-150 ease-out group-open:rotate-180 group-hover/identity:text-foreground group-focus-visible/identity:text-foreground" />
@@ -786,13 +792,13 @@ export function ProfileSettingsCard({
                                 copyValue={
                                   profile?.pubkey ?? currentPubkey ?? undefined
                                 }
-                                label="Public key"
+                                label={t("profile.publicKey")}
                                 testId="profile-pubkey"
                                 value={resolvedPubkey}
                               />
                               <IdentityRow
                                 copyValue={profile?.nip05Handle ?? undefined}
-                                label="NIP-05 handle"
+                                label={t("profile.nip05Handle")}
                                 testId="profile-nip05"
                                 value={nip05Handle}
                               />
@@ -846,8 +852,7 @@ export function ProfileSettingsCard({
                 <div className="mx-auto w-full max-w-[576px] space-y-2">
                   {hasPendingClearRequest ? (
                     <p className="text-sm text-muted-foreground">
-                      Clearing existing profile fields is not supported yet.
-                      Blank display name and avatar values are ignored for now.
+                      {t("profile.clearFieldsUnsupported")}
                     </p>
                   ) : null}
                 </div>

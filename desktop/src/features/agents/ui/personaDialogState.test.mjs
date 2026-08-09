@@ -10,6 +10,26 @@ import {
   parsePersonaNamePoolText,
 } from "./personaDialogState.ts";
 
+const en = {
+  "agents.createTitle": "Create agent",
+  "agents.createHint": "Create an agent and start it immediately.",
+  "agents.createAgent": "Create agent",
+  "agents.duplicateName": "Duplicate {name}",
+  "agents.duplicateHint": "Create a new agent by copying this one.",
+  "agents.editTitle": "Edit agent",
+  "agents.saveChanges": "Save changes",
+};
+
+const t = (key, params) => {
+  let result = en[key] ?? key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      result = result.replaceAll(`{${k}}`, String(v));
+    }
+  }
+  return result;
+};
+
 test("canSubmitPersonaDialog requires a display name but not a system prompt", () => {
   // Empty system prompt is allowed: core memory is auto-injected, so the
   // persona prompt is optional. Only the display name gates submission.
@@ -56,8 +76,8 @@ test("persona name pool helpers parse, format, and clear values", () => {
 });
 
 test("createPersonaDialogState returns a fresh empty draft", () => {
-  const first = createPersonaDialogState();
-  const second = createPersonaDialogState();
+  const first = createPersonaDialogState(t);
+  const second = createPersonaDialogState(t);
 
   assert.equal(first.title, "Create agent");
   assert.deepEqual(first.initialValues, {
@@ -83,7 +103,7 @@ test("duplicatePersonaDialogState copies persona fields into a new draft", () =>
     isActive: true,
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.deepEqual(state.initialValues, {
     displayName: "Solo copy",
@@ -114,7 +134,7 @@ test("duplicatePersonaDialogState carries envVars and namePool into the duplicat
     envVars: { ANTHROPIC_API_KEY: "sk-test", GOOSE_PROVIDER: "anthropic" },
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.deepEqual(state.initialValues.envVars, {
     ANTHROPIC_API_KEY: "sk-test",
@@ -136,7 +156,7 @@ test("editPersonaDialogState preserves the persona id for updates", () => {
     isActive: true,
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.equal(state.title, "Edit agent");
   assert.equal(state.description, "");
@@ -168,7 +188,7 @@ test("editPersonaDialogState seeds envVars and namePool from the persona", () =>
     envVars: { ANTHROPIC_API_KEY: "sk-test" },
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.deepEqual(state.initialValues.envVars, {
     ANTHROPIC_API_KEY: "sk-test",
@@ -191,7 +211,7 @@ test("editPersonaDialogState preserves provider=databricks", () => {
     envVars: {},
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.equal(state.initialValues.provider, "databricks");
 });
@@ -211,7 +231,7 @@ test("editPersonaDialogState maps provider=null to undefined", () => {
     envVars: {},
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.equal(state.initialValues.provider, undefined);
 });
@@ -231,7 +251,7 @@ test("duplicatePersonaDialogState preserves provider=databricks", () => {
     envVars: {},
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.equal(state.initialValues.provider, "databricks");
 });
@@ -260,11 +280,11 @@ test("edit and duplicate seed the behavior group from a quad-bearing persona", (
     parallelism: 4,
   };
   assert.deepEqual(
-    editPersonaDialogState(persona).initialValues.behavior,
+    editPersonaDialogState(persona, t).initialValues.behavior,
     expected,
   );
   assert.deepEqual(
-    duplicatePersonaDialogState(persona).initialValues.behavior,
+    duplicatePersonaDialogState(persona, t).initialValues.behavior,
     expected,
   );
 });
@@ -285,7 +305,7 @@ test("a non-allowlist mode does not seed a stale allowlist into the dialog", () 
     parallelism: null,
     createdAt: "2025-01-01T00:00:00Z",
     updatedAt: "2025-01-02T00:00:00Z",
-  });
+  }, t);
 
   assert.equal(state.initialValues.behavior.respondTo, "owner-only");
   assert.equal(

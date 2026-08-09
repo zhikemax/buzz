@@ -69,6 +69,7 @@ import { useThreadPanelWidth } from "@/shared/hooks/useThreadPanelWidth";
 import { AUXILIARY_PANEL_SINGLE_COLUMN_BREAKPOINT_PX } from "@/shared/layout/AuxiliaryPanel";
 import { useHistorySearchState } from "@/shared/hooks/useHistorySearchState";
 import { ProfilePanelProvider } from "@/shared/context/ProfilePanelContext";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 
 const INBOX_SEARCH_KEYS = [
@@ -101,6 +102,7 @@ export function HomeView({
   onOpenContext,
   onRefresh,
 }: HomeViewProps) {
+  const t = useT();
   const relaySelfPubkey = useRelaySelfQuery().data;
   const [homeInboxRef, homeInboxWidthPx] = useElementWidth<HTMLDivElement>();
   const isNarrowHomeViewport =
@@ -552,14 +554,14 @@ export function HomeView({
         <div className="flex w-full max-w-3xl flex-col gap-4">
           <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-5">
             <p className="text-base font-semibold tracking-tight">
-              Home feed unavailable
+              {t("inbox.feedUnavailable")}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {errorMessage ?? "The relay did not return a feed response."}
+              {errorMessage ?? t("inbox.feedError")}
             </p>
             <Button className="mt-5" onClick={onRefresh} type="button">
               <RefreshCcw className="h-4 w-4" />
-              Try again
+              {t("inbox.tryAgain")}
             </Button>
           </div>
         </div>
@@ -572,6 +574,7 @@ export function HomeView({
       selectedItem,
       currentPubkey,
       availableChannelIds,
+      t,
     );
   const detailMode = isDrafts
     ? "drafts"
@@ -714,7 +717,7 @@ export function HomeView({
           ) : null}
 
           <button
-            aria-label="Resize inbox list"
+            aria-label={t("inbox.resizeAria")}
             className={cn(
               "group absolute bottom-0 z-40 w-3 -translate-x-1/2 cursor-col-resize",
               topChromeInset.top,
@@ -728,8 +731,8 @@ export function HomeView({
             style={{ left: `${effectiveInboxListWidthPx}px` }}
             title={
               canResetInboxListWidth
-                ? "Drag to resize. Double-click to reset width."
-                : "Drag to resize."
+                ? t("inbox.resizeHintReset")
+                : t("inbox.resizeHint")
             }
             type="button"
           >
@@ -798,7 +801,7 @@ export function HomeView({
               }) => {
                 const channelId = selectedItem?.item.channelId;
                 if (!selectedItem || !channelId || !canReply) {
-                  throw new Error("Replies are not available for this item.");
+                  throw new Error(t("inbox.detail.repliesUnavailable"));
                 }
 
                 const itemToReply = selectedItem;
@@ -827,7 +830,7 @@ export function HomeView({
                           profiles: feedProfiles,
                           pubkey: authorPubkey,
                         })
-                      : "You",
+                      : t("inbox.you"),
                     authorPubkey,
                     avatarUrl:
                       currentPubkey && feedProfiles

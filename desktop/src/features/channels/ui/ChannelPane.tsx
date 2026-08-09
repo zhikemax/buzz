@@ -55,6 +55,7 @@ import type { ChannelPaneProps } from "@/features/channels/ui/ChannelPane.types"
 import * as agentSessionSelection from "@/features/channels/ui/agentSessionSelection";
 import { usePrepareDmSendChannel } from "@/features/channels/ui/usePrepareDmSendChannel";
 import { useChannelPaneMessages } from "@/features/channels/ui/useChannelPaneMessages";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { useRenderScopedReactionHydration } from "@/features/messages/lib/useRenderScopedReactionHydration";
 import type { TimelineMessage } from "@/features/messages/types";
@@ -166,6 +167,7 @@ export const ChannelPane = React.memo(function ChannelPane({
   threadFirstUnreadReplyId,
   typingPubkeys,
 }: ChannelPaneProps) {
+  const t = useT();
   const timelineScrollRef = React.useRef<HTMLDivElement>(null);
   const messageTimelineRef = React.useRef<MessageTimelineHandle>(null);
   const composerWrapperRef = React.useRef<HTMLDivElement>(null);
@@ -658,15 +660,15 @@ export const ChannelPane = React.memo(function ChannelPane({
             unfollowThreadById={unfollowThreadById}
             emptyDescription={
               activeChannel?.channelType === "forum"
-                ? "Select a stream or DM to load real message history in this first integration pass."
-                : "Messages and sub-replies will appear here once the relay has history for this channel."
+                ? t("channel.emptySelectHint")
+                : t("channel.emptyHistoryHint")
             }
             emptyTitle={
               activeChannel
                 ? activeChannel.channelType === "forum"
-                  ? "Forum channels are next"
-                  : "No messages yet"
-                : "No channel selected"
+                  ? t("channel.emptyForumNext")
+                  : t("channel.emptyNoMessages")
+                : t("channel.emptyNoSelected")
             }
             isLoading={isHuddleTranscript ? false : isTimelineLoading}
             entranceMessageId={entranceMessageId}
@@ -709,7 +711,7 @@ export const ChannelPane = React.memo(function ChannelPane({
               <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-muted-foreground">
                 <Hash className="h-4 w-4 shrink-0" />
                 <span className="truncate">
-                  Viewing{" "}
+                  {t("channel.viewing")}{" "}
                   <span className="font-medium text-foreground">
                     #{activeChannel?.name}
                   </span>
@@ -724,7 +726,7 @@ export const ChannelPane = React.memo(function ChannelPane({
                 variant="default"
               >
                 <LogIn className="mr-1.5 h-4 w-4" />
-                {isJoining ? "Joining..." : "Join to participate"}
+                {isJoining ? t("channel.joining") : t("channel.joinToParticipate")}
               </Button>
             </div>
           ) : (
@@ -777,19 +779,23 @@ export const ChannelPane = React.memo(function ChannelPane({
                   profiles={profiles}
                   placeholder={
                     timeoutState.active
-                      ? "You're timed out by community moderators."
+                      ? t("channel.timedOut")
                       : isModerationDmChannel
-                        ? "This channel is read-only."
+                        ? t("channel.readOnly")
                         : activeChannel?.archivedAt
-                          ? "Archived channels are read-only."
+                          ? t("channel.archivedReadOnly")
                           : activeChannel?.channelType === "forum"
-                            ? "Forum posting is not wired in this pass."
+                            ? t("channel.forumNotWired")
                             : activeChannel
                               ? activeChannel.channelType === "dm" &&
                                 directMessageIntro
-                                ? `Message ${directMessageIntro.displayName}`
-                                : `Message #${activeChannel.name}`
-                              : "Select a channel"
+                                ? t("composer.messageUser", {
+                                    name: directMessageIntro.displayName,
+                                  })
+                                : t("composer.messageChannel", {
+                                    channel: activeChannel.name,
+                                  })
+                              : t("composer.selectChannel")
                   }
                   showTopBorder={false}
                 />

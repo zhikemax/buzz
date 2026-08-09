@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
@@ -55,6 +56,7 @@ export function AvatarCustomColorPanel({
   testIdPrefix,
   className,
 }: AvatarCustomColorPanelProps) {
+  const t = useT();
   const hueDragUserSelectRef = React.useRef<string | null>(null);
 
   const unlockHueDragSelection = React.useCallback(() => {
@@ -224,7 +226,7 @@ export function AvatarCustomColorPanel({
       </div>
 
       <div
-        aria-label="Choose custom avatar color hue"
+        aria-label={t("avatar.chooseCustomHue")}
         aria-valuemax={360}
         aria-valuemin={0}
         aria-valuenow={hue}
@@ -282,7 +284,7 @@ export function AvatarCustomColorPanel({
         tabIndex={visible ? 0 : -1}
         type="button"
       >
-        Use color
+        {t("avatar.useColor")}
       </Button>
     </motion.div>
   );

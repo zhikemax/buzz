@@ -1,10 +1,11 @@
 import type * as React from "react";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import type { InheritedDefault } from "./bakedEnvHelpers";
 import { getPersonaProviderOptions } from "./agentConfigOptions";
 import { Button } from "@/shared/ui/button";
 
-function providerLabel(providerId: string) {
-  const option = getPersonaProviderOptions("", "buzz-agent").find(
+function providerLabel(providerId: string, t: TranslateFn) {
+  const option = getPersonaProviderOptions("", "buzz-agent", t).find(
     (candidate) => candidate.id === providerId,
   );
   return option?.label ?? providerId;
@@ -13,12 +14,14 @@ function providerLabel(providerId: string) {
 export function formatAiDefaultsSummary({
   provider,
   model,
+  t,
 }: {
   provider: InheritedDefault;
   model: InheritedDefault;
+  t: TranslateFn;
 }) {
   const parts = [
-    provider.value ? providerLabel(provider.value) : null,
+    provider.value ? providerLabel(provider.value, t) : null,
     model.value || null,
   ].filter((value): value is string => Boolean(value));
 
@@ -44,6 +47,7 @@ export function AgentAiDefaultsNotice({
   inheritedModel: InheritedDefault;
   inheritedProvider: InheritedDefault;
 }) {
+  const t = useT();
   const provider = explicitProvider.trim() || inheritedProvider.value;
   const model = explicitModel.trim() || inheritedModel.value;
 
@@ -84,7 +88,7 @@ export function AgentAiDefaultsNotice({
         ) : null}
         <dt className="text-muted-foreground">Provider</dt>
         <dd className="truncate text-foreground">
-          {provider ? providerLabel(provider) : "Not configured"}
+          {provider ? providerLabel(provider, t) : "Not configured"}
         </dd>
         <dt className="text-muted-foreground">Model</dt>
         <dd className="truncate text-foreground">

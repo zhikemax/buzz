@@ -10,6 +10,7 @@ import {
 } from "@/shared/ui/dialog";
 import { ONBOARDING_INK_ICON_CLASS } from "./OnboardingChrome";
 import { OnboardingFooter } from "./OnboardingFooter";
+import { useT } from "@/shared/i18n";
 
 const IDENTITY_KEY_HELP_SEEN_STORAGE_KEY =
   "buzz.machine-onboarding.identity-key-help-seen.v1";
@@ -34,6 +35,7 @@ function rememberIdentityKeyHelpSeen() {
 }
 
 export function IdentityKeyHelpDialog() {
+  const t = useT();
   const [isVisible, setIsVisible] = React.useState(hasSeenIdentityKeyHelp);
 
   React.useEffect(() => {
@@ -60,7 +62,7 @@ export function IdentityKeyHelpDialog() {
             type="button"
             variant="link"
           >
-            What’s an identity key?
+            {t("onboard.identityKeyHelpTitle")}
           </Button>
         </DialogTrigger>
       </OnboardingFooter>
@@ -74,7 +76,7 @@ export function IdentityKeyHelpDialog() {
       >
         <div className="mx-auto w-full max-w-[35rem] py-14 text-left max-sm:py-6">
           <DialogTitle className="text-balance pr-8 text-3xl font-normal text-foreground">
-            What’s an identity key?
+            {t("onboard.identityKeyHelpTitle")}
           </DialogTitle>
           <DialogDescription
             asChild
@@ -82,18 +84,13 @@ export function IdentityKeyHelpDialog() {
           >
             <div>
               <p>
-                Buzz uses an identity key instead of a traditional account. It’s
-                created on your device and represents you whenever you use Buzz.
+                {t("onboard.identityKeyHelpP1")}
               </p>
               <p>
-                Your identity belongs to you, not Buzz. There’s no password to
-                reset, and Buzz can’t recover your key if you lose it. Keep a
-                backup somewhere safe and never share it. Anyone with your key
-                can act as you.
+                {t("onboard.identityKeyHelpP2")}
               </p>
               <p>
-                If you’re new to Buzz, create a new identity key. If you already
-                have a Nostr identity, use your existing key.
+                {t("onboard.identityKeyHelpP3")}
               </p>
             </div>
           </DialogDescription>

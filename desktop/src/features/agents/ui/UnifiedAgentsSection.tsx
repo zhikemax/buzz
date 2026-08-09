@@ -27,6 +27,7 @@ import { AgentRuntimeAvatarControl } from "./AgentRuntimeAvatarControl";
 import { CreateIdentityCard } from "./CreateIdentityCard";
 import { PersonaActionsMenu } from "./PersonaActionsMenu";
 import { buildUnifiedGroups, pickProfileAgent } from "./unifiedAgentGroups";
+import { useT } from "@/shared/i18n";
 
 type UnifiedAgentsSectionProps = {
   defaultModel: string;
@@ -100,6 +101,7 @@ export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
     onDeletePersona,
     onImportSnapshotFile,
   } = props;
+  const t = useT();
 
   const { groups, ungrouped, unknown } = React.useMemo(
     () => buildUnifiedGroups(personas, agents),
@@ -136,7 +138,7 @@ export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
       {isDragOver ? (
         <div className="pointer-events-none absolute -inset-1 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-primary/50 bg-background/80 backdrop-blur-sm">
           <p className="text-sm font-medium text-primary">
-            Drop .agent.json or .agent.png to import
+            {t("agents.dropToImport")}
           </p>
         </div>
       ) : null}
@@ -202,7 +204,7 @@ export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
               collapsed={collapsed}
               defaultModel={defaultModel}
               groupKey="__unknown__"
-              label="Unknown agents"
+              label={t("agents.unknownAgents")}
               startingAgentPubkey={startingAgentPubkey}
               onToggle={toggle}
               onOpenAgentProfile={onOpenAgentProfile}
@@ -215,7 +217,7 @@ export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
               collapsed={collapsed}
               defaultModel={defaultModel}
               groupKey="__ungrouped__"
-              label="Custom agents"
+              label={t("agents.customAgents")}
               startingAgentPubkey={startingAgentPubkey}
               onToggle={toggle}
               onOpenAgentProfile={onOpenAgentProfile}
@@ -450,27 +452,28 @@ function NewAgentCard({
   onDiscover: () => void;
   onImport: () => void;
 }) {
+  const t = useT();
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <CreateIdentityCard ariaLabel="New agent" dataTestId="new-agent-card" />
+        <CreateIdentityCard ariaLabel={t("agents.newAgent")} dataTestId="new-agent-card" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <DropdownMenuItem disabled={isPending} onClick={onCreate}>
-          Create agent
+          {t("agents.createAgent")}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={isPending} onClick={onDiscover}>
-          Discover agents
+          {t("agents.discover")}
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="import-agent-snapshot-menu-item"
           disabled={isPending}
           onClick={onImport}
         >
-          Import
+          {t("agents.import")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -2,6 +2,7 @@ import { Circle, CircleDashed } from "lucide-react";
 import * as React from "react";
 
 import { clampFrameIndex } from "@/features/profile/ui/AnimatedAvatarCapture.helpers";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { performDefaultHaptic } from "@/shared/lib/haptics";
 import { Spinner } from "@/shared/ui/spinner";
@@ -90,6 +91,7 @@ export function AvatarFramingSlider({
   tipText = null,
   value,
 }: AvatarFramingSliderProps) {
+  const t = useT();
   const sliderRef = React.useRef<HTMLDivElement | null>(null);
   const activePointerRef = React.useRef<number | null>(null);
   const valueRef = React.useRef(value);
@@ -158,7 +160,7 @@ export function AvatarFramingSlider({
   const sliderControl = (
     <div className="buzz-avatar-framing-slider-wrapper">
       <div
-        aria-label="Avatar size"
+        aria-label={t("avatar.sizeAria")}
         aria-describedby={tipText ? tipId : undefined}
         aria-valuemax={max}
         aria-valuemin={min}
@@ -242,7 +244,7 @@ export function AvatarFramingSlider({
         <div aria-hidden="true" className="buzz-avatar-framing-slider-handle" />
       </div>
       <button
-        aria-label="Reset avatar size"
+        aria-label={t("avatar.resetSize")}
         className="buzz-avatar-framing-slider-hashmark"
         data-reset="true"
         data-testid={resetTestId}
@@ -255,7 +257,7 @@ export function AvatarFramingSlider({
           onReset();
         }}
         style={resetTickStyle}
-        title="Reset avatar size"
+        title={t("avatar.resetSize")}
         type="button"
       />
       {tipText ? (
@@ -298,10 +300,13 @@ export function AvatarOutlineToggle({
   onChange,
   testIdPrefix,
 }: AvatarOutlineToggleProps) {
+  const t = useT();
   const Icon = enabled ? Circle : CircleDashed;
   return (
     <button
-      aria-label={enabled ? "Turn outline off" : "Turn outline on"}
+      aria-label={
+        enabled ? t("avatar.turnOutlineOff") : t("avatar.turnOutlineOn")
+      }
       aria-pressed={enabled}
       className={cn(
         "grid h-12 w-12 shrink-0 place-items-center rounded-full border border-foreground/10 bg-background text-foreground transition-[background-color,box-shadow,color] duration-150 ease-out hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -310,7 +315,7 @@ export function AvatarOutlineToggle({
       data-testid={`${testIdPrefix}-animated-outline-toggle`}
       disabled={disabled}
       onClick={() => onChange(!enabled)}
-      title={enabled ? "Outline on" : "Outline off"}
+      title={enabled ? t("avatar.outlineOn") : t("avatar.outlineOff")}
       type="button"
     >
       <Icon aria-hidden="true" className="h-4 w-4" />
@@ -339,6 +344,7 @@ export function AvatarFilmstripPicker({
   selectedFrame,
   testIdPrefix,
 }: AvatarFilmstripPickerProps) {
+  const t = useT();
   const stripRef = React.useRef<HTMLDivElement | null>(null);
   const maxFrameIndex = Math.max(0, frameCount - 1);
   const safeSelectedFrame = clampFrameIndex(selectedFrame, frameCount);
@@ -382,7 +388,7 @@ export function AvatarFilmstripPicker({
       data-testid={`${testIdPrefix}-animated-poster-strip`}
     >
       <div
-        aria-label="Choose still frame"
+        aria-label={t("avatar.chooseStillFrame")}
         aria-valuemax={maxFrameIndex}
         aria-valuemin={0}
         aria-valuenow={safeSelectedFrame}
@@ -425,7 +431,7 @@ export function AvatarFilmstripPicker({
           {frames.length === 0 ? (
             <div className="grid h-full w-full place-items-center">
               <Spinner
-                aria-label="Generating frame thumbnails"
+                aria-label={t("avatar.generatingThumbnails")}
                 className="h-5 w-5"
               />
             </div>

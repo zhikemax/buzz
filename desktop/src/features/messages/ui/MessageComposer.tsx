@@ -26,6 +26,7 @@ import { useMentions } from "@/features/messages/lib/useMentions";
 import { diffAddedMentionPubkeys } from "@/features/messages/lib/threading";
 import { getPersistentAgentAudienceScope } from "@/features/messages/lib/persistentAgentAudience";
 import { useIdentityQuery } from "@/shared/api/hooks";
+import { useT } from "@/shared/i18n";
 import {
   hasMentionClipboardHtml,
   normalizeMentionClipboardHtml,
@@ -88,6 +89,7 @@ function MessageComposerImpl({
   typingParentEventId = null,
   typingRootEventId = null,
 }: MessageComposerProps) {
+  const t = useT();
   const {
     contentRef,
     isContentEmpty,
@@ -228,11 +230,14 @@ function MessageComposerImpl({
   }, []);
 
   const computedPlaceholder = editTarget
-    ? "Edit your message"
+    ? t("composer.editMessage")
     : (placeholder ??
       (replyTarget
-        ? `Reply to ${replyTarget.author} in #${channelName}`
-        : `Message #${channelName}`));
+        ? t("composer.replyToInChannel", {
+            author: replyTarget.author,
+            channel: channelName,
+          })
+        : t("composer.messageChannel", { channel: channelName })));
 
   const richText = useRichTextEditor({
     placeholder: computedPlaceholder,

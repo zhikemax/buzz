@@ -18,7 +18,8 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
-import { personaCatalogCopy } from "./personaLibraryCopy";
+import { getPersonaCatalogCopy } from "./personaLibraryCopy";
+import { useT } from "@/shared/i18n";
 import { RemoveMembersConfirmDialog } from "./RemoveMembersConfirmDialog";
 import {
   copySelectedPersonaIds,
@@ -54,6 +55,8 @@ export function TeamDialog({
   onSubmit,
   onDeleteRemovedPersonas,
 }: TeamDialogProps) {
+  const t = useT();
+  const personaCatalogCopy = getPersonaCatalogCopy(t);
   const [name, setName] = React.useState("");
   const [teamDescription, setTeamDescription] = React.useState("");
   const [instructions, setInstructions] = React.useState("");

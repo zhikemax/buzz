@@ -8,18 +8,47 @@ import type {
 import {
   COMING_SOON_SLOTS,
   RECOMMENDED_SOUND_BY_SLOT,
-  SLOT_DESCRIPTIONS,
-  SLOT_LABELS,
   SOUND_SLOTS,
   type SoundName,
   type SoundSlot,
 } from "@/features/notifications/lib/sound";
+import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { Switch } from "@/shared/ui/switch";
 import { SettingsOptionGroup, SettingsOptionRow } from "./SettingsOptionGroup";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 import { SoundPicker } from "./SoundPicker";
+
+const SLOT_LABEL_KEYS: Record<SoundSlot, MessageKey> = {
+  dm: "notify.slot.dms",
+  mention: "notify.slot.mentions",
+  thread_reply: "notify.slot.threadReplies",
+  needs_action: "notify.slot.needsAction",
+  job_accepted: "notify.slot.agentAccepted",
+  job_progress: "notify.slot.agentProgress",
+  job_result: "notify.slot.agentResult",
+  job_error: "notify.slot.agentError",
+};
+
+const SLOT_HINT_KEYS: Record<SoundSlot, MessageKey> = {
+  dm: "notify.slotHint.dms",
+  mention: "notify.slotHint.mentions",
+  thread_reply: "notify.slotHint.threadReplies",
+  needs_action: "notify.slotHint.needsAction",
+  job_accepted: "notify.slotHint.agentAccepted",
+  job_progress: "notify.slotHint.agentProgress",
+  job_result: "notify.slotHint.agentResult",
+  job_error: "notify.slotHint.agentError",
+};
+
+function getSlotLabel(slot: SoundSlot, t: TranslateFn) {
+  return t(SLOT_LABEL_KEYS[slot]);
+}
+
+function getSlotHint(slot: SoundSlot, t: TranslateFn) {
+  return t(SLOT_HINT_KEYS[slot]);
+}
 
 export function NotificationSettingsCard({
   isUpdatingDesktopNotifications,
@@ -44,6 +73,7 @@ export function NotificationSettingsCard({
   onSetNotifyWhileViewing: (enabled: boolean) => void;
   onSetSoundForSlot: (slot: SoundSlot, name: SoundName) => void;
 }) {
+  const t = useT();
   const permissionBlocked =
     notificationPermission === "denied" ||
     notificationPermission === "unsupported";
@@ -62,18 +92,18 @@ export function NotificationSettingsCard({
   return (
     <section className="min-w-0" data-testid="settings-notifications">
       <SettingsSectionHeader
-        title="Notifications"
-        description="Desktop alerts are on by default. Fine-tune what gets through below."
+        title={t("notify.title")}
+        description={t("notify.description")}
       />
 
       <span className="sr-only" data-testid="notifications-desktop-state">
         {notificationPermission === "unsupported"
-          ? "Unavailable"
+          ? t("notify.unavailable")
           : notificationPermission === "denied"
-            ? "Blocked"
+            ? t("notify.blocked")
             : notificationSettings.desktopEnabled
-              ? "On"
-              : "Off"}
+              ? t("notify.on")
+              : t("notify.off")}
       </span>
 
       <div className="flex flex-col gap-4">
@@ -85,13 +115,13 @@ export function NotificationSettingsCard({
                 htmlFor="desktop-alerts-switch"
               >
                 {isUpdatingDesktopNotifications
-                  ? "Requesting..."
-                  : "Desktop alerts"}
+                  ? t("notify.requesting")
+                  : t("notify.desktopAlerts")}
               </label>
               <p className="text-sm font-normal text-muted-foreground">
                 {notificationSettings.desktopEnabled
-                  ? "Native desktop alerts are enabled for the categories you have armed below."
-                  : "Request OS permission and surface new mentions or needs-action items outside the app."}
+                  ? t("notify.desktopEnabledHint")
+                  : t("notify.desktopRequestHint")}
               </p>
             </div>
             <Switch
@@ -111,11 +141,10 @@ export function NotificationSettingsCard({
                 className="text-sm font-medium"
                 htmlFor="notify-while-viewing-switch"
               >
-                Notify while viewing
+                {t("notify.whileViewing")}
               </label>
               <p className="text-sm font-normal text-muted-foreground">
-                Also alert for direct messages in the conversation you have
-                open.
+                {t("notify.whileViewingHint")}
               </p>
             </div>
             <Switch
@@ -142,10 +171,10 @@ export function NotificationSettingsCard({
                     className="text-sm font-medium"
                     htmlFor="notification-sound-switch"
                   >
-                    Sound
+                    {t("notify.sound")}
                   </label>
                   <p className="text-sm font-normal text-muted-foreground">
-                    Alert with a sound for the events below.
+                    {t("notify.soundHint")}
                   </p>
                 </div>
                 <Switch
@@ -176,15 +205,15 @@ export function NotificationSettingsCard({
                       >
                         <div className="min-w-0">
                           <span className="flex items-center gap-2 text-sm font-medium">
-                            {SLOT_LABELS[slot]}
+                            {getSlotLabel(slot, t)}
                             {comingSoon ? (
                               <span className="rounded-full bg-muted/70 px-2 py-0.5 text-2xs font-normal uppercase tracking-wide text-muted-foreground">
-                                Coming soon
+                                {t("notify.comingSoon")}
                               </span>
                             ) : null}
                           </span>
                           <p className="text-sm font-normal text-muted-foreground">
-                            {SLOT_DESCRIPTIONS[slot]}
+                            {getSlotHint(slot, t)}
                           </p>
                         </div>
                         <span className="flex items-center gap-3">
@@ -227,12 +256,12 @@ export function NotificationSettingsCard({
                     {showComingSoon ? (
                       <>
                         <ChevronUp className="h-4 w-4" />
-                        Show less
+                        {t("notify.showLess")}
                       </>
                     ) : (
                       <>
                         <ChevronDown className="h-4 w-4" />
-                        View all
+                        {t("notify.viewAll")}
                       </>
                     )}
                   </Button>
@@ -249,11 +278,10 @@ export function NotificationSettingsCard({
                 className="text-sm font-medium"
                 htmlFor="home-badge-switch"
               >
-                Home badge
+                {t("notify.homeBadge")}
               </label>
               <p className="text-sm font-normal text-muted-foreground">
-                Show a Home badge for mentions and needs-action items in the
-                sidebar.
+                {t("notify.homeBadgeHint")}
               </p>
             </div>
             <Switch
@@ -271,8 +299,8 @@ export function NotificationSettingsCard({
       {permissionBlocked && (
         <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {notificationPermission === "unsupported"
-            ? "Desktop notifications are not supported in this environment."
-            : "Desktop notifications are blocked. Enable them in your system settings."}
+            ? t("notify.unsupported")
+            : t("notify.blockedHint")}
         </p>
       )}
 

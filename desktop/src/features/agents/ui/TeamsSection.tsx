@@ -21,6 +21,7 @@ import { SectionHeader } from "@/shared/ui/PageHeader";
 import { CreateIdentityCard } from "./CreateIdentityCard";
 import { TeamIdentityCard } from "./TeamIdentityCard";
 import { IDENTITY_CARD_GRID_CLASS } from "./UnifiedAgentsSection";
+import { useT } from "@/shared/i18n";
 
 const TEAM_CARD_COLUMN_CLASS = "w-full";
 
@@ -53,12 +54,13 @@ export function TeamsSection({
   onShare,
   onImport,
 }: TeamsSectionProps) {
+  const t = useT();
   return (
     <section className="relative space-y-4" data-testid="agents-library-teams">
       <div className={TEAM_CARD_COLUMN_CLASS}>
         <SectionHeader
-          title="Agent teams"
-          description="Group agents that you can add to a channel together."
+          title={t("agents.teamsTitle")}
+          description={t("agents.teamsDescription")}
         />
       </div>
 
@@ -119,21 +121,21 @@ export function TeamsSection({
                         onClick={() => onEdit(team)}
                       >
                         <Pencil className="h-4 w-4" />
-                        Edit
+                        {t("common.edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={isPending || hasMissingPersonas}
                         onClick={() => onDuplicate(team)}
                       >
                         <CopyPlus className="h-4 w-4" />
-                        Duplicate
+                        {t("common.duplicate")}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         disabled={isPending || hasMissingPersonas}
                         onClick={() => onShare(team)}
                       >
                         <Share2 className="h-4 w-4" />
-                        Share
+                        {t("common.share")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -142,7 +144,7 @@ export function TeamsSection({
                         onClick={() => onDelete(team)}
                       >
                         <Trash2 className="h-4 w-4" />
-                        Delete
+                        {t("common.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -197,20 +199,24 @@ function NewTeamCard({
   onCreate: () => void;
   onImport: () => void;
 }) {
+  const t = useT();
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <CreateIdentityCard ariaLabel="New team" dataTestId="new-team-card" />
+        <CreateIdentityCard
+          ariaLabel={t("agents.newTeam")}
+          dataTestId="new-team-card"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <DropdownMenuItem disabled={isPending} onClick={onCreate}>
-          Create team
+          {t("agents.createTeam")}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={isPending} onClick={onImport}>
-          Import
+          {t("agents.import")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

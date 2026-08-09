@@ -1,4 +1,5 @@
 import type { MeshServingUsage } from "@/shared/api/tauriMesh";
+import type { MessageKey } from "@/shared/i18n";
 
 /**
  * Pure projection of host-side serving usage into a small, politely-worded
@@ -22,15 +23,13 @@ export type MeshServingIndicator = {
   active: boolean;
   /** A non-local member is (or has been) consuming this machine's compute. */
   hasRemoteConsumers: boolean;
-  /** One-line status suitable for the card. */
-  label: string;
-  /** Longer detail for a tooltip / secondary line. */
-  detail: string | null;
+  /** One-line status key suitable for the card. */
+  labelKey: MessageKey | null;
+  labelParams?: Record<string, string | number>;
+  /** Longer detail key for a tooltip / secondary line. */
+  detailKey: MessageKey | null;
+  detailParams?: Record<string, string | number>;
 };
-
-function plural(n: number, one: string, many = `${one}s`): string {
-  return n === 1 ? one : many;
-}
 
 /**
  * @param usage  latest snapshot from `meshServingUsage`, or null if not fetched
@@ -46,8 +45,8 @@ export function deriveServingIndicator(
     show: false,
     active: false,
     hasRemoteConsumers: false,
-    label: "",
-    detail: null,
+    labelKey: null,
+    detailKey: null,
   };
   if (!isSharing || !usage) {
     return hidden;
@@ -56,18 +55,42 @@ export function deriveServingIndicator(
   const hasRemoteConsumers =
     usage.remoteAttempts > 0 || usage.endpointAttempts > 0;
   const active = usage.inflight > 0;
+  const tok = Math.round(usage.tokensPerSecond);
 
   // Remote consumer present (or seen) — the headline case the user asked for.
   if (hasRemoteConsumers) {
     const remote = usage.remoteAttempts + usage.endpointAttempts;
-    const label = active
-      ? `In use now by another member · ${usage.inflight} live`
-      : `Used by another member · ${remote} ${plural(remote, "request")}`;
-    const detail =
-      usage.peers > 0
-        ? `${usage.peers} ${plural(usage.peers, "peer")} on the mesh · ${Math.round(usage.tokensPerSecond)} tok/s`
-        : `${Math.round(usage.tokensPerSecond)} tok/s`;
-    return { show: true, active, hasRemoteConsumers: true, label, detail };
+    const labelKey: MessageKey = active
+      ? "settings.compute.usage.inUseLive"
+      : remote === 1
+        ? "settings.compute.usage.usedByMember"
+        : "settings.compute.usage.usedByMemberPlural";
+    const labelParams = {
+      count: active ? usage.inflight : remote,
+    };
+    if (usage.peers > 0) {
+      return {
+        show: true,
+        active,
+        hasRemoteConsumers: true,
+        labelKey,
+        labelParams,
+        detailKey:
+          usage.peers === 1
+            ? "settings.compute.usage.peersDetail"
+            : "settings.compute.usage.peersDetailPlural",
+        detailParams: { peers: usage.peers, tok },
+      };
+    }
+    return {
+      show: true,
+      active,
+      hasRemoteConsumers: true,
+      labelKey,
+      labelParams,
+      detailKey: "settings.compute.usage.tokDetail",
+      detailParams: { tok },
+    };
   }
 
   // Only local (this machine's own agents) — show softly as activity.
@@ -76,8 +99,10 @@ export function deriveServingIndicator(
       show: true,
       active: true,
       hasRemoteConsumers: false,
-      label: `Serving your agent · ${usage.inflight} live`,
-      detail: `${Math.round(usage.tokensPerSecond)} tok/s`,
+      labelKey: "settings.compute.usage.servingLocal",
+      labelParams: { count: usage.inflight },
+      detailKey: "settings.compute.usage.tokDetail",
+      detailParams: { tok },
     };
   }
   if (usage.requestsServed > 0) {
@@ -85,8 +110,12 @@ export function deriveServingIndicator(
       show: true,
       active: false,
       hasRemoteConsumers: false,
-      label: "Idle · no one using it right now",
-      detail: `${usage.requestsServed} ${plural(usage.requestsServed, "request")} served this session`,
+      labelKey: "settings.compute.usage.idleNow",
+      detailKey:
+        usage.requestsServed === 1
+          ? "settings.compute.usage.servedSession"
+          : "settings.compute.usage.servedSessionPlural",
+      detailParams: { count: usage.requestsServed },
     };
   }
 
@@ -95,7 +124,7 @@ export function deriveServingIndicator(
     show: true,
     active: false,
     hasRemoteConsumers: false,
-    label: "Idle · no one using it yet",
-    detail: null,
+    labelKey: "settings.compute.usage.idleYet",
+    detailKey: null,
   };
 }

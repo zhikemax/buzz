@@ -33,7 +33,8 @@ test("sharing but nothing served yet -> idle, no detail", () => {
   assert.equal(i.show, true);
   assert.equal(i.active, false);
   assert.equal(i.hasRemoteConsumers, false);
-  assert.match(i.label, /Idle/);
+  assert.equal(i.labelKey, "settings.compute.usage.idleYet");
+  assert.equal(i.detailKey, null);
 });
 
 test("only local agent traffic -> not a remote consumer", () => {
@@ -42,8 +43,9 @@ test("only local agent traffic -> not a remote consumer", () => {
     true,
   );
   assert.equal(i.hasRemoteConsumers, false);
-  assert.match(i.label, /Idle/); // served earlier, none live now
-  assert.match(i.detail, /4 requests served/);
+  assert.equal(i.labelKey, "settings.compute.usage.idleNow");
+  assert.equal(i.detailKey, "settings.compute.usage.servedSessionPlural");
+  assert.equal(i.detailParams?.count, 4);
 });
 
 test("local agent live now -> serving your agent", () => {
@@ -53,8 +55,8 @@ test("local agent live now -> serving your agent", () => {
   );
   assert.equal(i.active, true);
   assert.equal(i.hasRemoteConsumers, false);
-  assert.match(i.label, /Serving your agent/);
-  assert.match(i.label, /1 live/);
+  assert.equal(i.labelKey, "settings.compute.usage.servingLocal");
+  assert.equal(i.labelParams?.count, 1);
 });
 
 test("remote consumer, not live -> used by another member (headline case)", () => {
@@ -69,9 +71,10 @@ test("remote consumer, not live -> used by another member (headline case)", () =
   );
   assert.equal(i.hasRemoteConsumers, true);
   assert.equal(i.active, false);
-  assert.match(i.label, /another member/);
-  assert.match(i.label, /7 requests/); // remote+endpoint = 7
-  assert.match(i.detail, /2 peers/);
+  assert.equal(i.labelKey, "settings.compute.usage.usedByMemberPlural");
+  assert.equal(i.labelParams?.count, 7); // remote+endpoint = 7
+  assert.equal(i.detailKey, "settings.compute.usage.peersDetailPlural");
+  assert.equal(i.detailParams?.peers, 2);
 });
 
 test("remote consumer live now -> in use now, singular peer/request grammar", () => {
@@ -81,6 +84,7 @@ test("remote consumer live now -> in use now, singular peer/request grammar", ()
   );
   assert.equal(i.active, true);
   assert.equal(i.hasRemoteConsumers, true);
-  assert.match(i.label, /In use now by another member/);
-  assert.match(i.detail, /1 peer\b/); // singular
+  assert.equal(i.labelKey, "settings.compute.usage.inUseLive");
+  assert.equal(i.detailKey, "settings.compute.usage.peersDetail");
+  assert.equal(i.detailParams?.peers, 1);
 });

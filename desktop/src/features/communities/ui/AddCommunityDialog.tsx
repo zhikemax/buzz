@@ -2,9 +2,10 @@ import * as React from "react";
 import { ArrowLeft, ChevronRight, Link2, Plus } from "lucide-react";
 
 import type { AddCommunityPrefillRequest } from "@/features/communities/addCommunityPrefill";
-import { HostedCommunityCreateFlow } from "@/features/communities/ui/HostedCommunityCreateFlow";
+import { LocalCommunityCreateForm } from "@/features/communities/ui/LocalCommunityCreateForm";
 import { useCommunityOnboarding } from "@/features/onboarding/communityOnboarding";
 import { InviteRedeemForm } from "@/features/onboarding/ui/InviteRedeemForm";
+import { useT } from "@/shared/i18n";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export function AddCommunityDialog({
   open,
   onOpenChange,
 }: AddCommunityDialogProps) {
+  const t = useT();
   const communityOnboarding = useCommunityOnboarding();
   const [mode, setMode] = React.useState<AddCommunityMode>("choose");
   const [joinError, setJoinError] = React.useState<string | null>(null);
@@ -56,44 +58,44 @@ export function AddCommunityDialog({
       inviteCode,
       policyReceipt,
       token,
+      communityName,
     }: {
       relayUrl: string;
       inviteCode?: string;
       policyReceipt?: string;
       token?: string;
+      communityName?: string;
     }) => {
       const started = communityOnboarding.start({
         source: "add-community",
         relayUrl,
         inviteCode,
-        communityName: prefill?.name,
+        communityName: communityName ?? prefill?.name,
         policyReceipt,
         token,
       });
       if (!started) {
-        setJoinError(
-          "Finish connecting the community already in progress, then try again.",
-        );
+        setJoinError(t("hosted.onboardingInProgressShort"));
         return;
       }
       handleClose();
     },
-    [communityOnboarding, handleClose, prefill?.name],
+    [communityOnboarding, handleClose, prefill?.name, t],
   );
 
   const title =
     mode === "create"
-      ? "Create a new community"
+      ? t("hosted.createNewCommunity")
       : mode === "join"
-        ? "Join an existing community"
-        : "Add community";
+        ? t("hosted.joinExistingCommunity")
+        : t("hosted.addCommunityTitle");
 
   const description =
     mode === "create"
-      ? "Opens Builderlab in your browser."
+      ? t("onboard.localCreateHint")
       : mode === "join"
-        ? "Use the community URL or invite link you received."
-        : "Create a new community or join one you already have.";
+        ? t("hosted.useUrlOrInviteReceived")
+        : t("hosted.addCommunityChooseHint");
 
   return (
     <Dialog
@@ -111,7 +113,7 @@ export function AddCommunityDialog({
           <div className="flex min-w-0 items-center gap-2">
             {mode !== "choose" ? (
               <button
-                aria-label="Back to add community options"
+                aria-label={t("hosted.backToAddOptions")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                 data-testid="add-community-back"
                 onClick={() => {
@@ -146,10 +148,10 @@ export function AddCommunityDialog({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium text-foreground">
-                    Create a new community
+                    {t("hosted.createNewCommunity")}
                   </span>
                   <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
-                    Claim a Buzz address for your team.
+                    {t("onboard.localCreateHint")}
                   </span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
@@ -166,10 +168,10 @@ export function AddCommunityDialog({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium text-foreground">
-                    Join an existing community
+                    {t("hosted.joinExistingCommunity")}
                   </span>
                   <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
-                    Use a community URL or invite link.
+                    {t("hosted.useUrlOrInviteShort")}
                   </span>
                 </span>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" />
@@ -194,7 +196,17 @@ export function AddCommunityDialog({
               variant="add-community"
             />
           ) : (
-            <HostedCommunityCreateFlow onComplete={handleClose} />
+            <LocalCommunityCreateForm
+              error={joinError}
+              onBack={() => {
+                setJoinError(null);
+                setMode("choose");
+              }}
+              onCreate={({ name, relayUrl }) =>
+                startConnection({ relayUrl, communityName: name })
+              }
+              variant="dialog"
+            />
           )}
         </div>
       </DialogContent>

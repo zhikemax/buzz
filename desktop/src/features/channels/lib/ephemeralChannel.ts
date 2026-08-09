@@ -1,18 +1,26 @@
 import type { Channel } from "@/shared/api/types";
+import { detectLocale, translate } from "@/shared/i18n";
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat("en-US", {
-  numeric: "auto",
-});
-const absoluteTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
+function relativeTimeFormatter() {
+  const locale = detectLocale() === "zh-CN" ? "zh-CN" : "en-US";
+  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+}
+
+function absoluteTimeFormatter() {
+  const locale = detectLocale() === "zh-CN" ? "zh-CN" : "en-US";
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 type EphemeralChannelLike = Pick<Channel, "ttlSeconds" | "ttlDeadline">;
 
-export const EPHEMERAL_CHANNEL_LABEL = "Ephemeral";
+export function getEphemeralChannelLabel(): string {
+  return translate("channel.ephemeral");
+}
 
 /** Default TTL for ephemeral channels: 7 days of inactivity. */
 export const DEFAULT_EPHEMERAL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -44,48 +52,54 @@ function resolveRemainingSeconds(
 
 function formatCompactRemaining(remainingSeconds: number): string {
   if (remainingSeconds <= 0) {
-    return "Cleanup due";
+    return translate("channel.ephemeralCleanupDue");
   }
 
   if (remainingSeconds <= 60) {
-    return "1m left";
+    return translate("channel.ephemeralOneMinuteLeft");
   }
 
   if (remainingSeconds < 60 * 60) {
-    return `${Math.max(1, Math.ceil(remainingSeconds / 60))}m left`;
+    return translate("channel.ephemeralMinutesLeft", {
+      count: Math.max(1, Math.ceil(remainingSeconds / 60)),
+    });
   }
 
   if (remainingSeconds < 60 * 60 * 24) {
-    return `${Math.max(1, Math.ceil(remainingSeconds / (60 * 60)))}h left`;
+    return translate("channel.ephemeralHoursLeft", {
+      count: Math.max(1, Math.ceil(remainingSeconds / (60 * 60))),
+    });
   }
 
-  return `${Math.max(1, Math.ceil(remainingSeconds / (60 * 60 * 24)))}d left`;
+  return translate("channel.ephemeralDaysLeft", {
+    count: Math.max(1, Math.ceil(remainingSeconds / (60 * 60 * 24))),
+  });
 }
 
 function formatVerboseRemaining(remainingSeconds: number): string {
   if (remainingSeconds <= 0) {
-    return "now";
+    return translate("channel.relative.now");
   }
 
   if (remainingSeconds <= 60) {
-    return relativeTimeFormatter.format(1, "minute");
+    return relativeTimeFormatter().format(1, "minute");
   }
 
   if (remainingSeconds < 60 * 60) {
-    return relativeTimeFormatter.format(
+    return relativeTimeFormatter().format(
       Math.max(1, Math.ceil(remainingSeconds / 60)),
       "minute",
     );
   }
 
   if (remainingSeconds < 60 * 60 * 24) {
-    return relativeTimeFormatter.format(
+    return relativeTimeFormatter().format(
       Math.max(1, Math.ceil(remainingSeconds / (60 * 60))),
       "hour",
     );
   }
 
-  return relativeTimeFormatter.format(
+  return relativeTimeFormatter().format(
     Math.max(1, Math.ceil(remainingSeconds / (60 * 60 * 24))),
     "day",
   );
@@ -110,21 +124,33 @@ function formatCompactTtl(ttlSeconds: number): string {
 function formatVerboseTtl(ttlSeconds: number): string {
   if (ttlSeconds < 60) {
     const seconds = Math.max(1, ttlSeconds);
-    return `${seconds} second${seconds === 1 ? "" : "s"}`;
+    return translate(
+      seconds === 1 ? "channel.duration.second" : "channel.duration.seconds",
+      { count: seconds },
+    );
   }
 
   if (ttlSeconds < 60 * 60) {
     const minutes = Math.max(1, Math.ceil(ttlSeconds / 60));
-    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+    return translate(
+      minutes === 1 ? "channel.duration.minute" : "channel.duration.minutes",
+      { count: minutes },
+    );
   }
 
   if (ttlSeconds < 60 * 60 * 24) {
     const hours = Math.max(1, Math.ceil(ttlSeconds / (60 * 60)));
-    return `${hours} hour${hours === 1 ? "" : "s"}`;
+    return translate(
+      hours === 1 ? "channel.duration.hour" : "channel.duration.hours",
+      { count: hours },
+    );
   }
 
   const days = Math.max(1, Math.ceil(ttlSeconds / (60 * 60 * 24)));
-  return `${days} day${days === 1 ? "" : "s"}`;
+  return translate(
+    days === 1 ? "channel.duration.day" : "channel.duration.days",
+    { count: days },
+  );
 }
 
 export function getEphemeralChannelDisplay(
@@ -138,7 +164,7 @@ export function getEphemeralChannelDisplay(
   const remainingSeconds = resolveRemainingSeconds(channel.ttlDeadline, nowMs);
   const absoluteDeadlineLabel =
     channel.ttlDeadline && !Number.isNaN(Date.parse(channel.ttlDeadline))
-      ? absoluteTimeFormatter.format(new Date(channel.ttlDeadline))
+      ? absoluteTimeFormatter().format(new Date(channel.ttlDeadline))
       : null;
   if (remainingSeconds === null) {
     return {
@@ -148,24 +174,30 @@ export function getEphemeralChannelDisplay(
           : formatCompactTtl(channel.ttlSeconds),
       tooltipLabel:
         channel.ttlSeconds === null
-          ? "Ephemeral channel. Cleans up automatically after inactivity."
-          : `Ephemeral channel. Cleans up after ${formatVerboseTtl(
-              channel.ttlSeconds,
-            )} of inactivity.`,
+          ? translate("channel.ephemeralTooltipInactivity")
+          : translate("channel.ephemeralTooltipInactivityDuration", {
+              duration: formatVerboseTtl(channel.ttlSeconds),
+            }),
     };
   }
 
   const compactRemaining = formatCompactRemaining(remainingSeconds);
   const verboseRemaining = formatVerboseRemaining(remainingSeconds);
+  const cleanupDue = translate("channel.ephemeralCleanupDue");
 
   return {
     detailLabel: compactRemaining,
     tooltipLabel:
-      compactRemaining === "Cleanup due"
-        ? "Ephemeral channel. Cleanup is due now."
+      compactRemaining === cleanupDue
+        ? translate("channel.ephemeralTooltipDue")
         : absoluteDeadlineLabel
-          ? `Ephemeral channel. Cleans up ${verboseRemaining}. Scheduled for ${absoluteDeadlineLabel}.`
-          : `Ephemeral channel. Cleans up ${verboseRemaining}.`,
+          ? translate("channel.ephemeralTooltipScheduled", {
+              when: verboseRemaining,
+              at: absoluteDeadlineLabel,
+            })
+          : translate("channel.ephemeralTooltipWhen", {
+              when: verboseRemaining,
+            }),
   };
 }
 

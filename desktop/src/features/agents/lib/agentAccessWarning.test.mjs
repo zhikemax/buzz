@@ -1,25 +1,38 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
 import {
+  agentAccessWarningKey,
   agentAccessWarningText,
   runLocationForBackend,
   runLocationForRunOn,
 } from "./agentAccessWarning.ts";
 
+const tEn = (key, params) => translate("en", key, params);
+
 test("only the modes that share access warn", () => {
-  assert.equal(agentAccessWarningText("owner-only", "local"), null);
-  assert.ok(agentAccessWarningText("anyone", "local"));
-  assert.ok(agentAccessWarningText("allowlist", "local"));
+  assert.equal(agentAccessWarningKey("owner-only", "local"), null);
+  assert.equal(agentAccessWarningText("owner-only", "local", tEn), null);
+  assert.ok(agentAccessWarningKey("anyone", "local"));
+  assert.ok(agentAccessWarningKey("allowlist", "local"));
 });
 
 test("a local agent names this computer and what is reachable on it", () => {
   assert.equal(
-    agentAccessWarningText("anyone", "local"),
+    agentAccessWarningKey("anyone", "local"),
+    "agents.access.anyoneLocal",
+  );
+  assert.equal(
+    agentAccessWarningKey("allowlist", "local"),
+    "agents.access.allowlistLocal",
+  );
+  assert.equal(
+    agentAccessWarningText("anyone", "local", tEn),
     "Anyone can use this agent to access your computer, including files, accounts, and connected tools.",
   );
   assert.equal(
-    agentAccessWarningText("allowlist", "local"),
+    agentAccessWarningText("allowlist", "local", tEn),
     "Selected people can use this agent to access your computer, including files, accounts, and connected tools.",
   );
 });
@@ -28,15 +41,23 @@ test("a provider-backed agent names the server, and not the owner's files", () =
   // A remote host's files aren't the owner's to describe, so the tail narrows
   // to the accounts and tools provisioned there.
   assert.equal(
-    agentAccessWarningText("anyone", "remote"),
+    agentAccessWarningKey("anyone", "remote"),
+    "agents.access.anyoneRemote",
+  );
+  assert.equal(
+    agentAccessWarningKey("allowlist", "remote"),
+    "agents.access.allowlistRemote",
+  );
+  assert.equal(
+    agentAccessWarningText("anyone", "remote", tEn),
     "Anyone can use this agent to access the server it runs on, including any accounts and tools available there.",
   );
   assert.equal(
-    agentAccessWarningText("allowlist", "remote"),
+    agentAccessWarningText("allowlist", "remote", tEn),
     "Selected people can use this agent to access the server it runs on, including any accounts and tools available there.",
   );
   assert.doesNotMatch(
-    agentAccessWarningText("anyone", "remote"),
+    agentAccessWarningText("anyone", "remote", tEn),
     /your computer/,
   );
 });
@@ -46,7 +67,11 @@ test("an unknown run location reads as local, not as a hedge", () => {
   // the Run on selector only renders when a buzz-backend-* provider exists.
   for (const unknown of [undefined, null]) {
     assert.equal(
-      agentAccessWarningText("anyone", unknown),
+      agentAccessWarningKey("anyone", unknown),
+      "agents.access.anyoneLocal",
+    );
+    assert.equal(
+      agentAccessWarningText("anyone", unknown, tEn),
       "Anyone can use this agent to access your computer, including files, accounts, and connected tools.",
     );
   }
@@ -55,7 +80,8 @@ test("an unknown run location reads as local, not as a hedge", () => {
 test("every variant leads with the audience and stays jargon-free", () => {
   for (const mode of ["anyone", "allowlist"]) {
     for (const runLocation of [null, "local", "remote"]) {
-      const text = agentAccessWarningText(mode, runLocation);
+      assert.ok(agentAccessWarningKey(mode, runLocation));
+      const text = agentAccessWarningText(mode, runLocation, tEn);
       assert.match(
         text,
         /^(Anyone|Selected people) can use this agent to access/,

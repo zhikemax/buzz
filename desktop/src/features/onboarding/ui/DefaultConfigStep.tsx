@@ -32,6 +32,7 @@ import {
   getVisibleOnboardingRuntimes,
 } from "./onboardingRuntimeSelection";
 import type { DefaultConfigDraft, DefaultConfigStepActions } from "./types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 type DefaultConfigStepProps = {
   actions: DefaultConfigStepActions;
@@ -40,8 +41,11 @@ type DefaultConfigStepProps = {
   readyRuntimeIds: readonly string[];
 };
 
-function formatHarnessLabel(runtime: AcpRuntimeCatalogEntry | undefined) {
-  if (!runtime) return "Select a harness";
+function formatHarnessLabel(
+  runtime: AcpRuntimeCatalogEntry | undefined,
+  t: TranslateFn,
+) {
+  if (!runtime) return t("onboard.selectHarness");
   return runtime.id === "buzz-agent" ? "Buzz" : runtime.label;
 }
 
@@ -61,6 +65,7 @@ function AgentDefaultsSection({
   }) => void;
   readyRuntimeIds: readonly string[];
 }) {
+  const t = useT();
   const runtimesQuery = useAcpRuntimesQuery();
   const initialDraftRef = React.useRef(draft);
   const [config, setConfig] = React.useState<GlobalAgentConfig>(
@@ -153,10 +158,10 @@ function AgentDefaultsSection({
   const harnessOptions = React.useMemo(
     () =>
       readyRuntimes.map((runtime) => ({
-        label: formatHarnessLabel(runtime),
+        label: formatHarnessLabel(runtime, t),
         value: runtime.id,
       })),
-    [readyRuntimes],
+    [readyRuntimes, t],
   );
 
   const updateDraft = React.useCallback(
@@ -230,11 +235,11 @@ function AgentDefaultsSection({
       {configSurfaceLoading ? (
         <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
           <Spinner className="h-4 w-4 border-2" />
-          Loading…
+          {t("onboard.loading")}
         </div>
       ) : configSurfaceError ? (
         <p className="py-4 text-center text-sm text-destructive">
-          Couldn't load harness settings. Go back and try again.
+          {t("onboard.harnessSettingsLoadFailed")}
         </p>
       ) : (
         <div className="space-y-7">
@@ -250,7 +255,7 @@ function AgentDefaultsSection({
               id="global-agent-default-harness"
               onValueChange={handleHarnessChange}
               options={harnessOptions}
-              placeholder="Select a harness"
+              placeholder={t("onboard.selectHarness")}
               placeholderClassName="text-foreground/70"
               testId="global-agent-default-harness"
               value={selectedRuntimeId}
@@ -307,6 +312,7 @@ export function DefaultConfigStep({
   draft,
   readyRuntimeIds,
 }: DefaultConfigStepProps) {
+  const t = useT();
   const [persistenceState, setPersistenceState] = React.useState<{
     canComplete: boolean;
     commit: () => Promise<void>;
@@ -326,7 +332,9 @@ export function DefaultConfigStep({
       setSaveError(
         cause instanceof Error
           ? cause.message
-          : "Couldn’t save model settings.",
+          : t("onboard.defaultSettingsSaveError", {
+              error: "",
+            }),
       );
     } finally {
       setIsSaving(false);
@@ -347,7 +355,7 @@ export function DefaultConfigStep({
     >
       <div className="w-full max-w-[500px] text-center">
         <h1 className="text-title font-normal text-foreground">
-          Configure your default model settings
+          {t("onboard.configureDefaults")}
         </h1>
         <p className="mx-auto mt-3 max-w-[440px] text-sm leading-5 text-foreground/80">
           This will be set as your default model configuration across Buzz. You
@@ -378,7 +386,7 @@ export function DefaultConfigStep({
             onClick={() => void handleComplete()}
             type="button"
           >
-            {isSaving ? "Saving…" : "Next"}
+            {isSaving ? t("common.saving") : t("common.next")}
           </Button>
           <Button
             className="absolute left-full ml-3 h-9 animate-in whitespace-nowrap rounded-full px-6 text-sm fade-in fill-mode-backwards [animation-delay:1000ms] animation-duration-[500ms] hover:bg-foreground/10 motion-reduce:animate-none"
@@ -388,7 +396,7 @@ export function DefaultConfigStep({
             type="button"
             variant="ghost"
           >
-            Skip for now
+            {t("common.skip")}
           </Button>
         </div>
 
@@ -400,7 +408,7 @@ export function DefaultConfigStep({
           type="button"
           variant="ghost"
         >
-          Back
+          {t("common.back")}
         </Button>
 
         {saveError ? (
@@ -409,14 +417,13 @@ export function DefaultConfigStep({
             data-testid="onboarding-config-save-error"
             role="alert"
           >
-            Couldn’t save model settings. {saveError} Try again.
+            {t("onboard.defaultSettingsSaveError", { error: saveError })}
           </p>
         ) : null}
 
         <p className="text-xs text-foreground/50">
-          Configure default models in{" "}
-          <span className="text-foreground/70">Settings → Agents</span> after
-          setup.
+          {t("onboard.settingsAgentsAfterSetup")}{" "}
+          <span className="text-foreground/70">{t("onboard.settingsAgents")}</span>
         </p>
       </OnboardingFooter>
     </OnboardingSlideTransition>

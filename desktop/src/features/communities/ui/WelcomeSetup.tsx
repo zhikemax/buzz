@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Check, Copy } from "lucide-react";
 
-import { HostedCommunityOnboarding } from "@/features/communities/ui/HostedCommunityOnboarding";
+import { LocalCommunityCreateForm } from "@/features/communities/ui/LocalCommunityCreateForm";
 import { useCommunityOnboarding } from "@/features/onboarding/communityOnboarding";
 import { InviteRedeemForm } from "@/features/onboarding/ui/InviteRedeemForm";
 import { OnboardingChrome } from "@/features/onboarding/ui/OnboardingChrome";
@@ -14,6 +14,7 @@ import {
   OnboardingSlideTransition,
 } from "@/features/onboarding/ui/OnboardingSlideTransition";
 import { useIdentityQuery } from "@/shared/api/hooks";
+import { useT } from "@/shared/i18n";
 import { writeTextToClipboard } from "@/shared/lib/clipboard";
 import { pubkeyToNpub } from "@/shared/lib/nostrUtils";
 import { useSystemColorScheme } from "@/shared/theme/useSystemColorScheme";
@@ -38,13 +39,11 @@ export function WelcomeSetup({
   initialTransitionMode = "initial",
   onBack,
 }: WelcomeSetupProps) {
+  const t = useT();
   const [page, setPage] = React.useState<WelcomeSetupPage>(initialPage);
   const [transitionMode, setTransitionMode] =
     React.useState<WelcomeTransitionMode>(initialTransitionMode);
-  // While true, the Builderlab sign-in modal floats over the current page —
-  // we only navigate to the hosted stage once sign-in completes, so the page
-  // behind the modal never changes out from under the user.
-  const [isHostedSignInOpen, setIsHostedSignInOpen] = React.useState(false);
+  const [createError, setCreateError] = React.useState<string | null>(null);
   const [copiedNpub, setCopiedNpub] = React.useState(false);
   const communityOnboarding = useCommunityOnboarding();
   const identityQuery = useIdentityQuery();
@@ -55,11 +54,12 @@ export function WelcomeSetup({
   const npubError = identityQuery.error
     ? identityQuery.error instanceof Error
       ? identityQuery.error.message
-      : "Could not load your public key."
+      : t("onboard.couldNotLoadPublicKey")
     : null;
 
   const showPage = React.useCallback(
     (nextPage: WelcomeSetupPage, direction?: OnboardingTransitionDirection) => {
+      setCreateError(null);
       setTransitionMode(
         direction ?? (nextPage === "welcome" ? "backward" : "forward"),
       );
@@ -92,6 +92,21 @@ export function WelcomeSetup({
     [communityOnboarding, page],
   );
 
+  const createLocalCommunity = React.useCallback(
+    ({ name, relayUrl }: { name: string; relayUrl: string }) => {
+      const started = communityOnboarding.start({
+        source: "first-community",
+        firstCommunityPage: "owned",
+        relayUrl,
+        communityName: name,
+      });
+      if (!started) {
+        setCreateError(t("onboard.localCreateFailed"));
+      }
+    },
+    [communityOnboarding, t],
+  );
+
   const transitionDirection =
     transitionMode === "backward" ? "backward" : "forward";
   const welcomeEffect =
@@ -116,11 +131,10 @@ export function WelcomeSetup({
             >
               <div className="w-full max-w-[760px]">
                 <h1 className="text-title font-normal">
-                  Join or create a community
+                  {t("onboard.joinOrCreateTitle")}
                 </h1>
                 <p className="mt-3 text-sm leading-6 text-foreground/80">
-                  Join with an invite, create your own community, or reconnect
-                  one you already have.
+                  {t("onboard.joinOrCreateHint")}
                 </p>
               </div>
               <div className="flex w-full flex-1 translate-y-16 flex-col items-center justify-center gap-20 py-8">
@@ -134,7 +148,7 @@ export function WelcomeSetup({
                     onClick={() => showPage("join")}
                     type="button"
                   >
-                    Join a community
+                    {t("onboard.joinACommunity")}
                   </button>
                 </Card>
                 <Card
@@ -144,10 +158,10 @@ export function WelcomeSetup({
                 >
                   <button
                     data-testid="community-choice-create"
-                    onClick={() => setIsHostedSignInOpen(true)}
+                    onClick={() => showPage("owned")}
                     type="button"
                   >
-                    Create a community
+                    {t("onboard.createACommunity")}
                   </button>
                 </Card>
                 <Card
@@ -160,7 +174,7 @@ export function WelcomeSetup({
                     onClick={() => showPage("existing")}
                     type="button"
                   >
-                    I already have a community
+                    {t("onboard.alreadyHaveCommunity")}
                   </button>
                 </Card>
               </div>
@@ -172,7 +186,7 @@ export function WelcomeSetup({
                   type="button"
                   variant="ghost"
                 >
-                  Back
+                  {t("common.back")}
                 </Button>
               </OnboardingFooter>
             </OnboardingSlideTransition>
@@ -185,10 +199,10 @@ export function WelcomeSetup({
             >
               <div className="w-full max-w-[760px]">
                 <h1 className="text-title font-normal">
-                  Reconnect to your community
+                  {t("onboard.reconnectCommunityTitle")}
                 </h1>
                 <p className="mt-3 text-sm leading-6 text-foreground/80">
-                  Tell us your role so we can find the fastest way back in.
+                  {t("onboard.reconnectCommunityHint")}
                 </p>
               </div>
               <div className="flex w-full flex-1 translate-y-16 flex-col items-center justify-center gap-20 py-8">
@@ -199,10 +213,10 @@ export function WelcomeSetup({
                 >
                   <button
                     data-testid="existing-choice-owner"
-                    onClick={() => setIsHostedSignInOpen(true)}
+                    onClick={() => showPage("owned")}
                     type="button"
                   >
-                    I own the community
+                    {t("onboard.iOwnCommunity")}
                   </button>
                 </Card>
                 <Card
@@ -215,7 +229,7 @@ export function WelcomeSetup({
                     onClick={() => showPage("member")}
                     type="button"
                   >
-                    I’m a member or admin
+                    {t("onboard.imMemberOrAdmin")}
                   </button>
                 </Card>
               </div>
@@ -227,7 +241,7 @@ export function WelcomeSetup({
                   type="button"
                   variant="ghost"
                 >
-                  Back
+                  {t("common.back")}
                 </Button>
               </OnboardingFooter>
             </OnboardingSlideTransition>
@@ -237,7 +251,12 @@ export function WelcomeSetup({
               direction={transitionDirection}
               transitionKey={`owned-${transitionDirection}`}
             >
-              <HostedCommunityOnboarding onBack={() => showPage("welcome")} />
+              <LocalCommunityCreateForm
+                error={createError}
+                onBack={() => showPage("welcome")}
+                onCreate={createLocalCommunity}
+                variant="onboarding"
+              />
             </OnboardingSlideTransition>
           ) : (
             <OnboardingSlideTransition
@@ -248,13 +267,13 @@ export function WelcomeSetup({
               <div className="w-full max-w-[620px]">
                 <h1 className="text-title font-normal">
                   {page === "member"
-                    ? "Reconnect to your community"
-                    : "Join a community"}
+                    ? t("onboard.reconnectCommunityTitle")
+                    : t("onboard.joinACommunity")}
                 </h1>
                 <p className="mt-3 text-sm leading-6 text-foreground/80">
                   {page === "member"
-                    ? "Enter the community URL or an invite link. Your role will be restored when you connect."
-                    : "Enter the invite link or community URL you received."}
+                    ? t("onboard.reconnectMemberHint")
+                    : t("onboard.joinInviteHint")}
                 </p>
               </div>
               <div className="flex w-full flex-1 flex-col items-center justify-center gap-16">
@@ -266,28 +285,26 @@ export function WelcomeSetup({
                   }
                   onConnect={startConnection}
                   onRedeem={redeemInvite}
-                  placeholder="Invite link or community URL"
+                  placeholder={t("onboard.inviteOrCommunityUrl")}
                   variant="onboarding-spotlight"
                 />
                 {page === "join" ? (
                   <div className="w-full max-w-[560px] text-left">
                     <p className="text-sm font-medium text-foreground">
-                      Joining a private community?
+                      {t("onboard.joiningPrivateCommunity")}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-foreground/75">
-                      Some communities need the owner to add you before you can
-                      join. Copy your public ID and send it to the community
-                      owner.
+                      {t("onboard.joiningPrivateCommunityHint")}
                     </p>
                     <div className="mt-4 flex items-center gap-3 rounded-xl border border-foreground/10 bg-background/35 px-4 py-3">
                       <code
                         className="min-w-0 flex-1 truncate font-mono text-xs text-foreground/80"
                         data-testid="welcome-join-npub"
                       >
-                        {npub || "Loading…"}
+                        {npub || t("onboard.loading")}
                       </code>
                       <Button
-                        aria-label="Copy public ID"
+                        aria-label={t("onboard.copyPublicId")}
                         className="h-9 shrink-0 rounded-full px-3"
                         disabled={!npub}
                         onClick={() => {
@@ -305,7 +322,9 @@ export function WelcomeSetup({
                         ) : (
                           <Copy className="h-4 w-4" aria-hidden="true" />
                         )}
-                        <span>{copiedNpub ? "Copied" : "Copy"}</span>
+                        <span>
+                          {copiedNpub ? t("onboard.copied") : t("onboard.copy")}
+                        </span>
                       </Button>
                     </div>
                     {npubError ? (
@@ -318,16 +337,6 @@ export function WelcomeSetup({
               </div>
             </OnboardingSlideTransition>
           )}
-          {isHostedSignInOpen && page !== "owned" ? (
-            <HostedCommunityOnboarding
-              onBack={() => setIsHostedSignInOpen(false)}
-              onReady={() => {
-                setIsHostedSignInOpen(false);
-                showPage("owned");
-              }}
-              stageHidden
-            />
-          ) : null}
         </div>
       </OnboardingFooterProvider>
     </div>

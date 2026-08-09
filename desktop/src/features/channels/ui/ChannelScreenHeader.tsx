@@ -16,6 +16,7 @@ import {
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import { Button } from "@/shared/ui/button";
 import type { Channel, PresenceStatus } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 
 const DM_HEADER_AVATAR_SIZE = 32;
@@ -63,6 +64,7 @@ export function ChannelScreenHeader({
   onManageChannel,
   onToggleMembers,
 }: ChannelScreenHeaderProps) {
+  const t = useT();
   const isGroupDm =
     activeChannel?.channelType === "dm" &&
     activeDmHeaderParticipants.length > 1;
@@ -83,7 +85,7 @@ export function ChannelScreenHeader({
         variant="default"
       >
         <LogIn className="mr-1.5 h-4 w-4" />
-        {isJoining ? "Joining…" : "Join"}
+        {isJoining ? t("channel.joining") : t("channel.join")}
       </Button>
     ) : (
       <ChannelMembersBar
@@ -118,7 +120,9 @@ export function ChannelScreenHeader({
           ) : activeDmParticipant ? (
             <UserProfilePopover
               pubkey={activeDmParticipant.pubkey}
-              triggerAriaLabel={`Open profile for ${activeChannelTitle}`}
+              triggerAriaLabel={t("channel.openProfileAria", {
+                name: activeChannelTitle,
+              })}
               triggerElement="span"
             >
               <ProfileAvatarWithStatus
@@ -167,6 +171,7 @@ function DmHeaderParticipantStack({
 }: {
   participants: ActiveDmHeaderParticipant[];
 }) {
+  const t = useT();
   const { hiddenCount, visibleParticipants } =
     getDmParticipantPreview(participants);
   const stackItemCount = visibleParticipants.length + (hiddenCount > 0 ? 1 : 0);
@@ -180,7 +185,9 @@ function DmHeaderParticipantStack({
         <UserProfilePopover
           key={participant.pubkey}
           pubkey={participant.pubkey}
-          triggerAriaLabel={`Open profile for ${participant.displayName}`}
+          triggerAriaLabel={t("channel.openProfileAria", {
+            name: participant.displayName,
+          })}
           triggerElement="span"
         >
           <span

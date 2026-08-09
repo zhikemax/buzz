@@ -32,6 +32,7 @@ import {
   OnboardingSlideTransition,
 } from "./OnboardingSlideTransition";
 import type { SetupStepActions, SetupStepState } from "./types";
+import { translate, useT } from "@/shared/i18n";
 
 type SetupStepProps = {
   actions: SetupStepActions;
@@ -103,6 +104,7 @@ function RuntimeStatus({
   onInstall: () => void;
   runtime: AcpRuntimeCatalogEntry;
 }) {
+  const t = useT();
   const methodsQuery = useAcpAuthMethodsQuery(runtime.id, {
     enabled:
       runtime.availability === "available" &&
@@ -150,7 +152,7 @@ function RuntimeStatus({
     return (
       <div className="flex flex-col items-center gap-1.5">
         <Button
-          aria-label={`Sign in to ${runtime.label}`}
+          aria-label={t("onboard.signInToRuntime", { runtime: runtime.label })}
           className="buzz-onboarding-runtime-setup h-5 rounded-full bg-[var(--buzz-welcome-chartreuse)]/30 px-2.5 font-mono !text-badge font-normal uppercase text-foreground hover:bg-[var(--buzz-welcome-chartreuse)]/40"
           data-testid={`onboarding-runtime-instructions-${runtime.id}`}
           onClick={() => {
@@ -178,23 +180,23 @@ function RuntimeStatus({
           variant="ghost"
         >
           {isWaitingForSignIn
-            ? "CHECKING…"
+            ? t("onboard.runtimeChecking")
             : didSignInCheckTimeOut
-              ? "CHECK AGAIN"
-              : "SIGN IN"}
+              ? t("onboard.checkAgain")
+              : t("onboard.signIn")}
         </Button>
         {methodsQuery.error instanceof Error ? (
           <RuntimeErrorTooltip
             className="absolute inset-x-3 bottom-2 truncate text-xs leading-4 text-destructive"
-            detail="Couldn’t load sign-in options."
-            label="Sign-in unavailable"
+            detail={t("onboard.runtimeSignInLoadFailed")}
+            label={t("onboard.runtimeSignInUnavailable")}
           />
         ) : null}
         {connectMutation.error instanceof Error ? (
           <RuntimeErrorTooltip
             className="absolute inset-x-3 bottom-2 truncate text-xs leading-4 text-destructive"
-            detail="Couldn’t start sign-in. Try again."
-            label="Sign-in failed"
+            detail={t("onboard.runtimeSignInStartFailed")}
+            label={t("onboard.runtimeSignInFailed")}
           />
         ) : null}
       </div>
@@ -204,12 +206,12 @@ function RuntimeStatus({
   if (isInstalling) {
     return (
       <div
-        aria-label={`Installing ${runtime.label}`}
+        aria-label={t("onboard.installingRuntime", { runtime: runtime.label })}
         className="flex h-5 items-center gap-2 rounded-full bg-white/60 px-2.5 font-mono text-badge font-normal uppercase text-foreground"
         role="status"
       >
         <Spinner className="h-3 w-3 border-2 text-foreground" />
-        INSTALLING
+        {t("onboard.runtimeInstalling")}
       </div>
     );
   }
@@ -222,7 +224,7 @@ function RuntimeStatus({
             className="inline-flex h-5 cursor-default items-center rounded-full bg-[#EBEFEF] px-2.5 font-mono text-badge font-normal uppercase text-foreground"
             data-testid={`onboarding-runtime-ready-${runtime.id}`}
           >
-            READY
+            {t("onboard.runtimeReady")}
           </span>
         </TooltipTrigger>
         <TooltipContent
@@ -241,23 +243,29 @@ function RuntimeStatus({
   ) {
     return (
       <Button
-        aria-label={`Check ${runtime.label} again`}
+        aria-label={t("onboard.runtimeCheckAgainAria", { runtime: runtime.label })}
         className="buzz-onboarding-runtime-setup h-5 rounded-full bg-[var(--buzz-welcome-chartreuse)]/30 px-2.5 font-mono !text-badge font-normal uppercase text-foreground hover:bg-[var(--buzz-welcome-chartreuse)]/40"
         disabled={runtimesQuery.isFetching}
         onClick={() => void runtimesQuery.refetch()}
         type="button"
         variant="ghost"
       >
-        {runtimesQuery.isFetching ? "CHECKING…" : "CHECK AGAIN"}
+        {runtimesQuery.isFetching
+          ? t("onboard.runtimeChecking")
+          : t("onboard.checkAgain")}
       </Button>
     );
   }
 
-  const installLabel = installError ? "RETRY INSTALL" : "INSTALL";
+  const installLabel = installError ? t("onboard.retryInstall") : t("onboard.install");
   if (runtime.canAutoInstall) {
     return (
       <Button
-        aria-label={`${installError ? "Retry installing" : "Install"} ${runtime.label}`}
+        aria-label={
+          installError
+            ? t("onboard.runtimeRetryInstallAria", { runtime: runtime.label })
+            : t("onboard.runtimeInstallAria", { runtime: runtime.label })
+        }
         className="buzz-onboarding-runtime-setup h-5 rounded-full bg-[var(--buzz-welcome-chartreuse)]/30 px-2.5 font-mono !text-badge font-normal uppercase text-foreground hover:bg-[var(--buzz-welcome-chartreuse)]/40"
         data-testid={`onboarding-runtime-install-${runtime.id}`}
         onClick={onInstall}
@@ -271,14 +279,14 @@ function RuntimeStatus({
 
   return (
     <Button
-      aria-label={`View ${runtime.label} install instructions`}
+      aria-label={t("onboard.viewInstallInstructions", { runtime: runtime.label })}
       className="buzz-onboarding-runtime-setup h-5 rounded-full bg-[var(--buzz-welcome-chartreuse)]/30 px-2.5 font-mono !text-badge font-normal uppercase text-foreground hover:bg-[var(--buzz-welcome-chartreuse)]/40"
       data-testid={`onboarding-runtime-instructions-${runtime.id}`}
       onClick={() => void openUrl(runtime.installInstructionsUrl)}
       type="button"
       variant="ghost"
     >
-      INSTALL
+      {t("onboard.install")}
     </Button>
   );
 }
@@ -300,7 +308,7 @@ function RuntimeDetails({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
         </p>
         {runtime.defaultArgs.length > 0 ? (
           <p className="mt-1 text-xs leading-4 text-white">
-            Args:{" "}
+            {translate("onboard.runtimeArgs")}{" "}
             <code className="font-mono">{runtime.defaultArgs.join(", ")}</code>
           </p>
         ) : null}
@@ -312,7 +320,7 @@ function RuntimeDetails({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
     return (
       <>
         <p className="text-xs leading-4 text-white">
-          CLI detected; ACP adapter missing.
+          {translate("onboard.runtimeCliDetectedAdapterMissing")}
         </p>
         <p className="mt-1 text-xs leading-4 text-white">
           {runtime.installHint}
@@ -325,7 +333,7 @@ function RuntimeDetails({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
     return (
       <>
         <p className="text-xs leading-4 text-white">
-          ACP adapter detected but outdated — reinstall required.
+          {translate("onboard.runtimeAdapterOutdated")}
         </p>
         <p className="mt-1 text-xs leading-4 text-white">
           This updates the machine-global{" "}
@@ -350,7 +358,7 @@ function RuntimeDetails({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
     return (
       <>
         <p className="text-xs leading-4 text-white">
-          ACP adapter detected; CLI missing.
+          {translate("onboard.runtimeCliMissing")}
         </p>
         <p className="mt-1 text-xs leading-4 text-white">
           {runtime.installHint}
@@ -361,7 +369,9 @@ function RuntimeDetails({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
 
   return (
     <>
-      <p className="text-xs leading-4 text-white">Not installed yet.</p>
+      <p className="text-xs leading-4 text-white">
+        {translate("onboard.runtimeNotInstalledYet")}
+      </p>
       <p className="mt-1 text-xs leading-4 text-white">{runtime.installHint}</p>
     </>
   );
@@ -380,16 +390,16 @@ function runtimeDetailText(runtime: AcpRuntimeCatalogEntry): string {
     return description.charAt(0).toUpperCase() + description.slice(1);
   }
   if (runtime.availability === "adapter_missing") {
-    return "CLI detected; ACP adapter missing.";
+    return translate("onboard.runtimeCliDetectedAdapterMissing");
   }
   if (runtime.availability === "adapter_outdated") {
-    return "ACP adapter detected but outdated — reinstall required.";
+    return translate("onboard.runtimeAdapterOutdated");
   }
   if (
     runtime.availability === "cli_missing" ||
     runtime.availability === "not_installed"
   ) {
-    return "CLI not detected.";
+    return translate("onboard.runtimeCliNotDetected");
   }
   return "";
 }
@@ -446,8 +456,8 @@ function RuntimeAuthError({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
     return (
       <RuntimeErrorTooltip
         className="absolute inset-x-3 bottom-2 truncate text-xs leading-4 text-destructive"
-        detail="Check this runtime’s configuration and try again."
-        label="Configuration invalid"
+        detail={translate("onboard.runtimeConfigurationInvalidDetail")}
+        label={translate("onboard.runtimeConfigurationInvalid")}
       />
     );
   }
@@ -458,8 +468,8 @@ function RuntimeAuthError({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
     return (
       <RuntimeErrorTooltip
         className="absolute inset-x-3 bottom-2 truncate text-xs leading-4 text-destructive"
-        detail="Couldn’t verify authentication."
-        label="Status unavailable"
+        detail={translate("onboard.runtimeStatusUnavailableDetail")}
+        label={translate("onboard.runtimeStatusUnavailable")}
       />
     );
   }
@@ -510,7 +520,10 @@ function RuntimeCard({
         onInstallResultsChange((current) => ({
           ...current,
           [runtime.id]: {
-            error: error instanceof Error ? error.message : "Install failed.",
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : translate("onboard.runtimeInstallationFailed"),
             success: false,
           },
         }));
@@ -593,7 +606,7 @@ function RuntimeProvidersLoadingState() {
       <div className="flex flex-col items-center text-foreground opacity-35">
         <FlappingBee className="h-auto w-16" />
         <p className="mt-5 text-2xl font-normal leading-8">
-          Finding your providers...
+          {translate("onboard.runtimeFindingProviders")}
         </p>
       </div>
     </div>
@@ -611,6 +624,7 @@ function RuntimeProvidersSection({
   >;
   runtimeProviders: SetupStepState["runtimeProviders"];
 }) {
+  const t = useT();
   const { errorMessage, isChecking, items } = runtimeProviders;
   const orderedItems = getVisibleOnboardingRuntimes(items);
 
@@ -618,11 +632,10 @@ function RuntimeProvidersSection({
     <section className="flex min-h-full w-full flex-col items-center">
       <div className="w-full max-w-[820px] text-center">
         <h1 className="text-title font-normal text-foreground">
-          Set up your agent harnesses
+          {t("onboard.setupHarnesses")}
         </h1>
         <p className="mx-auto mt-3 max-w-[760px] text-sm leading-6 text-foreground/90">
-          Buzz checks for command-line harnesses on this machine. Install the
-          CLI or sign in to at least one to continue.
+          {t("onboard.setupHarnessesHint")}
         </p>
       </div>
 
@@ -645,8 +658,7 @@ function RuntimeProvidersSection({
             className="max-w-[560px] rounded-2xl bg-white/70 px-6 py-6 text-sm text-muted-foreground"
             data-testid="onboarding-acp-empty"
           >
-            No supported command-line harnesses were detected yet. Install a
-            supported CLI, then check again.
+            {t("onboard.runtimeNoSupportedHarnesses")}
           </p>
         )}
 
@@ -666,6 +678,7 @@ function SetupStepContent({
   onReadyRuntimeIdsChange,
   state,
 }: SetupStepContentProps) {
+  const t = useT();
   const { runtimeProviders } = state;
   const [installResults, setInstallResults] =
     React.useState<InstallResultsState>({});
@@ -708,7 +721,7 @@ function SetupStepContent({
             onClick={() => actions.next(readyRuntimeIds)}
             type="button"
           >
-            Next
+            {t("common.next")}
           </Button>
           <Button
             className="absolute left-full ml-3 h-9 animate-in whitespace-nowrap rounded-full px-6 text-sm fade-in fill-mode-backwards [animation-delay:1000ms] animation-duration-[500ms] hover:bg-foreground/10 motion-reduce:animate-none"
@@ -717,7 +730,7 @@ function SetupStepContent({
             type="button"
             variant="ghost"
           >
-            Skip for now
+            {t("common.skip")}
           </Button>
         </div>
 
@@ -728,11 +741,11 @@ function SetupStepContent({
           type="button"
           variant="ghost"
         >
-          Back
+          {t("common.back")}
         </Button>
 
         <p className="text-xs text-foreground/50">
-          More harnesses (Cursor, Grok, Amp&hellip;){" "}
+          {t("onboard.moreHarnessesLead")}{" "}
           {actions.navigateToAgentSettings ? (
             <button
               className="text-foreground/70 underline underline-offset-2 hover:text-foreground"
@@ -740,12 +753,12 @@ function SetupStepContent({
               onClick={actions.navigateToAgentSettings}
               type="button"
             >
-              Settings → Agents
+              {t("onboard.settingsAgents")}
             </button>
           ) : (
-            <span className="text-foreground/70">Settings → Agents</span>
+            <span className="text-foreground/70">{t("onboard.settingsAgents")}</span>
           )}{" "}
-          after setup.
+          {t("onboard.settingsAgentsAfterSetup")}
         </p>
       </OnboardingFooter>
     </OnboardingSlideTransition>

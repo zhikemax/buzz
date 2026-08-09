@@ -11,6 +11,7 @@ import {
   type OnboardingTransitionDirection,
   OnboardingSlideTransition,
 } from "./OnboardingSlideTransition";
+import { useT } from "@/shared/i18n";
 import {
   type EncryptedBackupSession,
   EncryptedBackupCreator,
@@ -33,6 +34,7 @@ export function DownloadKeyStep({
   session,
   onBack,
 }: DownloadKeyStepProps) {
+  const t = useT();
   const reduceMotion = useReducedMotion() ?? false;
   // Once the encrypted payload is saved, the creator advances to its guided
   // backup test while this surface keeps its own navigation.
@@ -66,21 +68,21 @@ export function DownloadKeyStep({
             text-title size token as conflicting with text-foreground. */}
         <h1 className="text-title font-normal text-foreground">
           {hasVerifiedBackup
-            ? "Your backup is verified"
+            ? t("onboard.backupVerified")
             : hasSelectedBackup
-              ? "That’s your backup file"
+              ? t("onboard.thatsBackupFile")
               : hasCreated
-                ? "Optionally, test your backup"
-                : "Backup your key with a password"}
+                ? t("onboard.testBackup")
+                : t("onboard.backupWithPassword")}
         </h1>
         <p className="mt-5 text-sm leading-6 text-foreground/80">
           {hasVerifiedBackup
-            ? "Your file and password can restore your identity."
+            ? t("onboard.backupVerifiedHint")
             : hasSelectedBackup
-              ? "Now enter your password to prove you can unlock it."
+              ? t("onboard.backupSelectedHint")
               : hasCreated
-                ? "Learn how your backup works. Drop the file you just saved and unlock it with your password."
-                : "Keep the downloaded file private — you need both it and your password to restore your identity. Save the backup password somewhere safe; Buzz cannot reset it if lost."}
+                ? t("onboard.backupCreatedHint")
+                : t("onboard.backupPasswordHint")}
         </p>
       </motion.div>
 
@@ -131,7 +133,11 @@ export function DownloadKeyStep({
           type="button"
           variant="ghost"
         >
-          {hasVerifiedBackup ? "Finish" : hasCreated ? "Skip for now" : "Back"}
+          {hasVerifiedBackup
+            ? t("common.finish")
+            : hasCreated
+              ? t("common.skip")
+              : t("common.back")}
         </Button>
       </OnboardingFooter>
     </OnboardingSlideTransition>

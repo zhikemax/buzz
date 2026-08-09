@@ -3,6 +3,7 @@ import { useSystemColorScheme } from "@/shared/theme/useSystemColorScheme";
 import { Button } from "@/shared/ui/button";
 import { FlappingBee } from "@/shared/ui/buzz-logo/FlappingBee";
 import { StartupWindowDragRegion } from "@/shared/ui/StartupWindowDragRegion";
+import { useT } from "@/shared/i18n";
 
 /**
  * Acknowledge a community deep link received before machine onboarding is
@@ -10,6 +11,7 @@ import { StartupWindowDragRegion } from "@/shared/ui/StartupWindowDragRegion";
  * wait until setup finishes so only the user's final identity is admitted.
  */
 export function PendingInviteGate() {
+  const t = useT();
   const { transaction, update, clear } = useCommunityOnboarding();
   const systemColorScheme = useSystemColorScheme();
 
@@ -25,10 +27,10 @@ export function PendingInviteGate() {
       <div className="relative flex w-full max-w-[500px] flex-col items-center text-center">
         <FlappingBee className="h-auto w-24" />
         <h1 className="mt-6 text-3xl font-semibold tracking-tight">
-          Opening community link
+          {t("onboard.openingCommunityLink")}
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          You’ll connect to {transaction.communityName} once setup is finished.
+          {t("onboard.pendingInviteHint", { community: transaction.communityName })}
         </p>
         <div className="mt-8 flex w-full max-w-[300px] flex-col gap-3">
           <Button
@@ -37,7 +39,7 @@ export function PendingInviteGate() {
             onClick={() => update({ acknowledged: true })}
             type="button"
           >
-            Continue setup
+            {t("onboard.continueSetup")}
           </Button>
           <Button
             className="h-10 w-full"
@@ -46,7 +48,7 @@ export function PendingInviteGate() {
             type="button"
             variant="ghost"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </div>

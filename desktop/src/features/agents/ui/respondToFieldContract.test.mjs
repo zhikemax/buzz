@@ -14,16 +14,20 @@ const respondToFieldSource = await readFile(
  */
 const collapsedSource = respondToFieldSource.replace(/\s+/g, " ");
 
-for (const label of ["Only me (default)", "Selected people", "Anyone"]) {
-  test(`respond-to control uses the plain-language label: ${label}`, () => {
-    assert.ok(respondToFieldSource.includes(`label: "${label}"`));
+for (const labelKey of [
+  "agents.respond.onlyMe",
+  "agents.respond.selectedPeople",
+  "agents.respond.anyone",
+]) {
+  test(`respond-to control uses the plain-language label key: ${labelKey}`, () => {
+    assert.ok(respondToFieldSource.includes(`labelKey: "${labelKey}"`));
   });
 }
 
 test("native and persona controls share one option list", () => {
   assert.match(
     respondToFieldSource,
-    /<select[\s\S]*RESPOND_TO_OPTIONS\.map\(\(option\) => \([\s\S]*<option/,
+    /<select[\s\S]*respondToOptions\.map\(\(option\) => \([\s\S]*<option/,
   );
 });
 
@@ -50,7 +54,7 @@ test("the warning copy comes from the shared helper, not inline text", () => {
   // call site must keep that precedence rather than reading only one source.
   assert.match(
     collapsedSource,
-    /agentAccessWarningText\( mode, runLocation \?\? inheritedRunLocation, \)/,
+    /agentAccessWarningText\( mode, runLocation \?\? inheritedRunLocation, t \)/,
   );
   assert.match(collapsedSource, /<p aria-live="polite"[^>]*> \{warningText\}/);
 });

@@ -1,6 +1,8 @@
 import { Smartphone, Webcam } from "lucide-react";
 
 import type { CameraSource } from "@/features/profile/ui/AnimatedAvatarCapture.helpers";
+import { useT } from "@/shared/i18n";
+import type { MessageKey } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 
 type AnimatedAvatarCameraPickerProps = {
@@ -20,22 +22,30 @@ export function AnimatedAvatarCameraPicker({
   onSelectSource,
   testIdPrefix,
 }: AnimatedAvatarCameraPickerProps) {
+  const t = useT();
+  const options: {
+    disabled: boolean;
+    icon: typeof Smartphone;
+    labelKey: MessageKey;
+    source: CameraSource;
+  }[] = [
+    {
+      disabled: iphoneDisabled,
+      icon: Smartphone,
+      labelKey: "avatar.useIphone",
+      source: "iphone",
+    },
+    {
+      disabled: computerDisabled,
+      icon: Webcam,
+      labelKey: "avatar.useThisComputer",
+      source: "computer",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-2 gap-3">
-      {[
-        {
-          disabled: iphoneDisabled,
-          icon: Smartphone,
-          label: "Use iPhone",
-          source: "iphone" as const,
-        },
-        {
-          disabled: computerDisabled,
-          icon: Webcam,
-          label: "Use this computer",
-          source: "computer" as const,
-        },
-      ].map((option) => {
+      {options.map((option) => {
         const Icon = option.icon;
         const isSelected = activeCameraSource === option.source;
         const isDisabled = disabled || option.disabled;
@@ -67,7 +77,7 @@ export function AnimatedAvatarCameraPicker({
                 isSelected && "text-primary",
               )}
             >
-              {option.label}
+              {t(option.labelKey)}
             </span>
           </button>
         );

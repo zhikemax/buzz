@@ -38,6 +38,7 @@ import { useAnchoredScroll } from "@/features/messages/ui/useAnchoredScroll";
 import { useComposerHeightPadding } from "@/features/messages/ui/useComposerHeightPadding";
 import { UpdateIndicator } from "@/features/settings/UpdateIndicator";
 import type { Channel, UserProfileSummary } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 import { TopChromeInsetHeader } from "@/shared/layout/TopChromeInsetHeader";
 import { cn } from "@/shared/lib/cn";
@@ -159,6 +160,7 @@ function InboxMessageDetailPane({
   onSendReply,
   onToggleReaction,
 }: InboxDetailPaneProps) {
+  const t = useT();
   const detailPaneRef = React.useRef<HTMLElement | null>(null);
   const { activeCommunity } = useCommunities();
   // Refs for the shared anchored-scroll hook's container and content roots.
@@ -371,9 +373,11 @@ function InboxMessageDetailPane({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Mail className="h-6 w-6" />
           </div>
-          <p className="mt-4 text-base font-semibold">Select a message</p>
+          <p className="mt-4 text-base font-semibold">
+            {t("inbox.detail.selectTitle")}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pick an inbox item to see the full message and react to it.
+            {t("inbox.detail.selectHint")}
           </p>
         </div>
       </section>
@@ -407,23 +411,23 @@ function InboxMessageDetailPane({
     !isDirectMessage && hasInboxThreadContext(item, messages);
   const contextLabel = isThreadContext
     ? isDirectMessage
-      ? `Thread with ${item.senderLabel}`
+      ? t("inbox.detail.threadWith", { name: item.senderLabel })
       : channelContextName
-        ? `Thread in #${channelContextName}`
-        : "Thread"
+        ? t("inbox.detail.threadIn", { channel: channelContextName })
+        : t("inbox.detail.thread")
     : isDirectMessage
-      ? `DM with ${item.senderLabel}`
+      ? t("inbox.detail.dmWith", { name: item.senderLabel })
       : channelContextName
-        ? `Message in #${channelContextName}`
-        : formatInboxTypeLabel(item);
+        ? t("inbox.detail.messageIn", { channel: channelContextName })
+        : formatInboxTypeLabel(item, t);
   const contextChannelId = item.item.channelId;
   const sourceEventId = selectedEventId ?? item.id;
   const contextThreadRootId = isThreadContext ? item.conversationId : null;
   const openContextLabel = isThreadContext
-    ? "Open full thread"
+    ? t("inbox.detail.openFullThread")
     : isDirectMessage
-      ? "Open conversation"
-      : "Open in channel";
+      ? t("inbox.detail.openConversation")
+      : t("inbox.openInChannel");
 
   const handleSelectReplyTarget = (message: InboxDisplayMessage) => {
     setReplyTargetId((currentReplyTargetId) =>
@@ -450,7 +454,7 @@ function InboxMessageDetailPane({
               >
                 {onBack ? (
                   <Button
-                    aria-label="Back to inbox list"
+                    aria-label={t("inbox.detail.backAria")}
                     className="rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     onClick={onBack}
                     size="icon"
@@ -561,7 +565,7 @@ function InboxMessageDetailPane({
                 data-testid="home-inbox-context-loading"
               >
                 <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
-                <span>Loading surrounding context...</span>
+                <span>{t("inbox.detail.loadingContext")}</span>
               </div>
             ) : null}
             {hasThreadContextLoadError ? (
@@ -570,7 +574,7 @@ function InboxMessageDetailPane({
                 data-testid="home-inbox-context-error"
               >
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>Some message context could not be loaded.</span>
+                <span>{t("inbox.detail.contextLoadError")}</span>
               </div>
             ) : null}
             {displayMessages.map((message, index) => {
@@ -644,7 +648,7 @@ function InboxMessageDetailPane({
                     }
               }
               channelId={item.item.channelId}
-              channelName={item.channelLabel ?? "channel"}
+              channelName={item.channelLabel ?? t("channel.kindChannel")}
               channelType={composerChannelType}
               containerClassName="px-4 pb-4 sm:px-4"
               disabled={!canReply}
@@ -668,10 +672,14 @@ function InboxMessageDetailPane({
               placeholder={
                 canReply
                   ? isDirectMessage
-                    ? `Message ${item.senderLabel}`
-                    : `Send reply to ${item.channelLabel ? `#${item.channelLabel} thread` : "channel thread"}`
+                    ? t("composer.messageUser", { name: item.senderLabel })
+                    : item.channelLabel
+                      ? t("inbox.detail.replyToThread", {
+                          channel: item.channelLabel,
+                        })
+                      : t("inbox.detail.replyToChannelThread")
                   : (disabledReplyReason ??
-                    "Replies are not available for this item.")
+                    t("inbox.detail.repliesUnavailable"))
               }
               replyTarget={composerReplyTarget}
             />
@@ -701,9 +709,11 @@ function HeaderMoreMenu({
   isDeletingMessage: boolean;
   onDelete: () => void;
 }) {
+  const t = useT();
+  const moreActionsLabel = t("inbox.detail.moreActionsAria");
   const trigger = (
     <Button
-      aria-label="More actions"
+      aria-label={moreActionsLabel}
       className="rounded-full text-muted-foreground"
       size="icon"
       type="button"
@@ -719,7 +729,7 @@ function HeaderMoreMenu({
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent>More actions</TooltipContent>
+        <TooltipContent>{moreActionsLabel}</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
@@ -728,7 +738,7 @@ function HeaderMoreMenu({
           onClick={onDelete}
         >
           <Trash2 className="h-4 w-4" />
-          Delete message
+          {t("msg.delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

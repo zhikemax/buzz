@@ -18,6 +18,7 @@ import {
 } from "./OnboardingChrome";
 import { BackupPasswordTimeline } from "./BackupPasswordTimeline";
 import { OnboardingFooter } from "./OnboardingFooter";
+import { useT } from "@/shared/i18n";
 
 const NOSTR_KEY_FILE_MAX_BYTES = 1024;
 
@@ -42,7 +43,7 @@ type NostrKeyImportFormProps = {
  * existing key). The caller owns what happens after `onImport` resolves.
  */
 export function NostrKeyImportForm({
-  backLabel = "Back",
+  backLabel,
   disabled = false,
   errorMessage: externalErrorMessage = null,
   onBack,
@@ -50,6 +51,8 @@ export function NostrKeyImportForm({
   onStageChange,
   variant = "default",
 }: NostrKeyImportFormProps) {
+  const t = useT();
+  const resolvedBackLabel = backLabel ?? t("common.back");
   const [nsecInput, setNsecInput] = React.useState("");
   const [passphrase, setPassphrase] = React.useState("");
   const [isImporting, setIsImporting] = React.useState(false);
@@ -118,7 +121,7 @@ export function NostrKeyImportForm({
 
     if (file.size > NOSTR_KEY_FILE_MAX_BYTES) {
       setImportError(
-        "That file is too large to be a key backup or private key. Choose another file.",
+        t("onboard.fileTooLarge"),
       );
       return;
     }
@@ -131,7 +134,7 @@ export function NostrKeyImportForm({
       setImportError(null);
     } catch (error) {
       setImportError(
-        error instanceof Error ? error.message : "Couldn't read that file.",
+        error instanceof Error ? error.message : t("onboard.readFileFailed"),
       );
     }
   }, []);
@@ -148,10 +151,10 @@ export function NostrKeyImportForm({
     if (!isValid) {
       setImportError(
         isPasswordStage
-          ? "Enter the password for this key backup."
+          ? t("onboard.enterBackupPassword")
           : isEncryptedInput
-            ? "That doesn't look like a complete ncryptsec backup."
-            : "That doesn't look like a valid nsec. Paste an nsec1 key.",
+            ? t("onboard.incompleteNcryptsec")
+            : t("onboard.validNsecHint"),
       );
       return;
     }
@@ -163,7 +166,7 @@ export function NostrKeyImportForm({
       await onImport(trimmedInput, isPasswordStage ? passphrase : undefined);
     } catch (error) {
       setImportError(
-        error instanceof Error ? error.message : "Couldn't import this key.",
+        error instanceof Error ? error.message : t("onboard.couldntImportKey"),
       );
     } finally {
       setIsImporting(false);
@@ -208,7 +211,7 @@ export function NostrKeyImportForm({
             )}
             htmlFor="nostr-private-key"
           >
-            Private key
+            {t("onboard.privateKey")}
           </label>
           {variant === "spotlight" ? (
             <Card
@@ -230,7 +233,7 @@ export function NostrKeyImportForm({
                     setNsecInput(event.target.value);
                     setImportError(null);
                   }}
-                  placeholder="Enter your key here"
+                  placeholder={t("onboard.enterKeyHere")}
                   ref={inputRef}
                   spellCheck={false}
                   type={isRevealed ? "text" : "password"}
@@ -241,7 +244,9 @@ export function NostrKeyImportForm({
                 <Button
                   aria-hidden={!hasInput}
                   aria-label={
-                    isRevealed ? "Hide private key" : "Reveal private key"
+                    isRevealed
+                      ? t("onboard.hidePrivateKey")
+                      : t("onboard.revealPrivateKey")
                   }
                   className={cn(
                     "absolute right-8 top-1/2 h-10 w-10 -translate-y-1/2 text-muted-foreground transition-opacity duration-300 hover:bg-foreground/10 hover:text-foreground motion-reduce:transition-none",
@@ -313,7 +318,7 @@ export function NostrKeyImportForm({
             type="button"
             variant="ghost"
           >
-            Choose a backup file
+            {t("onboard.chooseBackupFile")}
           </Button>
         </div>
       ) : !isPasswordStage ? (
@@ -381,7 +386,7 @@ export function NostrKeyImportForm({
               isDragging && "text-primary",
             )}
           >
-            Drop a key here
+            {t("onboard.dropKeyHere")}
           </span>
         </button>
       ) : null}
@@ -393,7 +398,7 @@ export function NostrKeyImportForm({
         >
           <BackupPasswordTimeline mode="restore" />
           <label className="sr-only" htmlFor="nostr-import-passphrase">
-            Backup password
+            {t("onboard.backupPassword")}
           </label>
           <div className="relative z-10">
             <Input
@@ -406,14 +411,18 @@ export function NostrKeyImportForm({
                 setPassphrase(event.target.value);
                 setImportError(null);
               }}
-              placeholder="Backup password"
+              placeholder={t("onboard.backupPassword")}
               ref={passphraseInputRef}
               spellCheck={false}
               type={isRevealed ? "text" : "password"}
               value={passphrase}
             />
             <Button
-              aria-label={isRevealed ? "Hide password" : "Reveal password"}
+              aria-label={
+                isRevealed
+                  ? t("onboard.hidePassword")
+                  : t("onboard.revealPassword")
+              }
               className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-black/55 hover:bg-black/5 hover:text-black/80"
               data-testid="nostr-import-passphrase-reveal-toggle"
               disabled={isInteractionDisabled}
@@ -450,7 +459,7 @@ export function NostrKeyImportForm({
               >
                 <p className="flex items-center justify-center gap-1.5 text-foreground">
                   <Check aria-hidden="true" className="h-4 w-4 shrink-0" />
-                  Nostr identity found
+                  {t("onboard.nostrIdentityFound")}
                 </p>
                 <p className="break-all font-mono text-[color:var(--buzz-onboarding-backup-ink)]">
                   {previewNpub}
@@ -464,7 +473,7 @@ export function NostrKeyImportForm({
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div className="min-w-0 space-y-0.5">
                   <p className="font-medium text-foreground">
-                    This will use this Nostr identity:
+                    {t("onboard.importWillUseIdentity")}
                   </p>
                   <p className="break-all font-mono text-2xs text-muted-foreground">
                     {previewNpub}
@@ -477,8 +486,8 @@ export function NostrKeyImportForm({
           {showInvalidHint && !errorMessage ? (
             <p className="text-sm text-muted-foreground">
               {isEncryptedInput
-                ? "Waiting for a complete ncryptsec backup"
-                : "Waiting for a valid nsec1 key"}
+                ? t("onboard.waitingCompleteBackup")
+                : t("onboard.waitingValidNsec")}
             </p>
           ) : null}
 
@@ -507,11 +516,11 @@ export function NostrKeyImportForm({
           type="button"
         >
           {isImporting ? (
-            <Spinner aria-label="Importing key" className="h-4 w-4 border-2" />
+            <Spinner aria-label={t("onboard.importingKey")} className="h-4 w-4 border-2" />
           ) : variant === "spotlight" ? (
-            "Next"
+            t("common.next")
           ) : (
-            "Continue with this key"
+            t("onboard.continueWithKey")
           )}
         </Button>
 
@@ -526,7 +535,7 @@ export function NostrKeyImportForm({
           type="button"
           variant="ghost"
         >
-          {isPasswordStage ? "Back" : backLabel}
+          {isPasswordStage ? t("common.back") : resolvedBackLabel}
         </Button>
       </OnboardingFooter>
     </form>

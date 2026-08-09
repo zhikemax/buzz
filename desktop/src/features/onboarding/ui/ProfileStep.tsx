@@ -16,6 +16,7 @@ import {
   OnboardingSlideTransition,
 } from "./OnboardingSlideTransition";
 import type { ProfileStepActions, ProfileStepState } from "./types";
+import { useT } from "@/shared/i18n";
 
 type ProfileStepProps = {
   actions: ProfileStepActions;
@@ -34,6 +35,7 @@ function OnboardingRelayConnectionErrorCard({
   isSaving: boolean;
   message: string;
 }) {
+  const t = useT();
   const {
     isPending: isReconnectPending,
     isWaitingOnReconnectHook,
@@ -123,14 +125,14 @@ function OnboardingRelayConnectionErrorCard({
         .catch((error) => {
           hadActiveReconnectRef.current = false;
           const detail = error instanceof Error ? error.message : String(error);
-          toast.error(`Could not reconnect to the relay. ${detail}`);
+          toast.error(t("onboard.couldNotReconnect", { detail }));
         })
         .finally(() => {
           reconnectActionPendingRef.current = false;
           setIsReconnectActionPending(false);
         });
     },
-    [markSuccess],
+    [markSuccess, t],
   );
 
   const handleReconnectRelay = React.useCallback(() => {
@@ -193,6 +195,7 @@ export function ProfileStep({
   state,
   usesExistingIdentity = false,
 }: ProfileStepProps) {
+  const t = useT();
   const {
     advanceWithoutSaving,
     back,
@@ -221,11 +224,10 @@ export function ProfileStep({
     >
       <div className="w-full max-w-2xl">
         <h1 className="text-title font-normal text-foreground">
-          What should we call you?
+          {t("onboard.whatToCallYou")}
         </h1>
         <p className="mt-5 text-sm leading-6 text-muted-foreground">
-          Pick the name people and agents will see in Buzz. You can change it
-          anytime.
+          {t("onboard.pickNameHint")}
         </p>
       </div>
 
@@ -233,7 +235,7 @@ export function ProfileStep({
         className="mt-12 flex w-full cursor-text flex-col items-center"
         htmlFor="onboarding-display-name"
       >
-        <span className="sr-only">Name</span>
+        <span className="sr-only">{t("onboard.name")}</span>
         <div className="relative h-20 w-full max-w-[576px]">
           {!hasDisplayNameDraft ? (
             <div
@@ -245,12 +247,12 @@ export function ProfileStep({
                   aria-hidden="true"
                   className="buzz-onboarding-name-placeholder-caret h-[0.9em] w-0.5 rounded-full bg-primary"
                 />
-                Enter your name
+                {t("onboard.enterYourName")}
               </span>
             </div>
           ) : null}
           <input
-            aria-label="Name"
+            aria-label={t("onboard.name")}
             autoCapitalize="none"
             autoComplete="off"
             autoCorrect="off"
@@ -288,11 +290,11 @@ export function ProfileStep({
           type="button"
         >
           {isSaving ? (
-            <Spinner aria-label="Saving profile" className="h-4 w-4 border-2" />
+            <Spinner aria-label={t("common.saving")} className="h-4 w-4 border-2" />
           ) : usesExistingIdentity ? (
-            "Continue"
+            t("common.continue")
           ) : (
-            "Create an identity key"
+            t("onboard.createIdentityKey")
           )}
         </Button>
 
@@ -305,7 +307,7 @@ export function ProfileStep({
             type="button"
             variant="ghost"
           >
-            Back
+            {t("common.back")}
           </Button>
         ) : null}
 
@@ -318,7 +320,7 @@ export function ProfileStep({
             type="button"
             variant="ghost"
           >
-            I already have a key
+            {t("onboard.alreadyHaveKey")}
           </Button>
         ) : null}
 
@@ -332,7 +334,7 @@ export function ProfileStep({
               type="button"
               variant="ghost"
             >
-              Skip for now
+              {t("common.skip")}
             </Button>
           ) : null}
           {saveRecovery.canAdvanceWithoutSaving ? (
@@ -343,7 +345,7 @@ export function ProfileStep({
               type="button"
               variant="ghost"
             >
-              Continue without saving
+              {t("onboard.continueWithoutSaving")}
             </Button>
           ) : null}
           <div className="flex-1" />

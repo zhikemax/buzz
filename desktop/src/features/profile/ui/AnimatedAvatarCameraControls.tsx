@@ -7,6 +7,7 @@ import {
   ENTRANCE_TRANSITION,
   RECORD_SECONDS,
 } from "@/features/profile/ui/AnimatedAvatarCapture.helpers";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 
@@ -41,6 +42,7 @@ export function AnimatedAvatarCameraControls({
   showCameraPicker,
   testIdPrefix,
 }: AnimatedAvatarCameraControlsProps) {
+  const t = useT();
   return (
     <div className="grid gap-4">
       {showCameraPicker ? (
@@ -71,7 +73,7 @@ export function AnimatedAvatarCameraControls({
             onClick={onRetry}
             type="button"
           >
-            Try camera again
+            {t("avatar.tryCameraAgain")}
           </Button>
         ) : isLive ? (
           <Button
@@ -92,7 +94,7 @@ export function AnimatedAvatarCameraControls({
               transition={ENTRANCE_TRANSITION}
             >
               <Video aria-hidden="true" className="mr-2 h-4 w-4" />
-              Capture {RECORD_SECONDS} sec video
+              {t("avatar.captureSecVideo", { seconds: RECORD_SECONDS })}
             </motion.button>
           </Button>
         ) : null}
