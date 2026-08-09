@@ -340,6 +340,8 @@ function PersonaCatalogChooser({
   selectedPersona,
   selectedPersonaId,
 }: PersonaCatalogChooserProps) {
+  const t = useT();
+  const personaCatalogCopy = getPersonaCatalogCopy(t);
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-sidebar sm:flex-row">
       {selection === "import" && isDragOver ? (

@@ -45,6 +45,7 @@ import {
   editPersonaDialogState,
   type PersonaDialogState,
 } from "@/features/agents/ui/personaDialogState";
+import { useT } from "@/shared/i18n";
 import { useChannelsQuery } from "@/features/channels/hooks";
 import { useIdentityArchive } from "@/features/identity-archive/hooks";
 import { usePresenceQuery } from "@/features/presence/hooks";
@@ -124,6 +125,7 @@ export function UserProfilePanel({
   widthPx,
   transparentChrome = false,
 }: UserProfilePanelProps) {
+  const t = useT();
   const { globalConfig } = useGlobalAgentConfig();
   const isOverlay = useIsThreadPanelOverlay();
   const isSplitLayout = layout === "split";
@@ -403,11 +405,11 @@ export function UserProfilePanel({
 
   const handleEditAgent = React.useCallback(() => {
     if (resolvedPersona) {
-      setPersonaDialogState(editPersonaDialogState(resolvedPersona));
+      setPersonaDialogState(editPersonaDialogState(resolvedPersona, t));
       return;
     }
     setEditAgentOpen(true);
-  }, [resolvedPersona]);
+  }, [resolvedPersona, t]);
 
   const { deleteManagedAgentRecord, deleteManagedAgentsForPersona } =
     useProfileAgentDeletion({
@@ -549,13 +551,13 @@ export function UserProfilePanel({
 
   const handleEditPersona = React.useCallback(() => {
     if (!resolvedPersona) return;
-    setPersonaDialogState(editPersonaDialogState(resolvedPersona));
-  }, [resolvedPersona]);
+    setPersonaDialogState(editPersonaDialogState(resolvedPersona, t));
+  }, [resolvedPersona, t]);
 
   const handleDuplicatePersona = React.useCallback(() => {
     if (!resolvedPersona) return;
-    setPersonaDialogState(duplicatePersonaDialogState(resolvedPersona));
-  }, [resolvedPersona]);
+    setPersonaDialogState(duplicatePersonaDialogState(resolvedPersona, t));
+  }, [resolvedPersona, t]);
 
   const handleExportPersona = React.useCallback(() => {
     if (resolvedPersona) {
@@ -916,7 +918,7 @@ export function UserProfilePanel({
             ? () => {
                 setEditAgentOpen(false);
                 setEditAgentFocus(undefined);
-                setPersonaDialogState(editPersonaDialogState(resolvedPersona));
+                setPersonaDialogState(editPersonaDialogState(resolvedPersona, t));
               }
             : undefined
         }
