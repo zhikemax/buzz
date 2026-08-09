@@ -577,23 +577,32 @@ test("keyAnnotations_only_matching_key_gets_annotation", () => {
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { LocaleProvider } from "@/shared/i18n/LocaleProvider";
 import { EnvVarsEditor } from "./EnvVarsEditor.tsx";
+
+function renderEnvVarsEditor(props) {
+  return renderToStaticMarkup(
+    React.createElement(
+      LocaleProvider,
+      null,
+      React.createElement(EnvVarsEditor, props),
+    ),
+  );
+}
 
 test("keyAnnotations_annotation_present_only_on_matching_row", () => {
   const annotations = {
     OPENAI_API_KEY: "Used for minting agent trading cards",
   };
-  const html = renderToStaticMarkup(
-    React.createElement(EnvVarsEditor, {
-      disabled: false,
-      fileSatisfiedKeys: [],
-      hiddenKeys: [],
-      keyAnnotations: annotations,
-      onChange: () => {},
-      requiredKeys: [],
-      value: { OPENAI_API_KEY: "sk-placeholder", ANTHROPIC_API_KEY: "sk-ant" },
-    }),
-  );
+  const html = renderEnvVarsEditor({
+    disabled: false,
+    fileSatisfiedKeys: [],
+    hiddenKeys: [],
+    keyAnnotations: annotations,
+    onChange: () => {},
+    requiredKeys: [],
+    value: { OPENAI_API_KEY: "sk-placeholder", ANTHROPIC_API_KEY: "sk-ant" },
+  });
   assert.ok(
     html.includes("Used for minting agent trading cards"),
     "annotation must appear in rendered output for OPENAI_API_KEY row",
@@ -608,17 +617,15 @@ test("keyAnnotations_annotation_absent_for_non_matching_rows", () => {
   const annotations = {
     OPENAI_API_KEY: "Used for minting agent trading cards",
   };
-  const html = renderToStaticMarkup(
-    React.createElement(EnvVarsEditor, {
-      disabled: false,
-      fileSatisfiedKeys: [],
-      hiddenKeys: [],
-      keyAnnotations: annotations,
-      onChange: () => {},
-      requiredKeys: [],
-      value: { ANTHROPIC_API_KEY: "sk-ant", MY_VAR: "foo" },
-    }),
-  );
+  const html = renderEnvVarsEditor({
+    disabled: false,
+    fileSatisfiedKeys: [],
+    hiddenKeys: [],
+    keyAnnotations: annotations,
+    onChange: () => {},
+    requiredKeys: [],
+    value: { ANTHROPIC_API_KEY: "sk-ant", MY_VAR: "foo" },
+  });
   assert.ok(
     !html.includes("Used for minting agent trading cards"),
     "annotation must not appear when its key is not in the env map",

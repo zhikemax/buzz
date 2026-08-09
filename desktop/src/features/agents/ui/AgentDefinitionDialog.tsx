@@ -594,7 +594,7 @@ export function AgentDefinitionDialog({
   runtimeDropdownOptions.push(ADD_CUSTOM_HARNESS_OPTION);
   const runtimeSummaryLabel = selectedRuntime
     ? formatRuntimeOptionLabel(selectedRuntime)
-    : runtime.trim() || "Not configured";
+    : runtime.trim() || t("agents.notConfigured");
   const providerDropdownOptions: PersonaDropdownOption[] = [
     ...providerOptions
       .filter((option) => option.id.trim().length > 0)
@@ -849,9 +849,11 @@ export function AgentDefinitionDialog({
                 htmlFor="persona-llm-provider"
                 isRequired={providerIsRequired}
               >
-                LLM provider
+                {t("agents.llmProvider")}
                 {!providerIsRequired ? (
-                  <span className={PERSONA_LABEL_OPTIONAL_CLASS}>Optional</span>
+                  <span className={PERSONA_LABEL_OPTIONAL_CLASS}>
+                    {t("common.optional")}
+                  </span>
                 ) : null}
               </RequiredFieldLabel>
               <PersonaDropdownField
@@ -870,7 +872,7 @@ export function AgentDefinitionDialog({
                   )}
                 >
                   <Input
-                    aria-label="Custom provider ID"
+                    aria-label={t("agents.customProviderIdAria")}
                     autoCorrect="off"
                     className={cn(
                       "h-8 px-0 py-0 leading-6",
@@ -879,7 +881,7 @@ export function AgentDefinitionDialog({
                     disabled={isPending}
                     id="persona-custom-provider"
                     onChange={(event) => setProvider(event.target.value)}
-                    placeholder="Custom provider ID"
+                    placeholder={t("agents.customProviderId")}
                     value={provider}
                   />
                 </div>
@@ -896,7 +898,9 @@ export function AgentDefinitionDialog({
               isInherited={apiKeyIsInherited}
               inheritedLabel={apiKeyInheritedLabel}
               isRequired={apiKeyIsRequired}
-              label={getProviderApiKeyLabel(effectiveProvider) ?? "API key"}
+              label={
+                getProviderApiKeyLabel(effectiveProvider) ?? t("agents.apiKey")
+              }
               onValueChange={(next) => {
                 setEnvVars((prev) => ({
                   ...prev,
@@ -960,7 +964,7 @@ export function AgentDefinitionDialog({
             onClick={() => setShowAdvancedFields((current) => !current)}
             type="button"
           >
-            <span>Advanced</span>
+            <span>{t("agents.advanced")}</span>
             {(isCreateMode && createSubmitBlocked) ||
             localModeGate.missingEnvKeys.some((key) =>
               advancedRequiredEnvKeys.includes(key),
@@ -970,7 +974,7 @@ export function AgentDefinitionDialog({
                 className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive"
                 data-testid="persona-advanced-required-badge"
               >
-                Required
+                {t("agents.required")}
               </span>
             ) : null}
             <ChevronDown

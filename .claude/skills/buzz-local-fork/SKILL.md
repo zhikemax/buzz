@@ -116,16 +116,42 @@ in an i18n PR without explicit user request.
 
 | Remote | URL | Role |
 |--------|-----|------|
-| `origin` | `https://github.com/zhikemax/buzz.git` | Personal fork — push feature branches here |
+| `origin` | `https://github.com/zhikemax/buzz.git` | Personal **GitHub** fork — default push target |
 | `upstream` | `https://github.com/block/buzz.git` | Official — fetch/merge `upstream/main` only |
+| `gitee` | *(not configured)* | Do **not** invent a URL. Ask the user for the Gitee repo URL, then `git remote add gitee <url>` |
 
 ```bash
 git fetch upstream main
 git merge upstream/main
-# push your branch to the fork:
+# push your branch to the GitHub fork:
 git push -u origin HEAD
 ```
 
+### Push wording (avoid wrong remote)
+
+| User says | Action |
+|-----------|--------|
+| 推送 / 推仓库 / 推送仓库 / push / 推到 fork | `git push -u origin HEAD` → **GitHub** `zhikemax/buzz` |
+| 推送 GitHub / 推 origin | same → `origin` |
+| 推送 Gitee / 推 gitee | Only if remote `gitee` exists; else **ask for URL first**. Never push Gitee to `origin`. |
+| 推官方 / push upstream | **Refuse** unless user explicitly wants to push to `block/buzz` (they usually do not) |
+
+Ambiguous「推送仓库」= **GitHub origin**, not Gitee, not upstream.
 ## Branch
 
 Default working branch: `feat/zh-CN-i18n`. Commits need DCO: `git commit -s`.
+
+## More local changes later
+
+1. Stay on `feat/zh-CN-i18n` (or cut `feat/...` from it for a focused PR).
+2. Before big work: `git fetch upstream main && git merge upstream/main` (this skill).
+3. Classify the change:
+   - **Upstream-worthy** (i18n keys, Host fix, real bugs) → clean commit, push
+     `origin`, open PR `zhikemax/buzz` → `block/buzz`.
+   - **Fork-only** (LocalCommunityCreateForm, Windows `mesh-llm = []`,
+     `tauri.dev.local.json`) → commit on the fork branch; do **not** put in an
+     upstream PR unless the user asks.
+4. After any UI string change: update **both** `en.ts` and `zh-CN.ts`, then
+   `cd desktop && pnpm exec tsc --noEmit`.
+5. Say in chat:「同步官方」or「按 buzz-local-fork 做 xxx」so the agent reloads
+   these rules.

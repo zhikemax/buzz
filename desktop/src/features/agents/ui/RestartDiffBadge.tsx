@@ -3,13 +3,15 @@ import { RefreshCw } from "lucide-react";
 import { Badge } from "@/shared/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import type { RestartDiffEntry, RestartChange } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 
 // ── Auto-restart copy ─────────────────────────────────────────────────────────
 
 /**
- * Shared blurb strings for the auto-restart state. Exported so the Runtime-tab
- * banner can import the same constants — the two surfaces must never drift.
+ * Shared blurb strings for the auto-restart state. Prefer
+ * {@link autoRestartBlurb} with `useT()` so locale stays in sync; these English
+ * constants remain for non-React callers / tests.
  */
 export const AUTO_RESTART_ON_BLURB =
   "Configuration changed since this agent started. Buzz can restart it automatically after ~3 minutes idle, or stop and respawn it to apply now.";
@@ -17,6 +19,14 @@ export const AUTO_RESTART_ON_BLURB =
 export const AUTO_RESTART_OFF_BLURB =
   "Configuration changed since this agent started. Automatic restart is off for this agent — stop and respawn it to apply the changes.";
 
+export function autoRestartBlurb(
+  autoRestartEnabled: boolean,
+  t: TranslateFn,
+): string {
+  return autoRestartEnabled
+    ? t("agents.autoRestartOnBlurb")
+    : t("agents.autoRestartOffBlurb");
+}
 // ── Label helpers ─────────────────────────────────────────────────────────────
 
 /**
@@ -150,10 +160,11 @@ export function RestartDiffBadge({
   restartDiff: RestartDiffEntry[];
   className?: string;
 }) {
+  const t = useT();
   const badge = (
     <Badge className={cn("cursor-default gap-1", className)} variant="warning">
       <RefreshCw className="h-3 w-3" />
-      Restart required
+      {t("agents.restartRequired")}
     </Badge>
   );
 
@@ -174,14 +185,16 @@ export function RestartDiffBadge({
           data-testid="restart-diff-badge"
         >
           <RefreshCw className="h-3 w-3" />
-          Restart required
+          {t("agents.restartRequired")}
         </Badge>
       </TooltipTrigger>
       <TooltipContent className="max-w-72 text-xs" side="bottom">
-        <p className="mb-1.5 font-semibold">Config changed since last start:</p>
+        <p className="mb-1.5 font-semibold">
+          {t("agents.configChangedSinceStart")}
+        </p>
         <DiffList cap={TOOLTIP_CAP} entries={restartDiff} />
         <p className="mt-1.5 text-primary-foreground/70">
-          {autoRestartEnabled ? AUTO_RESTART_ON_BLURB : AUTO_RESTART_OFF_BLURB}
+          {autoRestartBlurb(autoRestartEnabled, t)}
         </p>
       </TooltipContent>
     </Tooltip>

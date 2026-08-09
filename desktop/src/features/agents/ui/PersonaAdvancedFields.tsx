@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useAgentAccessOwnerOnlyQuery } from "../useAgentAccessOwnerOnly";
+import { useT } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { cn } from "@/shared/lib/cn";
 import { EnvVarsEditor, type EnvVarsValue } from "./EnvVarsEditor";
@@ -13,8 +14,7 @@ import {
   BUZZ_AGENT_THINKING_EFFORT,
 } from "./buzzAgentConfig";
 import {
-  AGENT_PARALLELISM_HELP,
-  AGENT_PARALLELISM_PLACEHOLDER,
+  DEFAULT_AGENT_PARALLELISM,
   parallelismCapHint,
 } from "../lib/agentParallelism";
 import {
@@ -90,10 +90,12 @@ export function PersonaAdvancedFields({
    */
   selectedRuntime?: AcpRuntimeCatalogEntry;
 }) {
+  const t = useT();
   const { data: agentAccessOwnerOnly = false } = useAgentAccessOwnerOnlyQuery();
   const respondToMode = agentAccessOwnerOnly
     ? "owner-only"
     : (behaviorDraft.respondTo ?? "owner-only");
+  const defaultParallelism = String(DEFAULT_AGENT_PARALLELISM);
 
   // Numeric tuning descriptors — gate on catalog status so that loading/error
   // never collapses to "no controls": keys stay visible as generic rows.
@@ -164,8 +166,10 @@ export function PersonaAdvancedFields({
             className="text-sm font-medium text-foreground"
             htmlFor="persona-parallelism"
           >
-            Parallelism
-            <span className={PERSONA_LABEL_OPTIONAL_CLASS}>Optional</span>
+            {t("agents.parallelism")}
+            <span className={PERSONA_LABEL_OPTIONAL_CLASS}>
+              {t("common.optional")}
+            </span>
           </label>
           <div
             className={cn(
@@ -189,13 +193,17 @@ export function PersonaAdvancedFields({
                   parallelism: event.target.value,
                 })
               }
-              placeholder={AGENT_PARALLELISM_PLACEHOLDER}
+              placeholder={t("agents.appDefaultParallelism", {
+                count: defaultParallelism,
+              })}
               type="number"
               value={behaviorDraft.parallelism}
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            {AGENT_PARALLELISM_HELP}
+            {t("agents.appDefaultParallelismHelp", {
+              count: defaultParallelism,
+            })}
           </p>
           {personaParallelismHint !== null ? (
             <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -210,8 +218,10 @@ export function PersonaAdvancedFields({
           className="text-sm font-medium text-foreground"
           htmlFor="persona-name-pool"
         >
-          Instance name pool
-          <span className={PERSONA_LABEL_OPTIONAL_CLASS}>Optional</span>
+          {t("agents.instanceNamePool")}
+          <span className={PERSONA_LABEL_OPTIONAL_CLASS}>
+            {t("common.optional")}
+          </span>
         </label>
         <div
           className={cn(
@@ -229,7 +239,7 @@ export function PersonaAdvancedFields({
             disabled={disabled}
             id="persona-name-pool"
             onChange={(event) => onNamePoolTextChange(event.target.value)}
-            placeholder="Birch, Compass, Ridge, Thistle"
+            placeholder={t("agents.namePoolPlaceholder")}
             spellCheck={false}
             value={namePoolText}
           />

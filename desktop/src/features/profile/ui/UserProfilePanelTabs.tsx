@@ -11,10 +11,10 @@ import {
 
 import type { ManagedAgent, RestartDiffEntry } from "@/shared/api/types";
 import {
-  AUTO_RESTART_OFF_BLURB,
-  AUTO_RESTART_ON_BLURB,
+  autoRestartBlurb,
   RestartDiffList,
 } from "@/features/agents/ui/RestartDiffBadge";
+import { useT } from "@/shared/i18n";
 import type { ActiveTurnSummary } from "@/features/agents/activeAgentTurnsStore";
 import { ManagedAgentSessionPanel } from "@/features/agents/ui/ManagedAgentSessionPanel";
 import {
@@ -228,6 +228,7 @@ export function ProfileTabBar({
     trailing?: React.ReactNode;
   }>;
 }) {
+  const t = useT();
   const { didDragRef, onPointerDown, scrollRef } = useHorizontalDragScroll();
 
   return (
@@ -237,7 +238,7 @@ export function ProfileTabBar({
       ref={scrollRef}
     >
       <div
-        aria-label="Profile sections"
+        aria-label={t("profile.sectionsAria")}
         className="flex w-max min-w-full justify-center gap-1.5"
         role="tablist"
       >
@@ -307,6 +308,7 @@ export function ProfileInfoTabContent({
   pubkey: string | null;
   showActivityIngress: boolean;
 }) {
+  const t = useT();
   const infoFields: ProfileField[] = isArchived
     ? [
         ...agentInfoFields,
@@ -344,10 +346,10 @@ export function ProfileInfoTabContent({
         ) : (
           <ProfileIngressRow
             icon={Wrench}
-            label="Activity log"
+            label={t("profile.activityLog")}
             onClick={() => onOpenActivity(null)}
             testId={`user-profile-view-activity-${pubkey}`}
-            trailing="View"
+            trailing={t("common.view")}
           />
         )
       ) : null}
@@ -838,6 +840,7 @@ export function ProfileRuntimeTabContent({
   showDiagnosticsIngress: boolean;
   showInstructionBlock: boolean;
 }) {
+  const t = useT();
   const statusDiagnosticsFields = diagnosticsFields.filter(
     (field) => field.label === "Status",
   );
@@ -868,12 +871,10 @@ export function ProfileRuntimeTabContent({
           <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="min-w-0 text-sm">
             <p className="font-medium text-amber-600 dark:text-amber-400">
-              Restart required
+              {t("agents.restartRequired")}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {autoRestartEnabled
-                ? AUTO_RESTART_ON_BLURB
-                : AUTO_RESTART_OFF_BLURB}
+              {autoRestartBlurb(autoRestartEnabled, t)}
             </p>
             {/* Full uncapped diff list — Runtime banner is the only surface
                 where all entries show without truncation. */}
@@ -895,7 +896,7 @@ export function ProfileRuntimeTabContent({
       {showDiagnosticsIngress ? (
         <ProfileIngressRow
           icon={Activity}
-          label="Harness Log"
+          label={t("profile.harnessLog")}
           onClick={onOpenDiagnostics}
           testId="user-profile-diagnostics-ingress"
           trailing={diagnosticsSummary}

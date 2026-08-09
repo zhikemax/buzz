@@ -6,11 +6,23 @@ import {
   PROFILE_PANEL_VIEW_TITLES,
   type ProfilePanelView,
 } from "@/features/profile/ui/UserProfilePanelUtils";
+import type { MessageKey, TranslateFn } from "@/shared/i18n";
 import {
   AuxiliaryPanelHeaderActions,
   AuxiliaryPanelHeaderGroup,
   AuxiliaryPanelHeaderTitleBlock,
 } from "@/shared/layout/AuxiliaryPanel";
+
+const PROFILE_PANEL_VIEW_TITLE_KEYS: Record<ProfilePanelView, MessageKey> = {
+  summary: "profile.title",
+  instructions: "profile.instructions",
+  info: "profile.agentInfo",
+  configuration: "profile.tabRuntime",
+  diagnostics: "profile.harnessLog",
+  memories: "profile.tabMemories",
+  channels: "profile.tabChannels",
+  logs: "profile.harnessLog",
+};
 
 export function getUserProfilePanelHeaderContent({
   agentSettingsMenu,
@@ -18,6 +30,7 @@ export function getUserProfilePanelHeaderContent({
   logCopyValue,
   logSubtitle,
   onBack,
+  t,
   view,
   viewerIsOwner,
 }: {
@@ -26,16 +39,18 @@ export function getUserProfilePanelHeaderContent({
   logCopyValue?: string | null;
   logSubtitle?: string | null;
   onBack: () => void;
+  t: TranslateFn;
   view: ProfilePanelView;
   viewerIsOwner: boolean;
 }) {
-  const title = PROFILE_PANEL_VIEW_TITLES[view];
+  const title =
+    t(PROFILE_PANEL_VIEW_TITLE_KEYS[view]) || PROFILE_PANEL_VIEW_TITLES[view];
   const shouldShowLogDetails =
     (view === "diagnostics" || view === "logs") && Boolean(logSubtitle);
   const headerLeftContent = (
     <AuxiliaryPanelHeaderGroup
       align={shouldShowLogDetails ? "start" : "center"}
-      backButtonAriaLabel="Back to profile"
+      backButtonAriaLabel={t("profile.backToProfile")}
       backButtonTestId="user-profile-panel-back"
       onBack={view !== "summary" ? onBack : undefined}
     >

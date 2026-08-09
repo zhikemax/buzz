@@ -5,6 +5,7 @@ import type {
   PresenceLookup,
   RelayAgent,
 } from "@/shared/api/types";
+import type { TranslateFn } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 
 type DeleteManagedAgentInput = {
@@ -35,16 +36,23 @@ export function isManagedAgentActive(agent: Pick<ManagedAgent, "status">) {
   return agent.status === "running" || agent.status === "deployed";
 }
 
-export function getManagedAgentPrimaryActionLabel(agent: ManagedAgent) {
+export function getManagedAgentPrimaryActionLabel(
+  agent: ManagedAgent,
+  t: TranslateFn,
+) {
   if (agent.backend.type === "provider") {
-    return isManagedAgentActive(agent) ? "Shutdown" : "Deploy";
+    return isManagedAgentActive(agent)
+      ? t("agents.shutdown")
+      : t("agents.deploy");
   }
 
   if (isManagedAgentActive(agent)) {
-    return "Stop";
+    return t("agents.stop");
   }
 
-  return agent.status === "stopped" ? "Restart Agent" : "Start Agent";
+  return agent.status === "stopped"
+    ? t("agents.restartAgent")
+    : t("agents.startAgent");
 }
 
 export function resolveManagedAgentChannelId(

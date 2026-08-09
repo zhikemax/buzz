@@ -48,6 +48,7 @@ import type {
   ProfileChannelLink,
   ProfilePanelTab,
 } from "@/features/profile/ui/UserProfilePanelUtils";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
 import { Badge } from "@/shared/ui/badge";
@@ -150,8 +151,13 @@ function resolveRuntimeTabStatus({
 }
 
 function RuntimeTabStatusDot({ status }: { status: RuntimeTabStatus }) {
+  const t = useT();
   const label =
-    status === "error" ? "Error" : status === "running" ? "Running" : "Stopped";
+    status === "error"
+      ? t("common.error")
+      : status === "running"
+        ? t("agents.statusRunning")
+        : t("agents.statusStopped");
 
   return (
     <span
@@ -223,6 +229,7 @@ export function ProfileSummaryView({
   unfollowMutation,
   userStatus,
 }: ProfileSummaryViewProps) {
+  const t = useT();
   const activeTurns = useAgentWorking(isBot ? pubkey : null).channels;
 
   const showMemoriesTab = isOwner === true && Boolean(pubkey);
@@ -263,10 +270,10 @@ export function ProfileSummaryView({
   const diagnosticsTrailing =
     diagnosticsErrorField !== undefined ? (
       <Badge title={diagnosticsErrorField.displayValue} variant="destructive">
-        Error
+        {t("common.error")}
       </Badge>
     ) : (
-      "View"
+      t("common.view")
     );
   const runtimeTabStatus = resolveRuntimeTabStatus({
     diagnosticsError: diagnosticsErrorField !== undefined,
@@ -280,12 +287,12 @@ export function ProfileSummaryView({
       trailing?: React.ReactNode;
     }> = [];
     if (showInfoTab) {
-      items.push({ id: "info", label: "Info" });
+      items.push({ id: "info", label: t("profile.tabInfo") });
     }
     if (showRuntimeTab) {
       items.push({
         id: "runtime",
-        label: "Runtime",
+        label: t("profile.tabRuntime"),
         trailing: runtimeTabStatus ? (
           <RuntimeTabStatusDot status={runtimeTabStatus} />
         ) : undefined,
@@ -294,7 +301,7 @@ export function ProfileSummaryView({
     if (showChannelsTab) {
       items.push({
         id: "channels",
-        label: "Channels",
+        label: t("profile.tabChannels"),
         trailing: channelsLoading
           ? "…"
           : channelCount > 0
@@ -305,7 +312,7 @@ export function ProfileSummaryView({
     if (showMemoriesTab) {
       items.push({
         id: "memories",
-        label: "Memories",
+        label: t("profile.tabMemories"),
         trailing: memoriesLoading
           ? "…"
           : memoryCount !== undefined
@@ -324,6 +331,7 @@ export function ProfileSummaryView({
     showInfoTab,
     showMemoriesTab,
     showRuntimeTab,
+    t,
   ]);
 
   const showTabSection = tabs.length > 0;
@@ -359,7 +367,7 @@ export function ProfileSummaryView({
           agentActionDisabled={isAgentActionPending}
           agentActionLabel={
             isOwner === true && managedAgent
-              ? getManagedAgentPrimaryActionLabel(managedAgent)
+              ? getManagedAgentPrimaryActionLabel(managedAgent, t)
               : undefined
           }
           agentActionLive={
@@ -680,21 +688,22 @@ export function ChannelsFocusedView({
   onOpenChannel: (channelId: string) => void;
   variant?: "embedded" | "focused";
 }) {
+  const t = useT();
   return (
     <div className={cn("space-y-3", variant === "focused" && "pt-4")}>
       {canAddToChannel ? (
         <ProfileIngressRow
           disabled={isActionPending}
           icon={UserPlus}
-          label="Add to channel"
+          label={t("agents.addToChannel")}
           onClick={onAddToChannel}
           testId="user-profile-agent-add-channel"
-          trailing={isActionPending ? "Working…" : undefined}
+          trailing={isActionPending ? t("agents.workingEllipsis") : undefined}
         />
       ) : null}
       {isLoading ? (
         <p className="text-base leading-7 text-muted-foreground">
-          Loading channels…
+          {t("agents.loadingChannels")}
         </p>
       ) : channels.length === 0 ? (
         <div
@@ -707,13 +716,13 @@ export function ChannelsFocusedView({
           <UserPlus className="mx-auto h-4 w-4 text-muted-foreground" />
           <p className="mt-3 text-sm font-medium">
             {canAddToChannel
-              ? "Add this agent to a channel"
-              : "Channels appear here"}
+              ? t("agents.addAgentToChannel")
+              : t("agents.channelsAppearHere")}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {canAddToChannel
-              ? "Choose a channel above so it can join the conversation."
-              : "Visible memberships appear as this agent joins channels."}
+              ? t("agents.chooseChannelHint")
+              : t("agents.channelsMembershipHint")}
           </p>
         </div>
       ) : (
@@ -724,7 +733,7 @@ export function ChannelsFocusedView({
           {channels.map((channel) => (
             <li key={channel.id}>
               <button
-                aria-label={`Open #${channel.name}`}
+                aria-label={t("agents.openChannelAria", { name: channel.name })}
                 className="group flex w-full items-center gap-3 px-4 py-3 text-left text-base leading-7 text-foreground transition-colors hover:bg-muted/40"
                 data-testid={`user-profile-channel-link-${channel.name}`}
                 onClick={() => onOpenChannel(channel.id)}

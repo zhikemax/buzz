@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 import { Switch } from "@/shared/ui/switch";
+import { useT } from "@/shared/i18n";
 
 export function UserProfileAgentSettingsMenu({
   archiveActions,
@@ -53,6 +54,7 @@ export function UserProfileAgentSettingsMenu({
   onToggleAutoStart?: () => void;
   personaActionKey?: string;
 }) {
+  const t = useT();
   const [archiveConfirmOpen, setArchiveConfirmOpen] = React.useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const actionKey = managedAgent?.pubkey ?? "persona-draft";
@@ -76,15 +78,19 @@ export function UserProfileAgentSettingsMenu({
     return null;
   }
 
-  const archiveLabel = isBot ? "Archive agent" : "Archive identity";
-  const unarchiveLabel = isBot ? "Unarchive agent" : "Unarchive identity";
+  const archiveLabel = isBot
+    ? t("agents.archiveAgent")
+    : t("agents.archiveIdentity");
+  const unarchiveLabel = isBot
+    ? t("agents.unarchiveAgent")
+    : t("agents.unarchiveIdentity");
 
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
-            aria-label="Open profile settings"
+            aria-label={t("agents.openProfileSettings")}
             data-testid="user-profile-settings-menu-trigger"
             size="icon"
             type="button"
@@ -109,10 +115,10 @@ export function UserProfileAgentSettingsMenu({
             >
               <Power className="h-4 w-4 text-muted-foreground" />
               <span className="min-w-0 flex-1 text-sm font-medium">
-                Auto-start
+                {t("agents.autoStart")}
               </span>
               <Switch
-                aria-label="Auto-start"
+                aria-label={t("agents.autoStart")}
                 checked={managedAgent.startOnAppLaunch}
                 data-testid={autoStartSwitchId}
                 disabled={isPending}
@@ -129,7 +135,7 @@ export function UserProfileAgentSettingsMenu({
               onClick={onDuplicatePersona}
             >
               <CopyPlus className="h-4 w-4" />
-              Duplicate
+              {t("common.duplicate")}
             </DropdownMenuItem>
           ) : null}
           {onExportPersona ? (
@@ -139,7 +145,7 @@ export function UserProfileAgentSettingsMenu({
               onClick={onExportPersona}
             >
               <Download className="h-4 w-4" />
-              Export
+              {t("agents.export")}
             </DropdownMenuItem>
           ) : null}
           {hasManageActions && (canToggleAutoStart || hasPrimaryActions) ? (
@@ -153,7 +159,9 @@ export function UserProfileAgentSettingsMenu({
                 onClick={archiveActions.unarchive}
               >
                 <ArchiveRestore className="h-4 w-4" />
-                {archiveActions.isPending ? "Unarchiving…" : unarchiveLabel}
+                {archiveActions.isPending
+                  ? t("agents.unarchiving")
+                  : unarchiveLabel}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
@@ -162,7 +170,9 @@ export function UserProfileAgentSettingsMenu({
                 onSelect={() => setArchiveConfirmOpen(true)}
               >
                 <Archive className="h-4 w-4" />
-                {archiveActions.isPending ? "Archiving…" : archiveLabel}
+                {archiveActions.isPending
+                  ? t("agents.archiving")
+                  : archiveLabel}
               </DropdownMenuItem>
             )
           ) : null}
@@ -181,7 +191,7 @@ export function UserProfileAgentSettingsMenu({
               }}
             >
               <Trash2 className="h-4 w-4" />
-              Delete agent
+              {t("agents.deleteAgent")}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -304,38 +314,37 @@ function AgentDeleteConfirmDialog({
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }) {
+  const t = useT();
   const isProviderAgent = agent.backend.type === "provider";
 
   return (
     <AlertDialog onOpenChange={onOpenChange} open={open}>
       <AlertDialogContent data-testid="agent-delete-confirm-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this agent?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {t("agents.deleteAgentConfirmTitle")}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Deleting this agent stops and removes the agent from this community.
+            {t("agents.deleteAgentConfirmDesc")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-          <li>Removes the local management record and saved agent key</li>
-          <li>Removes the agent from every channel it belongs to</li>
-          <li>
-            Archives the agent&apos;s identity on the relay so it no longer
-            appears in member lists or mention suggestions
-          </li>
+          <li>{t("agents.deleteBulletLocal")}</li>
+          <li>{t("agents.deleteBulletChannels")}</li>
+          <li>{t("agents.deleteBulletArchive")}</li>
           <li>
             {isProviderAgent
-              ? "Requests remote deletion; if it is online, Buzz first sends a shutdown command when possible. If the deployment cannot be reached through a channel, the remote process may keep running without local management."
-              : "Stops any local agent process before deleting the record"}
+              ? t("agents.deleteBulletRemote")
+              : t("agents.deleteBulletLocalStop")}
           </li>
         </ul>
         <p className="text-sm text-muted-foreground">
-          You can also archive this agent from the profile settings menu if you
-          want to hide the agent instead of removing it.
+          {t("agents.deleteAlsoArchiveHint")}
         </p>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction
@@ -344,7 +353,7 @@ function AgentDeleteConfirmDialog({
             disabled={isPending}
             onClick={onConfirm}
           >
-            {isPending ? "Deleting..." : "Delete agent"}
+            {isPending ? t("agents.deleting") : t("agents.deleteAgent")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

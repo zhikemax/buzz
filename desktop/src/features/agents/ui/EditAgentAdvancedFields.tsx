@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
@@ -19,10 +20,7 @@ import {
   isBuzzAgentRuntime,
   BUZZ_AGENT_THINKING_EFFORT,
 } from "./buzzAgentConfig";
-import {
-  EDIT_AGENT_PARALLELISM_HELP,
-  parallelismCapHint,
-} from "../lib/agentParallelism";
+import { parallelismCapHint } from "../lib/agentParallelism";
 import {
   deriveNumericDescriptors,
   structuredEnvKeys,
@@ -108,6 +106,7 @@ export function EditAgentAdvancedFields({
   onAutoRestartChange: (value: boolean) => void;
   onSystemPromptChange: (value: string) => void;
 }) {
+  const t = useT();
   // Numeric tuning descriptors — gate on catalog status so that loading/error
   // never collapses to "no controls": keys stay visible as generic rows.
   const numericDescriptors = React.useMemo(
@@ -162,14 +161,17 @@ export function EditAgentAdvancedFields({
               onChange={(event) => onInheritHarnessChange(event.target.checked)}
               type="checkbox"
             />
-            Inherit runtime from template
+            {t("agents.inheritRuntime")}
           </label>
           <p className="text-xs text-muted-foreground">
             {inheritHarness
-              ? `Uses the ${linkedPersona.displayName} template's runtime${
-                  linkedPersona.runtime ? ` (${linkedPersona.runtime})` : ""
-                }. Editing the template and respawning propagates the new runtime.`
-              : "Pins this agent to a specific runtime command, overriding the template's runtime."}
+              ? t("agents.inheritRuntimeOn", {
+                  name: linkedPersona.displayName,
+                  runtimeSuffix: linkedPersona.runtime
+                    ? ` (${linkedPersona.runtime})`
+                    : "",
+                })
+              : t("agents.inheritRuntimeOff")}
           </p>
         </div>
       ) : null}
@@ -186,12 +188,12 @@ export function EditAgentAdvancedFields({
             onChange={(event) => onAutoRestartChange(event.target.checked)}
             type="checkbox"
           />
-          Auto-restart on config change
+          {t("agents.autoRestartConfig")}
         </label>
         <p className="text-xs text-muted-foreground">
           {autoRestartOnConfigChange
-            ? "Restarts this agent automatically when its configuration changes, once it is idle and connected."
-            : "Configuration changes only show the restart badge; restart manually to apply them."}
+            ? t("agents.autoRestartConfigOn")
+            : t("agents.autoRestartConfigOff")}
         </p>
       </div>
 
@@ -201,8 +203,10 @@ export function EditAgentAdvancedFields({
           className="text-sm font-medium text-foreground"
           htmlFor="edit-agent-args"
         >
-          Agent runtime args
-          <span className={PERSONA_LABEL_OPTIONAL_CLASS}>Optional</span>
+          {t("agents.runtimeArgs")}
+          <span className={PERSONA_LABEL_OPTIONAL_CLASS}>
+            {t("common.optional")}
+          </span>
         </label>
         <div
           className={cn(
@@ -219,7 +223,7 @@ export function EditAgentAdvancedFields({
             disabled={disabled}
             id="edit-agent-args"
             onChange={(event) => onAgentArgsChange(event.target.value)}
-            placeholder="Comma-separated"
+            placeholder={t("agents.commaSeparated")}
             value={agentArgs}
           />
         </div>
@@ -231,7 +235,7 @@ export function EditAgentAdvancedFields({
           className="text-sm font-medium text-foreground"
           htmlFor="edit-agent-parallelism"
         >
-          Parallelism
+          {t("agents.parallelism")}
         </label>
         <div
           className={cn(
@@ -249,13 +253,13 @@ export function EditAgentAdvancedFields({
             id="edit-agent-parallelism"
             inputMode="numeric"
             onChange={(event) => onParallelismChange(event.target.value)}
-            placeholder="Current value"
+            placeholder={t("agents.currentValue")}
             type="text"
             value={parallelism}
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          {EDIT_AGENT_PARALLELISM_HELP}
+          {t("agents.parallelismHelp")}
         </p>
         {parallelismHint !== null ? (
           <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -275,7 +279,7 @@ export function EditAgentAdvancedFields({
           className="text-sm font-medium text-foreground"
           htmlFor="edit-agent-acp-command"
         >
-          ACP command
+          {t("agents.acpCommand")}
         </label>
         <div
           className={cn(
@@ -305,8 +309,10 @@ export function EditAgentAdvancedFields({
             className="text-sm font-medium text-foreground"
             htmlFor="edit-agent-system-prompt"
           >
-            System prompt override
-            <span className={PERSONA_LABEL_OPTIONAL_CLASS}>Optional</span>
+            {t("agents.systemPromptOverride")}
+            <span className={PERSONA_LABEL_OPTIONAL_CLASS}>
+              {t("common.optional")}
+            </span>
           </label>
           <div className={PERSONA_FIELD_SHELL_CLASS}>
             <Textarea
@@ -317,7 +323,7 @@ export function EditAgentAdvancedFields({
               disabled={disabled}
               id="edit-agent-system-prompt"
               onChange={(event) => onSystemPromptChange(event.target.value)}
-              placeholder="Leave blank to send no ACP system prompt"
+              placeholder={t("agents.systemPromptOverridePlaceholder")}
               value={systemPrompt}
             />
           </div>
@@ -330,9 +336,9 @@ export function EditAgentAdvancedFields({
         fileSatisfiedKeys={fileSatisfiedEnvKeys}
         hiddenKeys={effectiveHiddenKeys}
         focusKey={focusKey}
-        helperText="Per-agent env vars. Override the template's vars on collision."
+        helperText={t("agents.envVarsHelper")}
         inheritedFrom={inheritedEnvVars}
-        inheritedLabel="template / global defaults"
+        inheritedLabel={t("agents.inheritedLabelTemplate")}
         keyAnnotations={CARD_MINT_KEY_ANNOTATIONS}
         onChange={onEnvVarsChange}
         requiredKeys={requiredEnvKeys}

@@ -22,6 +22,35 @@ import type {
   Profile,
   RelayAgent,
 } from "@/shared/api/types";
+import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
+
+const PROFILE_FIELD_LABEL_KEYS: Record<string, MessageKey> = {
+  "Public key": "profile.publicKey",
+  "Managed by": "profile.managedBy",
+  "Agent type": "profile.agentType",
+  Capabilities: "profile.capabilities",
+  "Agent profile": "profile.agentProfile",
+  "Who can send instructions": "profile.whoCanSend",
+  "Start on launch": "profile.startOnLaunch",
+  "Last error": "profile.lastError",
+  Visibility: "profile.visibility",
+  Status: "profile.status",
+  Runtime: "profile.tabRuntime",
+  "ACP command": "profile.acpCommand",
+  "MCP command": "profile.mcpCommand",
+  Backend: "profile.backend",
+};
+
+const PROFILE_FIELD_VALUE_KEYS: Record<string, MessageKey> = {
+  Yes: "common.yes",
+  No: "common.no",
+  "Not deployed": "profile.notDeployed",
+  "Only the owner": "profile.onlyOwner",
+  "Selected people": "profile.selectedPeople",
+  Anyone: "profile.anyone",
+  "Declared owner verified": "profile.declaredOwnerVerified",
+  Archived: "profile.archived",
+};
 
 const RUNTIME_LABELS: Record<string, string> = {
   goose: "Goose",
@@ -110,6 +139,7 @@ export function useProfileFieldBuckets({
   pubkey: string | null;
   relayAgent: RelayAgent | undefined;
 }) {
+  const t = useT();
   return React.useMemo(() => {
     const metadataFields = [
       ...buildPublicFields({ pubkey, profile, relayAgent, isBot, persona }),
@@ -127,6 +157,7 @@ export function useProfileFieldBuckets({
             presenceLoaded,
             presenceStatus,
             relayAgent,
+            t,
           })
         : []),
     ];
@@ -147,6 +178,7 @@ export function useProfileFieldBuckets({
     profile,
     pubkey,
     relayAgent,
+    t,
   ]);
 }
 
@@ -229,6 +261,7 @@ export function buildOwnerFields({
   presenceLoaded,
   presenceStatus,
   relayAgent,
+  t,
 }: {
   includeOperationalFields: boolean;
   managedAgent: ManagedAgent | undefined;
@@ -242,13 +275,14 @@ export function buildOwnerFields({
   presenceLoaded: boolean;
   presenceStatus: "online" | "away" | "offline" | undefined;
   relayAgent: RelayAgent | undefined;
+  t: TranslateFn;
 }): ProfileField[] {
   const fields: ProfileField[] = [];
   const respondTo = managedAgent?.respondTo ?? relayAgent?.respondTo ?? null;
   const respondToDisplayValue = respondTo
     ? respondTo === "owner-only"
       ? ownerDisplayName
-        ? `Only ${ownerDisplayName} (owner)`
+        ? t("profile.onlyNamedOwner", { name: ownerDisplayName })
         : "Only the owner"
       : respondTo === "allowlist"
         ? "Selected people"
@@ -460,9 +494,14 @@ export function ProfileFieldGroup({ fields }: { fields: ProfileField[] }) {
 }
 
 function ProfileFieldRow({ field }: { field: ProfileField }) {
+  const t = useT();
   const Icon = field.icon;
   const isCopyable = Boolean(field.copyValue);
   const isActionable = Boolean(field.onClick);
+  const labelKey = PROFILE_FIELD_LABEL_KEYS[field.label];
+  const displayLabel = labelKey ? t(labelKey) : field.label;
+  const valueKey = PROFILE_FIELD_VALUE_KEYS[field.displayValue];
+  const displayValue = valueKey ? t(valueKey) : field.displayValue;
 
   const content = (
     <>
@@ -471,13 +510,13 @@ function ProfileFieldRow({ field }: { field: ProfileField }) {
       </span>
       <span className="min-w-0 flex-1 text-left">
         <span className="block text-xs font-medium text-foreground">
-          {field.label}
+          {displayLabel}
         </span>
         <span
           className="mt-0.5 block truncate text-sm text-muted-foreground"
-          title={field.displayValue}
+          title={displayValue}
         >
-          {field.displayNode ?? field.displayValue}
+          {field.displayNode ?? displayValue}
         </span>
       </span>
       {field.trailingNode}
@@ -492,11 +531,11 @@ function ProfileFieldRow({ field }: { field: ProfileField }) {
   if (isActionable) {
     return (
       <button
-        aria-label={`Open ${field.label}`}
+        aria-label={t("profile.openField", { label: displayLabel })}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
         data-testid={field.testId}
         onClick={field.onClick}
-        title={`Open ${field.label}`}
+        title={t("profile.openField", { label: displayLabel })}
         type="button"
       >
         {content}
@@ -507,13 +546,16 @@ function ProfileFieldRow({ field }: { field: ProfileField }) {
   if (isCopyable && field.copyValue) {
     return (
       <button
-        aria-label={`Copy ${field.label}`}
+        aria-label={t("profile.copyLabel", { label: displayLabel })}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
         data-testid={field.testId}
         onClick={() =>
-          copyTextToClipboard(field.copyValue ?? "", `Copied ${field.label}`)
+          copyTextToClipboard(
+            field.copyValue ?? "",
+            t("channel.copiedField", { label: displayLabel }),
+          )
         }
-        title={`Copy ${field.label}`}
+        title={t("profile.copyLabel", { label: displayLabel })}
         type="button"
       >
         {content}

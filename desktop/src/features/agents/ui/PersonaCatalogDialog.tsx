@@ -363,14 +363,14 @@ function PersonaCatalogChooser({
             <CatalogNavigationButton
               icon={<Plus className="h-4 w-4" />}
               isCurrent={selection === "create"}
-              label="Create agent"
+              label={t("agents.createAgent")}
               onClick={() => onSelectionChange("create")}
               testId="agent-catalog-create"
             />
             <CatalogNavigationButton
               icon={<Upload className="h-4 w-4" />}
               isCurrent={selection === "import"}
-              label="Import"
+              label={t("agents.import")}
               onClick={() => onSelectionChange("import")}
               testId="agent-catalog-import"
             />

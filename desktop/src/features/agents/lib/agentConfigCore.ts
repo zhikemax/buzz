@@ -340,11 +340,17 @@ export function filterBakedGenericRows<T extends { key: string }>(
  * When absent (no global setting), the field shows `"Inherit (agent default)"`.
  *
  * Pure — used by NumericTuningFields and testable without a component renderer.
+ * Pass `labels` from the UI layer to localize; tests omit it for English defaults.
  */
 export function numericTuningPlaceholder(
   inheritedValue: string | null | undefined,
+  labels?: {
+    withValue: (value: string) => string;
+    agentDefault: string;
+  },
 ): string {
-  return inheritedValue
-    ? `Inherit (${inheritedValue})`
-    : "Inherit (agent default)";
+  if (inheritedValue) {
+    return labels?.withValue(inheritedValue) ?? `Inherit (${inheritedValue})`;
+  }
+  return labels?.agentDefault ?? "Inherit (agent default)";
 }

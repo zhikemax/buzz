@@ -1,6 +1,7 @@
 import { AlertCircle, Lock, Plus, X } from "lucide-react";
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { cn } from "@/shared/lib/cn";
@@ -212,8 +213,8 @@ export function EnvVarsEditor({
   value,
   onChange,
   inheritedFrom,
-  inheritedLabel = "inherited",
-  label = "Environment variables",
+  inheritedLabel,
+  label,
   helperText,
   disabled = false,
   requiredKeys = [],
@@ -224,6 +225,9 @@ export function EnvVarsEditor({
   inheritedRowsLabel = "build",
   keyAnnotations,
 }: EnvVarsEditorProps) {
+  const t = useT();
+  const resolvedLabel = label ?? t("agents.envVars");
+  const resolvedInheritedLabel = inheritedLabel ?? t("agents.inherited");
   // Keys that render as their own special rows (required amber rows or
   // file-satisfied read-only rows). These must NEVER enter `rows` state —
   // they read/write `value` directly via `onChange`/`updateRequiredValue`.
@@ -338,7 +342,7 @@ export function EnvVarsEditor({
   return (
     <div className="space-y-2" data-testid="env-vars-editor">
       <div>
-        <div className="text-sm font-medium">{label}</div>
+        <div className="text-sm font-medium">{resolvedLabel}</div>
         {helperText ? (
           <p className="mt-0.5 text-xs text-muted-foreground">{helperText}</p>
         ) : null}
@@ -373,7 +377,7 @@ export function EnvVarsEditor({
                   {isMissing ? (
                     <span className="ml-1 flex items-center gap-0.5 rounded-sm bg-amber-100 px-1 py-0.5 text-2xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
                       <AlertCircle className="h-2.5 w-2.5" aria-hidden />
-                      Required
+                      {t("agents.required")}
                     </span>
                   ) : null}
                 </div>
@@ -460,7 +464,7 @@ export function EnvVarsEditor({
                   {key}
                 </span>
                 <span className="ml-1 rounded-sm bg-muted px-1 py-0.5 text-2xs font-medium text-muted-foreground">
-                  Set in goose config
+                  {t("agents.setInGooseConfig")}
                 </span>
               </div>
               {/* Spacer columns to align with required-key rows */}
@@ -539,7 +543,7 @@ export function EnvVarsEditor({
         fileSatisfiedKeys.length === 0 &&
         inheritedRows.length === 0 ? (
           <p className="text-xs italic text-muted-foreground">
-            No variables set.
+            {t("agents.envVarsEmpty")}
           </p>
         ) : null}
         {rows.map((row) => {
@@ -556,7 +560,7 @@ export function EnvVarsEditor({
                   )}
                 >
                   <Input
-                    aria-label="Variable name"
+                    aria-label={t("agents.variableNameAria")}
                     className={cn(
                       "h-8 px-0 py-0 font-mono leading-6",
                       PERSONA_FIELD_CONTROL_CLASS,
@@ -566,7 +570,7 @@ export function EnvVarsEditor({
                     onChange={(event) =>
                       updateRow(row.id, { key: event.target.value })
                     }
-                    placeholder="VARIABLE_NAME"
+                    placeholder={t("agents.variableNamePlaceholder")}
                     value={row.key}
                   />
                 </div>
@@ -577,7 +581,7 @@ export function EnvVarsEditor({
                   )}
                 >
                   <Input
-                    aria-label="Variable value"
+                    aria-label={t("agents.variableValueAria")}
                     className={cn(
                       "h-8 px-0 py-0 font-mono leading-6",
                       PERSONA_FIELD_CONTROL_CLASS,
@@ -587,12 +591,12 @@ export function EnvVarsEditor({
                     onChange={(event) =>
                       updateRow(row.id, { value: event.target.value })
                     }
-                    placeholder="value"
+                    placeholder={t("agents.variableValuePlaceholder")}
                     value={row.value}
                   />
                 </div>
                 <Button
-                  aria-label="Remove variable"
+                  aria-label={t("agents.removeVariableAria")}
                   data-testid="env-vars-remove"
                   disabled={disabled}
                   onClick={() => removeRow(row.id)}
@@ -605,7 +609,9 @@ export function EnvVarsEditor({
               </div>
               {showsInherited ? (
                 <p className="ml-1 text-xs text-muted-foreground">
-                  Overrides {inheritedLabel} value{" "}
+                  {t("agents.overridesInheritedValue", {
+                    source: resolvedInheritedLabel,
+                  })}{" "}
                   <span className="font-mono">
                     {maskInherited(inheritedValue)}
                   </span>
@@ -619,7 +625,9 @@ export function EnvVarsEditor({
                 if (!override) return null;
                 return (
                   <p className="ml-1 text-xs text-muted-foreground">
-                    Overrides {inheritedRowsLabel} default{" "}
+                    {t("agents.overridesInheritedDefault", {
+                      source: inheritedRowsLabel,
+                    })}{" "}
                     <span className="font-mono">{override.value}</span>
                   </p>
                 );
@@ -644,7 +652,7 @@ export function EnvVarsEditor({
           variant="outline"
         >
           <Plus className="mr-1 h-4 w-4" />
-          Add variable
+          {t("agents.addVariable")}
         </Button>
       </div>
     </div>

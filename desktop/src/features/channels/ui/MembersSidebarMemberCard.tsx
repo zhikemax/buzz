@@ -32,6 +32,7 @@ import type {
   ManagedAgentRuntimeStatus,
   PresenceStatus,
 } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Badge } from "@/shared/ui/badge";
 import {
@@ -328,6 +329,7 @@ function MemberActionsMenu({
   onViewActivity?: (pubkey: string) => void;
   pairAction?: ManagedAgentPairAction;
 }) {
+  const t = useT();
   const showChangeRole =
     canChangeRole && !memberIsBot && member.role !== "owner";
   const isBanned = moderationState?.banned ?? false;
@@ -370,7 +372,7 @@ function MemberActionsMenu({
                 : getManagedAgentActionIcon(managedAgent)}
               {pairAction
                 ? MANAGED_AGENT_PAIR_ACTION_LABELS[pairAction]
-                : getManagedAgentPrimaryActionLabel(managedAgent)}
+                : getManagedAgentPrimaryActionLabel(managedAgent, t)}
             </DropdownMenuItem>
             {onEditRespondTo ? (
               <DropdownMenuItem

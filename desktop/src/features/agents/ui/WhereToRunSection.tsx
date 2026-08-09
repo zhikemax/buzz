@@ -103,7 +103,7 @@ export function WhereToRunSection({
             })
           }
           options={runOnOptions}
-          placeholder="Choose where to run"
+          placeholder={t("agents.chooseWhereToRun")}
           value={draft.runOn}
         />
       </div>
@@ -113,17 +113,16 @@ export function WhereToRunSection({
           <div className="flex gap-3 rounded-2xl border border-warning/30 bg-warning-bg px-4 py-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-warning">
-              This provider at{" "}
+              {t("agents.providerKeyWarningBefore")}{" "}
               <span className="font-mono font-medium">
                 {selectedBackendProvider.binaryPath}
               </span>{" "}
-              will receive your agent&apos;s private key. Only use providers
-              from trusted sources.
+              {t("agents.providerKeyWarningAfter")}
             </p>
           </div>
           {probeError ? (
             <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              Could not probe provider: {probeError}
+              {t("agents.couldNotProbeProvider", { error: probeError })}
             </p>
           ) : null}
           {draft.probedProvider?.config_schema ? (

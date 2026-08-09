@@ -16,6 +16,7 @@ import type {
   useUnfollowMutation,
 } from "@/features/profile/hooks";
 import { useFeatureEnabled } from "@/shared/features";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Spinner } from "@/shared/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -53,6 +54,7 @@ export function ProfilePrimaryActions({
   pubkey: string;
   unfollowMutation: ReturnType<typeof useUnfollowMutation>;
 }) {
+  const t = useT();
   const showFollowAction = useFeatureEnabled("pulse");
   const followToggleMutation = isFollowing ? unfollowMutation : followMutation;
 
@@ -60,7 +62,9 @@ export function ProfilePrimaryActions({
     followToggleMutation.mutate(pubkey, {
       onError: (error) =>
         toast.error(
-          `${isFollowing ? "Unfollow" : "Follow"} failed: ${error.message}`,
+          isFollowing
+            ? t("profile.unfollowFailed", { message: error.message })
+            : t("profile.followFailed", { message: error.message }),
         ),
     });
   };
@@ -72,7 +76,7 @@ export function ProfilePrimaryActions({
           active={isFollowing}
           disabled={followToggleMutation.isPending}
           icon={isFollowing ? UserMinus : UserPlus}
-          label={isFollowing ? "Unfollow" : "Follow"}
+          label={isFollowing ? t("profile.unfollow") : t("profile.follow")}
           onClick={handleFollowClick}
         />
       ) : null}
@@ -81,7 +85,7 @@ export function ProfilePrimaryActions({
           disabled={messagePending}
           icon={MessageSquare}
           isLoading={messagePending}
-          label="Message"
+          label={t("profile.message")}
           onClick={onMessage}
           testId="user-profile-message"
         />
@@ -89,7 +93,7 @@ export function ProfilePrimaryActions({
       {canEditAgent ? (
         <ProfileQuickAction
           icon={Pencil}
-          label="Edit"
+          label={t("profile.edit")}
           onClick={onEditAgent}
           testId="user-profile-edit-agent"
         />
@@ -108,7 +112,7 @@ export function ProfilePrimaryActions({
         <ProfileQuickAction
           disabled={agentActionDisabled}
           icon={RefreshCw}
-          label="Restart Agent"
+          label={t("agents.restartAgent")}
           onClick={onAgentRestart}
           testId="user-profile-agent-restart"
         />
@@ -116,7 +120,7 @@ export function ProfilePrimaryActions({
       {onCreateCard ? (
         <ProfileQuickAction
           icon={Sparkles}
-          label="Create card"
+          label={t("agents.createCard")}
           onClick={onCreateCard}
           testId="user-profile-create-card"
         />
@@ -138,12 +142,13 @@ export function ProfilePersonaPrimaryActions({
   onEditAgent: () => void;
   onStartAgent: () => void;
 }) {
+  const t = useT();
   return (
     <div className="flex items-center justify-center gap-8">
       <ProfileQuickAction
         disabled={disabled}
         icon={Play}
-        label="Start Agent"
+        label={t("agents.startAgent")}
         onClick={onStartAgent}
         testId="user-profile-start-agent"
       />
@@ -151,7 +156,7 @@ export function ProfilePersonaPrimaryActions({
         <ProfileQuickAction
           disabled={disabled}
           icon={Pencil}
-          label="Edit"
+          label={t("profile.edit")}
           onClick={onEditAgent}
           testId="user-profile-edit-agent"
         />
@@ -160,7 +165,7 @@ export function ProfilePersonaPrimaryActions({
         <ProfileQuickAction
           disabled={disabled}
           icon={Sparkles}
-          label="Create card"
+          label={t("agents.createCard")}
           onClick={onCreateCard}
           testId="user-profile-create-card"
         />

@@ -6,6 +6,7 @@
  * PersonaAdvancedFields and EditAgentAdvancedFields.
  */
 import * as React from "react";
+import { useT } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { cn } from "@/shared/lib/cn";
 import type { EnvVarsValue } from "./EnvVarsEditor";
@@ -100,11 +101,12 @@ export function EffortSelectField({
   /** Render the polished app dropdown instead of the native select. */
   useCustomSelect?: boolean;
 }) {
+  const t = useT();
   const inheritLabel = inheritedEffort
-    ? `Inherit (${inheritedEffort})`
+    ? t("agents.inheritValue", { value: inheritedEffort })
     : effortDefault === null
-      ? "Inherit (default)"
-      : (inheritFallbackLabel ?? "Inherit");
+      ? t("agents.inheritDefault")
+      : (inheritFallbackLabel ?? t("agents.inherit"));
   const effortOptions: AgentDropdownOption[] = [
     { label: emptyOptionLabel ?? inheritLabel, value: "" },
     ...BUZZ_AGENT_THINKING_EFFORT_VALUES.flatMap((v) => {
@@ -114,7 +116,7 @@ export function EffortSelectField({
       return [
         {
           disabled: !isValid,
-          label: isDefault ? `${v} (default)` : v,
+          label: isDefault ? t("agents.effortDefault", { value: v }) : v,
           value: v,
         },
       ];
@@ -202,26 +204,23 @@ export function useEffortAutoClear({
 
 export type { NumericDescriptor };
 
-const NUMERIC_KIND_LABELS: Record<NumericDescriptor["kind"], string> = {
-  maxOutputTokens: "Max output tokens",
-  contextLimit: "Context limit",
-  maxRounds: "Max rounds",
-};
-
-const NUMERIC_KIND_DESCRIPTIONS: Record<NumericDescriptor["kind"], string> = {
-  maxOutputTokens:
-    "Maximum tokens the LLM may generate per response. Leave blank to inherit.",
-  contextLimit:
-    "Maximum context window tokens tracked before a handoff. Leave blank to inherit.",
-  maxRounds:
-    "Maximum LLM + tool-call rounds per turn. 0 = unlimited. Leave blank to inherit.",
-};
-
 const NUMERIC_KIND_TEST_IDS: Record<NumericDescriptor["kind"], string> = {
   maxOutputTokens: "numeric-max-output-tokens-input",
   contextLimit: "numeric-context-limit-input",
   maxRounds: "numeric-max-rounds-input",
 };
+
+const NUMERIC_KIND_LABEL_KEYS = {
+  maxOutputTokens: "agents.maxOutputTokens",
+  contextLimit: "agents.contextLimit",
+  maxRounds: "agents.maxRounds",
+} as const;
+
+const NUMERIC_KIND_HELP_KEYS = {
+  maxOutputTokens: "agents.maxOutputTokensHelp",
+  contextLimit: "agents.contextLimitHelp",
+  maxRounds: "agents.maxRoundsHelp",
+} as const;
 
 /**
  * Input `min` attribute per numeric kind.
@@ -255,13 +254,14 @@ export function NumericTuningFields({
   inheritedEnvVars: EnvVarsValue;
   onEnvVarChange: (key: string, value: string) => void;
 }) {
+  const t = useT();
   if (descriptors.length === 0) return null;
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {descriptors.map((d) => {
         const key = d.currentPersistence.key;
-        const label = NUMERIC_KIND_LABELS[d.kind];
-        const description = NUMERIC_KIND_DESCRIPTIONS[d.kind];
+        const label = t(NUMERIC_KIND_LABEL_KEYS[d.kind]);
+        const description = t(NUMERIC_KIND_HELP_KEYS[d.kind]);
         const testId = NUMERIC_KIND_TEST_IDS[d.kind];
         const inheritedVal = inheritedEnvVars[key];
         return (
@@ -277,7 +277,10 @@ export function NumericTuningFields({
               inputMode="numeric"
               min={NUMERIC_KIND_MIN[d.kind]}
               onChange={(event) => onEnvVarChange(key, event.target.value)}
-              placeholder={numericTuningPlaceholder(inheritedVal)}
+              placeholder={numericTuningPlaceholder(inheritedVal, {
+                withValue: (value) => t("agents.inheritValue", { value }),
+                agentDefault: t("agents.inheritAgentDefault"),
+              })}
               step="1"
               type="number"
               value={envVars[key] ?? ""}
@@ -307,6 +310,7 @@ export function BuzzAgentModelTuningFields({
   /** Active LLM provider id (optional) — used for effort filtering + default labels. */
   provider?: string;
 }) {
+  const t = useT();
   const effortConfig = getProviderEffortConfig(provider ?? "", model);
   const { validValues: effortValid, defaultValue: effortDefault } =
     effortConfig;
@@ -321,7 +325,7 @@ export function BuzzAgentModelTuningFields({
   return (
     <div className="space-y-4">
       <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
-        buzz-agent model tuning
+        {t("agents.buzzAgentModelTuning")}
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -333,8 +337,8 @@ export function BuzzAgentModelTuningFields({
             effortValid={effortValid}
             htmlFor="ba-thinking-effort"
             inheritedEffort={inheritedEnvVars[BUZZ_AGENT_THINKING_EFFORT]}
-            inheritFallbackLabel="Inherit (agent default)"
-            label="Thinking / Effort"
+            inheritFallbackLabel={t("agents.inheritAgentDefault")}
+            label={t("agents.thinkingEffort")}
             onChange={(value) =>
               onEnvVarChange(BUZZ_AGENT_THINKING_EFFORT, value)
             }
@@ -344,8 +348,7 @@ export function BuzzAgentModelTuningFields({
             className="text-xs text-muted-foreground"
             id="help-ba-thinking-effort"
           >
-            Controls how much reasoning effort the LLM applies per turn. Leave
-            blank to inherit from the global or persona default.
+            {t("agents.thinkingEffortHelp")}
           </p>
         </div>
       </div>

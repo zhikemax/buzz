@@ -27,6 +27,7 @@ import type {
   CreateTeamInput,
   UpdateTeamInput,
 } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { deriveImportToast } from "./teamSnapshotImport.lib";
 
 type TeamDialogState = {
@@ -50,6 +51,7 @@ export function useTeamActions(
   actions: ActionMessages,
   refetch: RefetchCallbacks,
 ) {
+  const t = useT();
   const queryClient = useQueryClient();
   const teamsQuery = useTeamsQuery();
   const createTeamMutation = useCreateTeamMutation();
@@ -164,9 +166,9 @@ export function useTeamActions(
     actions.setActionNoticeMessage(null);
     actions.setActionErrorMessage(null);
     setTeamDialogState({
-      title: "Create team",
-      description: "Group agents together for quick deployment to channels.",
-      submitLabel: "Create team",
+      title: t("agents.createTeamTitle"),
+      description: t("agents.createTeamHint"),
+      submitLabel: t("agents.createTeam"),
       initialValues: {
         name: "",
         description: "",
@@ -179,11 +181,11 @@ export function useTeamActions(
     actions.setActionNoticeMessage(null);
     actions.setActionErrorMessage(null);
     setTeamDialogState({
-      title: `Duplicate ${team.name}`,
-      description: "Create a new team by copying this one.",
-      submitLabel: "Create team",
+      title: t("agents.duplicateTeam", { name: team.name }),
+      description: t("agents.duplicateTeamHint"),
+      submitLabel: t("agents.createTeam"),
       initialValues: {
-        name: `${team.name} copy`,
+        name: t("agents.teamNameCopy", { name: team.name }),
         description: team.description ?? "",
         personaIds: [...team.personaIds],
       },
@@ -208,9 +210,9 @@ export function useTeamActions(
     actions.setActionNoticeMessage(null);
     actions.setActionErrorMessage(null);
     setTeamDialogState({
-      title: "Edit team",
+      title: t("agents.editTeam"),
       description: "",
-      submitLabel: "Save changes",
+      submitLabel: t("agents.saveChanges"),
       initialValues: {
         id: team.id,
         name: team.name,

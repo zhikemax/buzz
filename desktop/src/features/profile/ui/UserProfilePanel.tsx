@@ -704,7 +704,7 @@ export function UserProfilePanel({
   ]);
   const ownerDisplayName = ownerHandle
     ? isCurrentUserOwner || (!ownerPubkey && isOwner === true)
-      ? `${ownerHandle} (you)`
+      ? t("profile.youSuffix", { name: ownerHandle })
       : ownerHandle
     : null;
   const ownerProfilePubkey =
@@ -772,6 +772,7 @@ export function UserProfilePanel({
       logCopyValue: isDiagnosticsLikeView ? managedAgentLogContent : null,
       logSubtitle: logHeaderSubtitle,
       onBack: () => setView("summary"),
+      t,
       view,
       viewerIsOwner,
     },

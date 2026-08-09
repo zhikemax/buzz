@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/shared/ui/alert-dialog";
 import { Button, buttonVariants } from "@/shared/ui/button";
+import { useT } from "@/shared/i18n";
 
 // Archive is relay-scoped + reversible (NIP-IA), so this gates with a calm,
 // reassuring confirmation rather than a destructive warning. The confirm action
@@ -30,8 +31,10 @@ export function ArchiveConfirmDialog({
   isBot: boolean;
   isPending: boolean;
 }) {
-  const title = isBot ? "Archive this agent?" : "Archive this identity?";
-  const subject = isBot ? "this agent" : "this person";
+  const t = useT();
+  const title = isBot
+    ? t("agents.archiveAgentConfirmTitle")
+    : t("agents.archiveIdentityConfirmTitle");
 
   return (
     <AlertDialog onOpenChange={onOpenChange} open={open}>
@@ -39,33 +42,34 @@ export function ArchiveConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
-            Archiving hides {subject} from the space.
+            {isBot
+              ? t("agents.archiveConfirmDescAgent")
+              : t("agents.archiveConfirmDescPerson")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {/* The list + closing paragraph sit outside AlertDialogDescription on
             purpose — that component renders a <p>, which can't legally contain
             a <ul> or another block <p>. */}
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
+          <li>{t("agents.archiveBulletSearch")}</li>
           <li>
-            They won't appear in search, autocomplete, or when adding members
+            {t("agents.archiveBulletSpaceBefore")}{" "}
+            <span className="font-medium text-foreground">
+              {t("agents.archiveBulletSpaceEmphasis")}
+            </span>{" "}
+            {t("agents.archiveBulletSpaceAfter")}
           </li>
-          <li>
-            This only affects{" "}
-            <span className="font-medium text-foreground">this space</span> —
-            not their account anywhere else
-          </li>
-          <li>You can unarchive them at any time to restore them</li>
+          <li>{t("agents.archiveBulletUnarchive")}</li>
         </ul>
         {isBot ? (
           <p className="text-sm text-muted-foreground">
-            You can also delete this agent from the profile settings menu if you
-            want to remove the agent instead of hiding it.
+            {t("agents.archiveAlsoDeleteHint")}
           </p>
         ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction
@@ -74,7 +78,7 @@ export function ArchiveConfirmDialog({
             disabled={isPending}
             onClick={onConfirm}
           >
-            {isPending ? "Archiving…" : "Archive"}
+            {isPending ? t("agents.archiving") : t("common.archive")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
