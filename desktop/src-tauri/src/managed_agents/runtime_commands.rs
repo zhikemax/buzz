@@ -283,7 +283,9 @@ fn start_pair(
         .lock()
         .ok()
         .map(|keys| keys.public_key().to_hex());
-    let mut process = spawn_agent_child(&app, record, &key.relay_url, lazy, owner.as_deref())?;
+    // Pass the caller-supplied relay URL (not the canonical key form) so the
+    // child keeps the Host spelling used by the community binding.
+    let mut process = spawn_agent_child(&app, record, &relay_url, lazy, owner.as_deref())?;
     let now = crate::util::now_iso();
     let receipt = ManagedAgentRuntimeReceipt {
         key: key.clone(),
@@ -403,7 +405,9 @@ async fn probe_agent_relay_access(
     let key = ManagedAgentRuntimeKey::new(record.pubkey.clone(), &requested_relay_url)?;
     let keys = nostr::Keys::parse(record.private_key_nsec.trim())
         .map_err(|error| format!("invalid managed-agent key: {error}"))?;
-    let api_base = crate::relay::relay_http_base_url(&key.relay_url);
+    // Probe with the requested Host spelling — canonical loopback folding would
+    // miss communities bound only to `localhost`.
+    let api_base = crate::relay::relay_http_base_url(&requested_relay_url);
     tokio::time::timeout(
         std::time::Duration::from_secs(10),
         crate::relay::query_relay_at_with_keys(

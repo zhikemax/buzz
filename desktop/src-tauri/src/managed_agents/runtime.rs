@@ -544,9 +544,22 @@ pub fn spawn_agent_child(
         .map(|p| p.display().to_string())
         .unwrap_or_else(|| effective_command.clone());
 
-    // The caller supplies the explicit canonical pair relay. This is the only
-    // relay this child may connect to, regardless of the record/workspace default.
-    let effective_relay_url = runtime_key.relay_url.clone();
+    // Pair identity uses the canonical relay (`runtime_key.relay_url`), which
+    // folds localhost/::1 → 127.0.0.1. The child must connect with the
+    // caller-supplied spelling so Host-bound communities keep working: Docker
+    // local relays commonly bind the community to `localhost:PORT`, and a
+    // rewritten `127.0.0.1` Host returns 404 ("no community is configured").
+    // buzz-core's `normalize_relay_url` docs call this out — canonical form is
+    // for identity only; connection code retains the configured URL.
+    let connect_relay_url = {
+        let trimmed = relay_url.trim().trim_end_matches('/');
+        if trimmed.is_empty() {
+            runtime_key.relay_url.clone()
+        } else {
+            trimmed.to_string()
+        }
+    };
+    let identity_relay_url = runtime_key.relay_url.clone();
 
     // Augment PATH for DMG launches so child processes can find:
     //   - bundled CLI via ~/.local/bin symlink
@@ -577,7 +590,7 @@ pub fn spawn_agent_child(
     }
     command.env("RUST_LOG", child_rust_log_filter());
     command.env("BUZZ_PRIVATE_KEY", &record.private_key_nsec);
-    command.env("BUZZ_RELAY_URL", &effective_relay_url);
+    command.env("BUZZ_RELAY_URL", &connect_relay_url);
     command.env("BUZZ_ACP_LAZY_POOL", if lazy { "true" } else { "false" });
     command.env("BUZZ_ACP_AGENT_COMMAND", &resolved_agent_command);
     command.env("BUZZ_ACP_AGENT_ARGS", agent_args.join(","));
@@ -825,7 +838,7 @@ pub fn spawn_agent_child(
     //
     // NOSTR_PRIVATE_KEY mirrors BUZZ_PRIVATE_KEY — keep in sync.
     if let Some(cred_helper) = resolve_command("git-credential-nostr") {
-        let relay_http_url = crate::relay::relay_http_base_url(&effective_relay_url);
+        let relay_http_url = crate::relay::relay_http_base_url(&connect_relay_url);
 
         command.env("NOSTR_PRIVATE_KEY", &record.private_key_nsec);
         command.env("GIT_TERMINAL_PROMPT", "0");
@@ -908,13 +921,13 @@ pub fn spawn_agent_child(
 
     // Stamp the effective spawn config so the summary builder can flag
     // needs_restart when disk state drifts from what this process runs.
-    // `effective_relay_url` is already resolved, and resolution is idempotent,
-    // so it serves as the workspace-relay input here.
+    // Hash against the canonical pair relay so localhost vs 127.0.0.1 spellings
+    // of the same workspace do not flip needs_restart.
     let spawn_config_hash = super::spawn_hash::spawn_config_hash(
         record,
         &personas,
         &teams,
-        &effective_relay_url,
+        &identity_relay_url,
         &global,
     );
 
@@ -997,7 +1010,9 @@ pub fn start_managed_agent_process(
     // Scalar PIDs are migration-only and never establish pair liveness.
     record.runtime_pid = None;
 
-    let mut process = spawn_agent_child(app, record, &key.relay_url, false, owner_hex)?;
+    // Pass the pre-canonical workspace relay so Host-bound local communities
+    // (localhost vs 127.0.0.1) still resolve inside the child.
+    let mut process = spawn_agent_child(app, record, &relay_url, false, owner_hex)?;
     let now = now_iso();
     let receipt = super::ManagedAgentRuntimeReceipt {
         key: key.clone(),
