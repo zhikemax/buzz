@@ -236,22 +236,29 @@ describe("cardMintKeyUtils — key panel derivations", () => {
 
   // ── keyPanelTitle ──────────────────────────────────────────────────────────
 
+  const t = (key) =>
+    ({
+      "agents.openaiApiKey": "OpenAI API key",
+      "agents.openaiKeyOnetimeSetup": "One-time setup: OpenAI API key",
+      "agents.updateOpenaiKey": "Update OpenAI API key",
+    })[key] ?? key;
+
   it("keyPanelTitle_none_firstTimeSetup", () => {
     assert.equal(
-      keyPanelTitle("none", false),
+      keyPanelTitle("none", false, t),
       "One-time setup: OpenAI API key",
     );
   });
 
   it("keyPanelTitle_global_editing_update", () => {
-    assert.equal(keyPanelTitle("global", true), "Update OpenAI API key");
+    assert.equal(keyPanelTitle("global", true, t), "Update OpenAI API key");
   });
 
   it("keyPanelTitle_agent_readOnly", () => {
-    assert.equal(keyPanelTitle("agent", false), "OpenAI API key");
+    assert.equal(keyPanelTitle("agent", false, t), "OpenAI API key");
   });
 
   it("keyPanelTitle_persona_readOnly", () => {
-    assert.equal(keyPanelTitle("persona", true), "OpenAI API key");
+    assert.equal(keyPanelTitle("persona", true, t), "OpenAI API key");
   });
 });

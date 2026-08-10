@@ -167,10 +167,10 @@ export function AgentDefaultsEditor({
   const harnessOptions = React.useMemo(
     () =>
       sortedRuntimes.map((runtime) => ({
-        label: formatRuntimeOptionLabel(runtime),
+        label: formatRuntimeOptionLabel(runtime, t),
         value: runtime.id,
       })),
-    [sortedRuntimes],
+    [sortedRuntimes, t],
   );
   const configSurfaceLoading = isLoading || runtimesQuery.isLoading;
   const configSurfaceError =

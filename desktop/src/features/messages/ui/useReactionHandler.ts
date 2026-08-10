@@ -7,6 +7,7 @@ import type {
   TimelineReaction,
 } from "@/features/messages/types";
 import { reactionEmojiUrl } from "@/shared/api/customEmoji";
+import { detectLocale, translate } from "@/shared/i18n";
 import type { CustomEmoji } from "@/shared/lib/remarkCustomEmoji";
 
 type ReactionHandler = {
@@ -162,7 +163,7 @@ export function useReactionHandler(
         const nextMessage =
           error instanceof Error
             ? error.message
-            : "Failed to update the reaction.";
+            : translate(detectLocale(), "msg.reaction.updateFailed");
         setErrorMessage(nextMessage);
         throw error;
       } finally {

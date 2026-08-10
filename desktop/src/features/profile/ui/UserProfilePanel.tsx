@@ -470,17 +470,19 @@ export function UserProfilePanel({
       if (created.spawnError) {
         toast.error(created.spawnError);
       } else {
-        toast.success(`Started ${created.agent.name}.`);
+        toast.success(t("agents.startedNamed", { name: created.agent.name }));
       }
       if (created.profileSyncError) {
         toast.warning(created.profileSyncError);
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to start agent.",
+        error instanceof Error
+          ? error.message
+          : t("agents.failedStartAgent"),
       );
     }
-  }, [createManagedAgentForPersona, resolvedPersona]);
+  }, [createManagedAgentForPersona, resolvedPersona, t]);
 
   const handleToggleAgentAutoStart = React.useCallback(async () => {
     if (managedAgent?.backend.type !== "local") return;
@@ -492,17 +494,17 @@ export function UserProfilePanel({
       });
       toast.success(
         updated.startOnAppLaunch
-          ? `Will start ${updated.name} automatically.`
-          : `${updated.name} will stay manual-start only.`,
+          ? t("agents.willStartOnLaunch", { name: updated.name })
+          : t("agents.manualStartOnly", { name: updated.name }),
       );
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to update startup preference.",
+          : t("agents.failedUpdateStartup"),
       );
     }
-  }, [managedAgent, startOnLaunchMutation.mutateAsync]);
+  }, [managedAgent, startOnLaunchMutation.mutateAsync, t]);
 
   const handleDeleteAgent = React.useCallback(async () => {
     if (!managedAgent) return;
@@ -511,14 +513,16 @@ export function UserProfilePanel({
       const result = await deleteManagedAgentRecord(managedAgent);
       if (result.cancelled) return;
 
-      toast.success(`Deleted ${managedAgent.name}.`);
+      toast.success(t("agents.deletedNamed", { name: managedAgent.name }));
       onClose();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete agent.",
+        error instanceof Error
+          ? error.message
+          : t("agents.failedDeleteAgent"),
       );
     }
-  }, [deleteManagedAgentRecord, managedAgent, onClose]);
+  }, [deleteManagedAgentRecord, managedAgent, onClose, t]);
 
   const handleSubmitPersona = React.useCallback(
     async (input: CreatePersonaInput | UpdatePersonaInput) => {
@@ -533,6 +537,7 @@ export function UserProfilePanel({
         },
         previousPersona: resolvedPersona,
         runtimes: acpRuntimesQuery.data ?? [],
+        t,
         updateManagedAgent: updateManagedAgentMutation.mutateAsync,
         updatePersona: updatePersonaMutation.mutateAsync,
       });
@@ -544,6 +549,7 @@ export function UserProfilePanel({
       personasQuery.refetch,
       resolvedPersona,
       acpRuntimesQuery.data,
+      t,
       updateManagedAgentMutation.mutateAsync,
       updatePersonaMutation.mutateAsync,
     ],
@@ -578,18 +584,24 @@ export function UserProfilePanel({
           id: resolvedPersona.id,
           active: false,
         });
-        toast.success(`Removed ${resolvedPersona.displayName} from My Agents.`);
+        toast.success(
+          t("agents.removedFromMyAgents", {
+            name: resolvedPersona.displayName,
+          }),
+        );
         onClose();
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Failed to delete agent.",
+          error instanceof Error
+            ? error.message
+            : t("agents.failedDeleteAgent"),
         );
       }
       return;
     }
 
     if (resolvedPersona.sourceTeam) {
-      toast.error("This agent is managed by a team.");
+      toast.error(t("agents.managedByTeamToast"));
       return;
     }
 
@@ -599,28 +611,33 @@ export function UserProfilePanel({
     onClose,
     resolvedPersona,
     setPersonaActiveMutation.mutateAsync,
+    t,
   ]);
 
   const handleConfirmDeletePersona = React.useCallback(
     async (personaToConfirm: AgentPersona) => {
       if (personaToConfirm.sourceTeam) {
-        toast.error("This agent is managed by a team.");
+        toast.error(t("agents.managedByTeamToast"));
         setPersonaToDelete(null);
         return;
       }
 
       try {
         await deletePersonaMutation.mutateAsync(personaToConfirm.id);
-        toast.success(`Deleted ${personaToConfirm.displayName}.`);
+        toast.success(
+          t("agents.deletedNamed", { name: personaToConfirm.displayName }),
+        );
         setPersonaToDelete(null);
         onClose();
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Failed to delete agent.",
+          error instanceof Error
+            ? error.message
+            : t("agents.failedDeleteAgent"),
         );
       }
     },
-    [deletePersonaMutation.mutateAsync, onClose],
+    [deletePersonaMutation.mutateAsync, onClose, t],
   );
 
   // Count of managed-agent instances backed by the persona being deleted.
@@ -638,11 +655,26 @@ export function UserProfilePanel({
   const handleAddedToChannel = React.useCallback(
     (channel: Channel, result: AttachManagedAgentToChannelResult) => {
       if (result.started) {
-        toast.success(`Added ${result.agent.name} to ${channel.name}.`);
+        toast.success(
+          t("agents.addedToChannel", {
+            name: result.agent.name,
+            channel: channel.name,
+          }),
+        );
       } else if (result.membershipAdded) {
-        toast.success(`Added ${result.agent.name} to ${channel.name}.`);
+        toast.success(
+          t("agents.addedToChannel", {
+            name: result.agent.name,
+            channel: channel.name,
+          }),
+        );
       } else {
-        toast.success(`${result.agent.name} is already in ${channel.name}.`);
+        toast.success(
+          t("agents.alreadyInChannel", {
+            name: result.agent.name,
+            channel: channel.name,
+          }),
+        );
       }
       void managedAgentsQuery.refetch();
       void relayAgentsQuery.refetch();
@@ -652,6 +684,7 @@ export function UserProfilePanel({
       channelsQuery.refetch,
       managedAgentsQuery.refetch,
       relayAgentsQuery.refetch,
+      t,
     ],
   );
 

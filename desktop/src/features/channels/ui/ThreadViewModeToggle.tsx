@@ -4,6 +4,7 @@ import {
   type ThreadViewMode,
   useThreadViewMode,
 } from "@/features/channels/lib/threadViewModePreference";
+import { useT, type MessageKey } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 
@@ -28,13 +29,13 @@ const THREAD_VIEW_MODE_TOGGLE = {
   focus: {
     // Viewing the drawer → offer the pane.
     icon: Columns2,
-    label: "Show thread beside channel",
+    labelKey: "channel.thread.showBeside" as const satisfies MessageKey,
     target: "split",
   },
   split: {
     // Viewing the pane → offer the drawer.
     icon: PanelRightOpen,
-    label: "Expand thread",
+    labelKey: "channel.thread.expand" as const satisfies MessageKey,
     target: "focus",
   },
 } as const;
@@ -57,8 +58,10 @@ export function ThreadViewModeToggle({
 }: {
   onChange: (mode: ThreadViewMode, restoreFocus: boolean) => void;
 }) {
+  const t = useT();
   const viewMode = useThreadViewMode();
-  const { icon: Icon, label, target } = THREAD_VIEW_MODE_TOGGLE[viewMode];
+  const { icon: Icon, labelKey, target } = THREAD_VIEW_MODE_TOGGLE[viewMode];
+  const label = t(labelKey);
 
   return (
     <Tooltip disableHoverableContent>

@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { useApprovalMutation } from "@/features/workflows/hooks";
 import type { WorkflowApproval } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
 
@@ -11,6 +12,7 @@ type WorkflowApprovalCardProps = {
 };
 
 export function WorkflowApprovalCard({ approval }: WorkflowApprovalCardProps) {
+  const t = useT();
   const [note, setNote] = React.useState("");
   const approvalMutation = useApprovalMutation();
 
@@ -25,19 +27,23 @@ export function WorkflowApprovalCard({ approval }: WorkflowApprovalCardProps) {
       className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3"
       data-testid="workflow-approval-card"
     >
-      <p className="mb-2 text-sm font-medium">Approval Required</p>
-      <p className="mb-2 text-xs text-muted-foreground">
-        Approver: {approval.approverSpec}
+      <p className="mb-2 text-sm font-medium">
+        {t("workflows.approval.required")}
       </p>
       <p className="mb-2 text-xs text-muted-foreground">
-        Expires: {new Date(approval.expiresAt).toLocaleString()}
+        {t("workflows.approval.approver", { spec: approval.approverSpec })}
+      </p>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {t("workflows.approval.expires", {
+          date: new Date(approval.expiresAt).toLocaleString(),
+        })}
       </p>
 
       <Textarea
-        aria-label="Approval note"
+        aria-label={t("workflows.approval.noteAria")}
         className="mb-2 h-16 resize-none text-xs"
         onChange={(event) => setNote(event.target.value)}
-        placeholder="Optional note..."
+        placeholder={t("workflows.approval.notePlaceholder")}
         value={note}
       />
 
@@ -55,7 +61,7 @@ export function WorkflowApprovalCard({ approval }: WorkflowApprovalCardProps) {
           size="sm"
         >
           <Check className="mr-1 h-4 w-4" />
-          Approve
+          {t("workflows.approval.approve")}
         </Button>
         <Button
           className="flex-1"
@@ -71,7 +77,7 @@ export function WorkflowApprovalCard({ approval }: WorkflowApprovalCardProps) {
           variant="destructive"
         >
           <X className="mr-1 h-4 w-4" />
-          Deny
+          {t("workflows.approval.deny")}
         </Button>
       </div>
     </div>

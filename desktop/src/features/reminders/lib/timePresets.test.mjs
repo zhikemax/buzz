@@ -2,37 +2,39 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  TIME_PRESETS,
+  getTimePresets,
   parseCustomDateTime,
   todayDateString,
 } from "./timePresets.ts";
+import { translate } from "../../../shared/i18n/locale.ts";
 
+const t = (key, params) => translate("en", key, params);
 const nowSeconds = () => Math.floor(Date.now() / 1_000);
 
 test("TIME_PRESETS_every_preset_returns_strictly_future_timestamp", () => {
   const now = nowSeconds();
-  for (const preset of TIME_PRESETS) {
+  for (const preset of getTimePresets(t)) {
     assert.ok(
       preset.getTimestamp() > now,
-      `${preset.label} must be strictly in the future`,
+      `${preset.id} must be strictly in the future`,
     );
   }
 });
 
 test("TIME_PRESETS_relative_offsets_match_their_labels", () => {
   const before = nowSeconds();
-  const byLabel = Object.fromEntries(
-    TIME_PRESETS.map((p) => [p.label, p.getTimestamp()]),
+  const byId = Object.fromEntries(
+    getTimePresets(t).map((p) => [p.id, p.getTimestamp()]),
   );
   // Allow a 2s window for clock drift across the getTimestamp calls.
-  assert.ok(Math.abs(byLabel["In 30 minutes"] - (before + 30 * 60)) <= 2);
-  assert.ok(Math.abs(byLabel["In 1 hour"] - (before + 60 * 60)) <= 2);
-  assert.ok(Math.abs(byLabel["In 3 hours"] - (before + 3 * 60 * 60)) <= 2);
+  assert.ok(Math.abs(byId.in30Minutes - (before + 30 * 60)) <= 2);
+  assert.ok(Math.abs(byId.in1Hour - (before + 60 * 60)) <= 2);
+  assert.ok(Math.abs(byId.in3Hours - (before + 3 * 60 * 60)) <= 2);
 });
 
 test("TIME_PRESETS_9am_presets_land_on_a_9am_boundary", () => {
-  for (const label of ["Tomorrow at 9am", "Next Monday at 9am"]) {
-    const preset = TIME_PRESETS.find((p) => p.label === label);
+  for (const id of ["tomorrow9am", "nextMonday9am"]) {
+    const preset = getTimePresets(t).find((p) => p.id === id);
     const d = new Date(preset.getTimestamp() * 1_000);
     assert.equal(d.getHours(), 9);
     assert.equal(d.getMinutes(), 0);
@@ -40,7 +42,7 @@ test("TIME_PRESETS_9am_presets_land_on_a_9am_boundary", () => {
 });
 
 test("TIME_PRESETS_next_monday_lands_on_a_monday", () => {
-  const preset = TIME_PRESETS.find((p) => p.label === "Next Monday at 9am");
+  const preset = getTimePresets(t).find((p) => p.id === "nextMonday9am");
   const d = new Date(preset.getTimestamp() * 1_000);
   assert.equal(d.getDay(), 1); // Monday
 });

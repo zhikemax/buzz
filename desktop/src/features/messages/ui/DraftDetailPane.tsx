@@ -21,6 +21,7 @@ import {
   type DraftViewItem,
 } from "@/features/messages/ui/DraftsPanel";
 import { TopChromeInsetHeader } from "@/shared/layout/TopChromeInsetHeader";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Markdown } from "@/shared/ui/markdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -37,6 +38,7 @@ export function DraftDetailPane({
   onBack,
   onDelete,
 }: DraftDetailPaneProps) {
+  const t = useT();
   const { goChannel } = useAppNavigation();
   const [sendDialogOpen, setSendDialogOpen] = React.useState(false);
 
@@ -50,9 +52,9 @@ export function DraftDetailPane({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <FileText className="h-6 w-6" />
           </div>
-          <p className="mt-4 text-base font-semibold">Select a draft</p>
+          <p className="mt-4 text-base font-semibold">{t("msg.draft.selectTitle")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pick a draft to preview it and choose what to do next.
+            {t("msg.draft.selectHint")}
           </p>
         </div>
       </section>
@@ -67,7 +69,7 @@ export function DraftDetailPane({
     ? isDm
       ? source.label
       : `#${source.label}`
-    : "Unknown channel";
+    : t("msg.draft.unknownChannel");
   const openEnabled = canOpenDraft(entry.draft, source) && !isOrphaned;
   const sendEnabled = canSendDraft(entry.draft, source, rootStatus);
   const content = entry.draft.content.trim();
@@ -84,7 +86,7 @@ export function DraftDetailPane({
             <div className="flex min-w-0 items-center gap-1">
               {onBack ? (
                 <Button
-                  aria-label="Back to drafts list"
+                  aria-label={t("msg.draft.backAria")}
                   className="rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   onClick={onBack}
                   size="icon"
@@ -115,8 +117,7 @@ export function DraftDetailPane({
           >
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              The original thread was deleted. This draft can no longer be
-              opened or sent.
+              {t("msg.draft.orphanedNotice")}
             </span>
           </div>
         ) : null}
@@ -129,38 +130,42 @@ export function DraftDetailPane({
               onDelete={() => onDelete(entry.key)}
               onOpen={() => void openDraftEntry(entry, goChannel)}
               onSend={() => setSendDialogOpen(true)}
+              t={t}
             />
 
             <UserAvatar
               avatarUrl={null}
               className="h-9 w-9 shrink-0"
-              displayName="You"
+              displayName={t("agents.you")}
               size="md"
             />
 
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0">
                 <span className="text-sm font-semibold text-foreground">
-                  You
+                  {t("agents.you")}
                 </span>
                 <span className="text-xs font-medium text-muted-foreground">
-                  Draft
+                  {t("msg.draft.badge")}
                 </span>
                 <span className="shrink-0 text-xs font-normal tabular-nums text-muted-foreground/55">
-                  {formatDraftCreatedAt(entry.draft)}
+                  {formatDraftCreatedAt(entry.draft, t)}
                 </span>
               </div>
 
               <div className="mt-0.5 text-base leading-6 text-foreground">
                 <Markdown
                   className="inbox-preview-markdown text-inherit leading-6"
-                  content={content || getDraftPreview(entry.draft)}
+                  content={content || getDraftPreview(entry.draft, t)}
                   interactive={false}
                 />
                 {attachmentCount > 0 && content ? (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {attachmentCount} attachment
-                    {attachmentCount === 1 ? "" : "s"}
+                    {attachmentCount === 1
+                      ? t("msg.draft.oneAttachment")
+                      : t("msg.draft.manyAttachments", {
+                          count: attachmentCount,
+                        })}
                   </p>
                 ) : null}
               </div>
@@ -191,12 +196,14 @@ function DraftActionBar({
   onDelete,
   onOpen,
   onSend,
+  t,
 }: {
   canOpen: boolean;
   canSend: boolean;
   onDelete: () => void;
   onOpen: () => void;
   onSend: () => void;
+  t: ReturnType<typeof useT>;
 }) {
   return (
     <div className="absolute right-2 top-1 z-10">
@@ -208,19 +215,23 @@ function DraftActionBar({
           <div className="flex items-center gap-0.5 p-1">
             <DraftActionButton
               disabled={!canOpen}
-              label="Open draft"
+              label={t("msg.draft.openDraft")}
               onClick={onOpen}
             >
               <Pencil className="h-4 w-4" />
             </DraftActionButton>
             <DraftActionButton
               disabled={!canSend}
-              label="Send"
+              label={t("common.send")}
               onClick={onSend}
             >
               <Send className="h-4 w-4" />
             </DraftActionButton>
-            <DraftActionButton destructive label="Delete" onClick={onDelete}>
+            <DraftActionButton
+              destructive
+              label={t("common.delete")}
+              onClick={onDelete}
+            >
               <Trash2 className="h-4 w-4" />
             </DraftActionButton>
           </div>

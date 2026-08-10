@@ -2,9 +2,23 @@ import * as React from "react";
 
 import { Badge } from "@/shared/ui/badge";
 import type { ManagedAgent, PresenceStatus } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 /** Grace period after mount before treating "running + no presence" as "Starting…" */
 const PRESENCE_GRACE_MS = 15_000;
+
+function statusLabel(status: ManagedAgent["status"], t: TranslateFn): string {
+  switch (status) {
+    case "running":
+      return t("agents.statusRunning");
+    case "stopped":
+      return t("agents.statusStopped");
+    case "deployed":
+      return t("agents.statusDeployed");
+    default:
+      return status.replace(/_/g, " ");
+  }
+}
 
 export function AgentStatusBadge({
   isWorking,
@@ -17,6 +31,7 @@ export function AgentStatusBadge({
   presenceStatus: PresenceStatus | undefined;
   status: ManagedAgent["status"];
 }) {
+  const t = useT();
   const [inGracePeriod, setInGracePeriod] = React.useState(true);
 
   React.useEffect(() => {
@@ -40,10 +55,10 @@ export function AgentStatusBadge({
         : "secondary";
 
   const label = isWorking
-    ? "Working"
+    ? t("sidebar.working")
     : isStarting
-      ? "Starting\u2026"
-      : status.replace(/_/g, " ");
+      ? t("agents.starting")
+      : statusLabel(status, t);
 
   return (
     <Badge

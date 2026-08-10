@@ -10,6 +10,7 @@ import {
 import { isManagedAgentActive } from "@/features/agents/lib/managedAgentControlActions";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { ManagedAgent } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Badge } from "@/shared/ui/badge";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -64,7 +65,7 @@ export function ManagedAgentSessionPanel({
   autoTail = false,
   channelId = null,
   className,
-  emptyDescription = "Mention this agent in a channel to watch the next turn.",
+  emptyDescription,
   emptyState = "idle",
   panelPadding = true,
   rawLayout = "responsive",
@@ -76,6 +77,9 @@ export function ManagedAgentSessionPanel({
   rawEventsOverride,
   transcriptOverride,
 }: ManagedAgentSessionPanelProps) {
+  const t = useT();
+  const resolvedEmptyDescription =
+    emptyDescription ?? t("agents.mentionToWatch");
   const hasObserver = isManagedAgentActive(agent);
   // Always read from the store — archived frames are ingested regardless of
   // live status and must be renderable for idle agents with channel history.
@@ -153,7 +157,7 @@ export function ManagedAgentSessionPanel({
         connectionState={connectionState}
         autoTail={autoTail}
         channelId={channelId}
-        emptyDescription={emptyDescription}
+        emptyDescription={resolvedEmptyDescription}
         emptyState={emptyState}
         errorMessage={errorMessage}
         events={displayEvents}
@@ -181,25 +185,28 @@ function SessionHeader({
   hasObserver: boolean;
   latestSessionId: string | null | undefined;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold tracking-tight">
-            Live ACP session
+            {t("agents.liveAcpSession")}
           </h3>
           <ObserverStatusBadge state={connectionState} />
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {hasObserver
             ? latestSessionId
-              ? `Session ${shorten(latestSessionId)}`
-              : "Waiting for the next agent turn."
-            : "Restart this local agent to attach the observer feed."}
+              ? t("agents.sessionShort", { id: shorten(latestSessionId) })
+              : t("agents.waitingNextTurn")
+            : t("agents.restartToAttachObserver")}
         </p>
       </div>
       <Badge className="w-fit font-mono" variant="outline">
-        {eventCount} event{eventCount === 1 ? "" : "s"}
+        {eventCount === 1
+          ? t("agents.eventCountOne", { count: eventCount })
+          : t("agents.eventCountMany", { count: eventCount })}
       </Badge>
     </div>
   );
@@ -337,20 +344,33 @@ function SessionLoadingSkeleton() {
 }
 
 function ObserverStatusBadge({ state }: { state: ConnectionState }) {
+  const t = useT();
   const display =
     state === "open"
-      ? { label: "Live", Icon: CircleDot, variant: "default" as const }
+      ? {
+          label: t("agents.connLive"),
+          Icon: CircleDot,
+          variant: "default" as const,
+        }
       : state === "connecting"
-        ? { label: "Connecting", variant: "secondary" as const }
+        ? { label: t("agents.connConnecting"), variant: "secondary" as const }
         : state === "error"
           ? {
-              label: "Unavailable",
+              label: t("agents.connUnavailable"),
               Icon: XCircle,
               variant: "destructive" as const,
             }
           : state === "closed"
-            ? { label: "Closed", Icon: Clock3, variant: "secondary" as const }
-            : { label: "Idle", Icon: Clock3, variant: "secondary" as const };
+            ? {
+                label: t("agents.connClosed"),
+                Icon: Clock3,
+                variant: "secondary" as const,
+              }
+            : {
+                label: t("agents.connIdle"),
+                Icon: Clock3,
+                variant: "secondary" as const,
+              };
   const StatusIcon = display.Icon;
 
   return (
@@ -366,12 +386,13 @@ function ObserverStatusBadge({ state }: { state: ConnectionState }) {
 }
 
 function EmptyObserverState() {
+  const t = useT();
   return (
     <div className="mt-4 flex min-h-48 flex-col items-center justify-center px-6 py-8 text-center">
       <TerminalSquare className="mx-auto h-4 w-4 text-muted-foreground" />
-      <p className="mt-3 text-sm font-medium">Observer not attached</p>
+      <p className="mt-3 text-sm font-medium">{t("agents.observerNotAttached")}</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        The live feed is available for local agents started after this update.
+        {t("agents.observerNotAttachedHint")}
       </p>
     </div>
   );

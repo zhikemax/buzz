@@ -17,6 +17,7 @@ import { resolveUserLabel } from "@/features/profile/lib/identity";
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { isPositiveEmojiParticle } from "@/shared/ui/EmojiBurstProvider";
 import {
@@ -441,6 +442,7 @@ function describeSystemEvent(
   payload: SystemMessagePayload,
   currentPubkey: string | undefined,
   profiles: UserProfileLookup | undefined,
+  t: TranslateFn,
   personaLookup?: Map<string, string>,
   agentPubkeys?: ReadonlySet<string>,
 ): SystemMessageDescription | null {
@@ -601,7 +603,7 @@ function describeSystemEvent(
       // content and the reporter are never disclosed here.
       if (payload.public_reason) {
         return {
-          title: "Removed by community moderators",
+          title: t("msg.system.removedByModerators"),
           action: payload.public_reason,
         };
       }
@@ -639,6 +641,7 @@ export const SystemMessageRow = React.memo(function SystemMessageRow({
     remove: boolean,
   ) => Promise<void>;
 }) {
+  const t = useT();
   const sourceMessages = React.useMemo(
     () => groupedMessages ?? [message],
     [groupedMessages, message],
@@ -702,6 +705,7 @@ export const SystemMessageRow = React.memo(function SystemMessageRow({
     payload,
     currentPubkey,
     profiles,
+    t,
     personaLookup,
     agentPubkeys,
   );
@@ -798,7 +802,7 @@ export const SystemMessageRow = React.memo(function SystemMessageRow({
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
                 <Button
-                  aria-label="Open reactions"
+                  aria-label={t("msg.openReactions")}
                   className={SYSTEM_ACTION_BUTTON_CLASS}
                   size="sm"
                   type="button"
@@ -808,7 +812,7 @@ export const SystemMessageRow = React.memo(function SystemMessageRow({
                 </Button>
               </PopoverTrigger>
             </TooltipTrigger>
-            <TooltipContent>React</TooltipContent>
+            <TooltipContent>{t("msg.react")}</TooltipContent>
           </Tooltip>
           <PopoverContent
             align="end"

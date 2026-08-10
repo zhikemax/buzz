@@ -5,6 +5,7 @@ import {
   useCardMintJobs,
   viewMintedCardJob,
 } from "@/features/agents/cardMintStore";
+import { useT } from "@/shared/i18n";
 import { Shimmer } from "@/shared/ui/Shimmer";
 
 /**
@@ -14,6 +15,7 @@ import { Shimmer } from "@/shared/ui/Shimmer";
  * composer dock's bottom activity rail next to agent-working/typing rows.
  */
 export function CardMintComposerChip() {
+  const t = useT();
   const jobs = useCardMintJobs();
   if (jobs.length === 0) return null;
 
@@ -32,7 +34,9 @@ export function CardMintComposerChip() {
             >
               <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-70" />
               <Shimmer className="-my-px truncate py-px">
-                {`Minting ${job.input.agentName}’s card… (takes a few minutes)`}
+                {t("agents.mintingCardProgress", {
+                  name: job.input.agentName,
+                })}
               </Shimmer>
             </span>
           );
@@ -48,7 +52,7 @@ export function CardMintComposerChip() {
             >
               <Sparkles className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">
-                {`${job.input.agentName}’s card is ready — view it`}
+                {t("agents.cardReadyView", { name: job.input.agentName })}
               </span>
             </button>
           );
@@ -60,10 +64,10 @@ export function CardMintComposerChip() {
             key={job.jobId}
           >
             <span className="truncate">
-              {`Minting ${job.input.agentName}’s card failed`}
+              {t("agents.mintingCardFailed", { name: job.input.agentName })}
             </span>
             <button
-              aria-label="Dismiss failed mint"
+              aria-label={t("agents.dismissFailedMint")}
               className="shrink-0 opacity-70 hover:opacity-100"
               onClick={() => dismissCardMintJob(job.jobId)}
               type="button"

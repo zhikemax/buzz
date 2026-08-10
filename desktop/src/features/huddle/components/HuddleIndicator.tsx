@@ -248,7 +248,7 @@ export function HuddleIndicator({
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Huddle</TooltipContent>
+        <TooltipContent>{t("huddle.title")}</TooltipContent>
       </Tooltip>
     );
   }
@@ -294,7 +294,11 @@ export function HuddleIndicator({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          aria-label={`Join active huddle (${participantCount} participant${participantCount !== 1 ? "s" : ""})`}
+          aria-label={
+            participantCount === 1
+              ? t("huddle.joinActiveAriaOne")
+              : t("huddle.joinActiveAriaMany", { count: participantCount })
+          }
           className={cn("relative", className)}
           disabled={isJoining || isStarting}
           onClick={() => void doJoin()}
@@ -313,7 +317,9 @@ export function HuddleIndicator({
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {`Huddle active — ${participantCount} participant${participantCount !== 1 ? "s" : ""}`}
+        {participantCount === 1
+          ? t("huddle.activeTooltipOne")
+          : t("huddle.activeTooltipMany", { count: participantCount })}
       </TooltipContent>
     </Tooltip>
   );

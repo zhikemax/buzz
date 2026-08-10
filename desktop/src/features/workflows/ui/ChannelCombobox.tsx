@@ -2,6 +2,7 @@ import { Check, ChevronsUpDown, Search } from "lucide-react";
 import * as React from "react";
 
 import type { Channel } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 
@@ -24,6 +25,7 @@ export function ChannelCombobox({
   onChange,
   value,
 }: ChannelComboboxProps) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
@@ -97,7 +99,7 @@ export function ChannelCombobox({
           type="button"
         >
           <span className="truncate">
-            {selected ? formatChannelLabel(selected) : "Select a channel..."}
+            {selected ? formatChannelLabel(selected) : t("workflows.channel.select")}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
@@ -119,7 +121,7 @@ export function ChannelCombobox({
               setHighlightedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search channels..."
+            placeholder={t("workflows.channel.search")}
             spellCheck={false}
             value={query}
           />
@@ -127,7 +129,7 @@ export function ChannelCombobox({
         <div className="max-h-60 overflow-y-auto p-1">
           {filtered.length === 0 ? (
             <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-              No channels found.
+              {t("workflows.channel.empty")}
             </p>
           ) : (
             filtered.map((channel, index) => (

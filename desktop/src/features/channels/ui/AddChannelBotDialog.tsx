@@ -14,6 +14,7 @@ import { AddChannelBotPersonasSection } from "@/features/channels/ui/AddChannelB
 import { AddChannelBotTeamsSection } from "@/features/channels/ui/AddChannelBotTeamsSection";
 import { useInChannelPersonaIds } from "@/features/channels/ui/useInChannelPersonaIds";
 import type { AcpRuntime } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
 import { Dialog } from "@/shared/ui/dialog";
@@ -35,16 +36,16 @@ function toggleValue(values: readonly string[], value: string) {
     : [...values, value];
 }
 
-function formatAgentCountLabel(count: number) {
-  return count === 1 ? "agent" : "agents";
-}
-
 function formatBatchFailureSummary(
   failures: ReadonlyArray<{ name: string; error: string }>,
+  t: TranslateFn,
 ) {
   if (failures.length === 1) {
     const [failure] = failures;
-    return `Failed to add ${failure.name}: ${failure.error}`;
+    return t("agents.failedAddNamed", {
+      name: failure.name,
+      error: failure.error,
+    });
   }
 
   return failures
@@ -62,6 +63,7 @@ export function AddChannelBotDialog({
   onCreateAgent,
   onOpenChange,
 }: AddChannelBotDialogProps) {
+  const t = useT();
   const personasQuery = usePersonasQuery();
   const teamsQuery = useTeamsQuery();
   const inChannelPersonaIds = useInChannelPersonaIds(
@@ -178,12 +180,14 @@ export function AddChannelBotDialog({
       );
       if (result.successes.length > 0) {
         setSubmissionNotice(
-          `Added ${result.successes.length} ${formatAgentCountLabel(
-            result.successes.length,
-          )}.`,
+          result.successes.length === 1
+            ? t("agents.addedAgentsCountOne")
+            : t("agents.addedAgentsCountMany", {
+                count: result.successes.length,
+              }),
         );
       }
-      setSubmissionError(formatBatchFailureSummary(result.failures));
+      setSubmissionError(formatBatchFailureSummary(result.failures, t));
     } catch {
       // The mutation error is rendered inline.
     }
@@ -196,18 +200,18 @@ export function AddChannelBotDialog({
     !createBotsMutation.isPending;
   const addButtonLabel = createBotsMutation.isPending
     ? selectedPersonas.length > 1
-      ? `Adding ${selectedPersonas.length}…`
-      : "Adding…"
+      ? t("agents.addingCount", { count: selectedPersonas.length })
+      : t("agents.addingEllipsis")
     : selectedPersonas.length > 1
-      ? `Add ${selectedPersonas.length} agents`
-      : "Add agent";
+      ? t("agents.addAgentsCount", { count: selectedPersonas.length })
+      : t("agents.addAgent");
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <ChooserDialogContent
         className="max-w-xl"
         data-testid="add-channel-bot-dialog"
-        description="Choose from your agents, or create a new one."
+        description={t("agents.addChannelBotDesc")}
         footer={
           <>
             <Button
@@ -216,7 +220,7 @@ export function AddChannelBotDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={!canSubmit}
@@ -233,7 +237,7 @@ export function AddChannelBotDialog({
         headerTestId="add-channel-bot-dialog-header"
         scrollAreaClassName="space-y-5"
         scrollAreaTestId="add-channel-bot-dialog-scroll-area"
-        title="Add agents"
+        title={t("agents.addAgentsTitle")}
       >
         <AddChannelBotPersonasSection
           canToggleSelections={!createBotsMutation.isPending}
@@ -265,7 +269,7 @@ export function AddChannelBotDialog({
           <div className="flex gap-3 rounded-lg border border-warning/30 bg-warning-bg px-4 py-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-warning">
-              Install an agent runtime before adding an agent to this channel.
+              {t("agents.installRuntimeBeforeAdd")}
             </p>
           </div>
         ) : null}

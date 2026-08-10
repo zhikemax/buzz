@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import { useCommunities } from "../useCommunities";
 import { CommunityEditForm } from "./CommunityEditForm";
 
@@ -12,6 +13,7 @@ export function CommunityChangeOverlay({
   onClose,
   onUpdated,
 }: CommunityChangeOverlayProps) {
+  const t = useT();
   const { activeCommunity, updateCommunity } = useCommunities();
   const [error, setError] = React.useState<string | null>(null);
   const overlayRef = React.useRef<HTMLDivElement>(null);
@@ -51,14 +53,14 @@ export function CommunityChangeOverlay({
           // If requiresReinit, the tree remounts — overlay unmounts naturally.
           break;
         case "duplicate-relay":
-          setError("Another community already uses this relay URL.");
+          setError(t("community.change.duplicateRelay"));
           break;
         case "not-found":
-          setError("Community not found.");
+          setError(t("community.change.notFound"));
           break;
       }
     },
-    [activeCommunity, onClose, onUpdated, updateCommunity],
+    [activeCommunity, onClose, onUpdated, t, updateCommunity],
   );
 
   if (!activeCommunity) return null;
@@ -76,10 +78,10 @@ export function CommunityChangeOverlay({
       <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-background p-8 shadow-2xl">
         <h2 className="text-xl font-semibold tracking-tight">
-          Change community
+          {t("community.change.title")}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Update your community name or relay URL.
+          {t("community.change.description")}
         </p>
         <div className="mt-6">
           <CommunityEditForm
@@ -87,7 +89,7 @@ export function CommunityChangeOverlay({
             initialRelayUrl={activeCommunity.relayUrl}
             onCancel={onClose}
             onSubmit={handleSubmit}
-            submitLabel="Save changes"
+            submitLabel={t("community.change.save")}
           />
         </div>
         {error ? (

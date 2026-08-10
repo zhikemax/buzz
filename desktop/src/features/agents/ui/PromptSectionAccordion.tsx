@@ -1,8 +1,26 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 
+import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import type { PromptSection } from "./agentSessionTypes";
+
+const PROMPT_SECTION_TITLE_KEYS: Record<string, MessageKey> = {
+  System: "agents.promptSectionSystem",
+  Base: "agents.promptSectionBase",
+  "Team Instructions": "agents.teamInstructions",
+  "Core Memory": "agents.promptSectionCoreMemory",
+  "Channel Canvas": "agents.promptSectionChannelCanvas",
+  Prompt: "agents.promptSectionPrompt",
+};
+
+export function localizePromptSectionTitle(
+  title: string,
+  t: TranslateFn,
+): string {
+  const key = PROMPT_SECTION_TITLE_KEYS[title];
+  return key ? t(key) : title;
+}
 
 export function PromptSectionList({
   className,
@@ -31,6 +49,7 @@ export function PromptSectionAccordion({
 }: {
   section: PromptSection;
 }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const body = section.body.trim();
 
@@ -50,7 +69,7 @@ export function PromptSectionAccordion({
                 !open && "line-clamp-2 wrap-anywhere",
               )}
             >
-              {section.title}
+              {localizePromptSectionTitle(section.title, t)}
             </div>
             <div
               className={cn(
@@ -63,7 +82,9 @@ export function PromptSectionAccordion({
               {body.length > 0 ? (
                 body
               ) : (
-                <span className="italic text-foreground/50">No metadata.</span>
+                <span className="italic text-foreground/50">
+                  {t("agents.noMetadata")}
+                </span>
               )}
             </div>
           </div>

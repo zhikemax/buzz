@@ -171,9 +171,7 @@ export function useAgentManagement() {
         (pubkey) => pubkey.toLowerCase() === requestingPubkey,
       )
     ) {
-      throw new Error(
-        "An agent can only manage agents from a channel you both belong to.",
-      );
+      throw new Error(t("agents.manageOnlySharedChannel"));
     }
   }
 
@@ -193,7 +191,7 @@ export function useAgentManagement() {
         (candidate) => candidate.id === input.runtime,
       );
       if (!runtime) {
-        throw new Error("Choose an available runtime for this agent.");
+        throw new Error(t("agents.chooseAvailableRuntime"));
       }
 
       const avatarUrl = await resolveManagedAgentAvatarUrl(
@@ -233,7 +231,7 @@ export function useAgentManagement() {
       return true;
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Could not save this agent.",
+        cause instanceof Error ? cause.message : t("agents.couldNotSaveAgent"),
       );
       return false;
     }
@@ -255,7 +253,7 @@ export function useAgentManagement() {
       return true;
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Could not save this agent.",
+        cause instanceof Error ? cause.message : t("agents.couldNotSaveAgent"),
       );
       return false;
     }
@@ -286,13 +284,13 @@ export function useAgentManagement() {
     if (request?.action !== "update") return error;
     if (error) return error;
     if (matchingPersonas.length > 1) {
-      return "More than one personal agent has that name. Rename it in Agents, then ask the agent again.";
+      return t("agents.duplicatePersonalAgentName");
     }
     if (!currentPersona) {
-      return "Agents can only update a personal agent profile by its current name.";
+      return t("agents.updatePersonalAgentByName");
     }
     return null;
-  }, [currentPersona, error, matchingPersonas.length, request]);
+  }, [currentPersona, error, matchingPersonas.length, request, t]);
 
   return {
     request,

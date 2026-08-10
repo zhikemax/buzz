@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import {
   CreateProjectWorkItemDialog,
   type CreateProjectWorkItemDialogInput,
@@ -18,17 +19,18 @@ export function CreateIssueDialog({
   open: boolean;
   projectName: string;
 }) {
+  const t = useT();
   return (
     <CreateProjectWorkItemDialog
-      bodyPlaceholder="Add context, expected behavior, or reproduction steps"
-      description={`Create an issue in ${projectName}`}
+      bodyPlaceholder={t("projects.issue.create.bodyPlaceholder")}
+      description={t("projects.issue.create.inRepo", { name: projectName })}
       isCreating={isCreating}
       itemName="issue"
       onCreate={onCreate}
       onOpenChange={onOpenChange}
       open={open}
-      title="Create an issue"
-      titlePlaceholder="Describe the issue"
+      title={t("projects.issue.create.title")}
+      titlePlaceholder={t("projects.issue.create.titlePlaceholder")}
     />
   );
 }

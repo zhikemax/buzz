@@ -4,6 +4,7 @@ import {
   resolveUserLabel,
   type UserProfileLookup,
 } from "@/features/profile/lib/identity";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import type { TranscriptItem } from "../agentSessionTypes";
@@ -33,12 +34,13 @@ export function ToolItem({
   item: Extract<TranscriptItem, { type: "tool" }>;
   profiles?: UserProfileLookup;
 }) {
+  const t = useT();
   const [isExpanded, setIsExpanded] = React.useState(false);
   const hasArgs = Object.keys(item.args).length > 0;
   const hasResult = item.result.trim().length > 0;
   const canonicalToolName = item.buzzToolName ?? item.toolName;
-  const buzzTool = getBuzzToolInfo(canonicalToolName);
-  const compactSummary = buildCompactToolSummary(item);
+  const buzzTool = getBuzzToolInfo(canonicalToolName, t);
+  const compactSummary = buildCompactToolSummary(item, t);
   const duration = getToolDurationDisplay(item);
   const messageLink = getSentMessageLink(item);
   const timestampTitle = formatTranscriptTimestampTitle(item.timestamp);

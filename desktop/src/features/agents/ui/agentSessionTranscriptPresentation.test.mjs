@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
 import {
   getActivityHeadline,
   isMeaningfulItem,
   isSpineItem,
+  localizeTranscriptActivityTitle,
   shouldShowTranscriptRowTimestamp,
 } from "./agentSessionTranscriptPresentation.ts";
 
 const baseTimestamp = "2026-06-14T19:00:00.000Z";
+const t = (key, params) => translate("en", key, params);
 
 function makeTool(overrides = {}) {
   return {
@@ -40,13 +43,30 @@ function makeMessage(overrides = {}) {
   };
 }
 
-test("getActivityHeadline formats tool titles and assistant text", () => {
-  assert.equal(getActivityHeadline(makeTool()), "Send Message · abc");
+test("localizeTranscriptActivityTitle maps known activity titles", () => {
+  assert.equal(localizeTranscriptActivityTitle("Thinking", t), "Thinking");
+  assert.equal(localizeTranscriptActivityTitle("Plan", t), "Plan");
   assert.equal(
-    getActivityHeadline(makeMessage({ text: "First line\nSecond line" })),
+    localizeTranscriptActivityTitle("Plan updated", t),
+    "Plan updated",
+  );
+  assert.equal(
+    localizeTranscriptActivityTitle("Prompt context", t),
+    "Prompt context",
+  );
+  assert.equal(
+    localizeTranscriptActivityTitle("Custom title", t),
+    "Custom title",
+  );
+});
+
+test("getActivityHeadline formats tool titles and assistant text", () => {
+  assert.equal(getActivityHeadline(makeTool(), t), "Send Message · abc");
+  assert.equal(
+    getActivityHeadline(makeMessage({ text: "First line\nSecond line" }), t),
     "First line",
   );
-  assert.equal(getActivityHeadline(makeMessage({ text: "   " })), "Responding");
+  assert.equal(getActivityHeadline(makeMessage({ text: "   " }), t), "Responding");
 });
 
 test("isMeaningfulItem ignores lifecycle noise and raw JSON-RPC metadata", () => {
@@ -127,7 +147,7 @@ test("getActivityHeadline uses semantic tool descriptors", () => {
           groupKey: "buzz-cli:messages.send",
         },
       }),
-    ),
+  t),
     "Send Message · hi",
   );
 });
@@ -217,7 +237,7 @@ test("two-tier headline: metadata excluded when spine work is present", () => {
 
   const headlines = transcript
     .filter(passFilter)
-    .map((item) => getActivityHeadline(item))
+    .map((item) => getActivityHeadline(item, t))
     .filter(Boolean);
 
   assert.ok(
@@ -239,7 +259,7 @@ test("two-tier headline: metadata headlines when it is the only activity (sessio
 
   const headlines = transcript
     .filter(passFilter)
-    .map((item) => getActivityHeadline(item))
+    .map((item) => getActivityHeadline(item, t))
     .filter(Boolean);
 
   assert.ok(

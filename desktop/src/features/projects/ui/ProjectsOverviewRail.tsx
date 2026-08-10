@@ -7,6 +7,7 @@ import type {
   ProjectActivitySummary,
 } from "@/features/projects/hooks";
 import { normalizePubkey } from "@/shared/lib/pubkey";
+import { useT } from "@/shared/i18n";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 import { OverviewRailSection } from "./ProjectOverviewPanel";
@@ -59,6 +60,7 @@ export function ProjectsOverviewRail({
   projects,
   summaries,
 }: ProjectsOverviewRailProps) {
+  const t = useT();
   const people = overviewPeople(projects, summaries);
   const activityByDay = overviewActivityByDay(projects, summaries);
 
@@ -67,7 +69,10 @@ export function ProjectsOverviewRail({
   return (
     <>
       <div className="rounded-lg border border-border/60 p-4">
-        <OverviewRailSection title="People" titleClassName="text-base">
+        <OverviewRailSection
+          title={t("projects.overview.people")}
+          titleClassName="text-base"
+        >
           {people.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {people.slice(0, 18).map((pubkey) => {
@@ -91,14 +96,16 @@ export function ProjectsOverviewRail({
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No people yet.</p>
+            <p className="text-sm text-muted-foreground">
+              {t("projects.empty.noPeople")}
+            </p>
           )}
         </OverviewRailSection>
       </div>
 
       <div className="min-w-0 rounded-lg border border-border/60 p-4">
         <OverviewRailSection
-          title="Contribution Activity"
+          title={t("projects.activity.contributionTitle")}
           titleClassName="text-base"
         >
           <ProjectsContributionGraph activityByDay={activityByDay} compact />

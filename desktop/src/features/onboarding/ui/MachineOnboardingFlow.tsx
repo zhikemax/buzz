@@ -142,7 +142,7 @@ export function MachineOnboardingFlow({
     } finally {
       setIsPending(false);
     }
-  }, [queryClient]);
+  }, [queryClient, t]);
 
   const loadRecoveredIdentity = React.useCallback(async () => {
     setIsPending(true);
@@ -157,12 +157,12 @@ export function MachineOnboardingFlow({
       setPage("setup");
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Failed to load identity",
+        cause instanceof Error ? cause.message : t("onboard.loadIdentityFailed"),
       );
     } finally {
       setIsPending(false);
     }
-  }, [continueWithRecoveredIdentity, queryClient]);
+  }, [continueWithRecoveredIdentity, queryClient, t]);
 
   const replaceLostIdentity = React.useCallback(async () => {
     const confirmed = window.confirm(
@@ -391,10 +391,10 @@ export function MachineOnboardingFlow({
                 >
                   <div className="mx-auto w-full max-w-[35rem] pb-6 pt-10 text-center max-sm:pb-4 max-sm:pt-6">
                     <DialogTitle className="text-balance px-8 text-3xl font-normal text-foreground">
-                      Restore from a backup file
+                      {t("onboard.recover.restoreBackupTitle")}
                     </DialogTitle>
                     <DialogDescription className="mx-auto mt-4 max-w-[28rem] text-sm leading-6 text-foreground/80">
-                      Choose the encrypted backup file you saved from Buzz.
+                      {t("onboard.recover.restoreBackupDesc")}
                     </DialogDescription>
                     <NostrKeyImportForm
                       footerMode="inline"
@@ -423,14 +423,14 @@ export function MachineOnboardingFlow({
                   <div className="mx-auto flex w-full max-w-[35rem] flex-col items-center pb-6 pt-8 text-center max-sm:pb-4 max-sm:pt-4">
                     <DialogTitle className="text-balance px-8 text-3xl font-normal text-foreground">
                       {identityLost
-                        ? "Recover from your phone"
-                        : "Use your Buzz identity"}
+                        ? t("onboard.recover.fromPhoneTitle")
+                        : t("onboard.recover.useIdentityTitle")}
                     </DialogTitle>
                     <DialogDescription className="mt-4 text-sm leading-6 text-foreground/80">
                       {phoneRecoveryStep === "loading" ||
                       phoneRecoveryStep === "qr"
-                        ? "Scan this code with a signed-in Buzz phone."
-                        : "Confirm the code before sharing your identity."}
+                        ? t("onboard.recover.scanCode")
+                        : t("onboard.recover.confirmCode")}
                     </DialogDescription>
                     <div className="mt-5">
                       <IdentityRecoveryPairing

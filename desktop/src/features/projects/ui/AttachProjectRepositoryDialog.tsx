@@ -2,6 +2,7 @@ import { FolderGit2 } from "lucide-react";
 import * as React from "react";
 
 import type { Project, Repository } from "@/features/projects/hooks";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
 import { Dialog } from "@/shared/ui/dialog";
@@ -21,6 +22,7 @@ export function AttachProjectRepositoryDialog({
   project: Project;
   repositories: Repository[];
 }) {
+  const t = useT();
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -34,7 +36,9 @@ export function AttachProjectRepositoryDialog({
       onOpenChange(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to attach repository.",
+        error instanceof Error
+          ? error.message
+          : t("projects.repo.attach.failed"),
       );
     }
   }
@@ -51,13 +55,15 @@ export function AttachProjectRepositoryDialog({
         className="max-w-lg"
         contentClassName="max-h-96 overflow-y-auto pt-3"
         data-testid="attach-project-repository-dialog"
-        description={`Choose an existing repository to add to ${project.name}.`}
-        title="Add existing repository"
+        description={t("projects.repo.attach.description", {
+          name: project.name,
+        })}
+        title={t("projects.repo.attach.title")}
       >
         <div className="space-y-2">
           {repositories.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
-              Every available repository is already in this project.
+              {t("projects.repo.attach.empty")}
             </p>
           ) : (
             repositories.map((repository) => (

@@ -5,6 +5,7 @@ import {
   createNcryptsecBackup,
   saveNcryptsecCopy,
 } from "@/shared/api/tauriIdentity";
+import { useT } from "@/shared/i18n";
 import {
   type EncryptedBackupEvent,
   type EncryptedBackupState,
@@ -39,6 +40,7 @@ export function EncryptedBackupProvider({
   children: React.ReactNode;
   onOpenSettings: () => void;
 }) {
+  const t = useT();
   const [state, dispatch] = React.useReducer(
     encryptedBackupReducer,
     initialEncryptedBackupState,
@@ -98,7 +100,7 @@ export function EncryptedBackupProvider({
             message:
               err instanceof Error
                 ? err.message
-                : "Failed to encrypt your key.",
+                : t("settings.backup.encryptFailed"),
           });
         });
     };
@@ -110,12 +112,12 @@ export function EncryptedBackupProvider({
       if (!started) cancelledBeforeStart = true;
       window.clearTimeout(timer);
     };
-  }, [pendingPassphrase, skipDebounce, state.nextRequestId]);
+  }, [pendingPassphrase, skipDebounce, state.nextRequestId, t]);
 
   React.useEffect(() => {
     if (state.downloadPending) {
-      toast.loading("Preparing backup…", {
-        description: "You can close this window while Buzz finishes.",
+      toast.loading(t("settings.backup.preparing"), {
+        description: t("settings.backup.preparingDesc"),
         duration: Number.POSITIVE_INFINITY,
         id: BACKUP_READY_TOAST_ID,
       });
@@ -126,7 +128,7 @@ export function EncryptedBackupProvider({
       state.passphrase.length === 0 &&
       !state.ncryptsec
     ) {
-      toast.error("Couldn’t create backup", {
+      toast.error(t("settings.backup.createFailed"), {
         description: state.createError,
         id: BACKUP_READY_TOAST_ID,
       });
@@ -136,22 +138,23 @@ export function EncryptedBackupProvider({
     state.downloadPending,
     state.ncryptsec,
     state.passphrase.length,
+    t,
   ]);
 
   const showAvailableToast = React.useCallback(
     (description: string, error = false) => {
       const options = {
         action: {
-          label: "Open settings",
+          label: t("settings.backup.openSettings"),
           onClick: () => onOpenSettingsRef.current(),
         },
         description,
         id: BACKUP_READY_TOAST_ID,
       };
-      if (error) toast.error("Backup ready to download", options);
-      else toast.success("Backup ready to download", options);
+      if (error) toast.error(t("settings.backup.readyDownload"), options);
+      else toast.success(t("settings.backup.readyDownload"), options);
     },
-    [],
+    [t],
   );
 
   const saveBackup = React.useCallback(
@@ -159,8 +162,8 @@ export function EncryptedBackupProvider({
       if (isSaving) return;
       setIsSaving(true);
       setSaveError(null);
-      toast("Saving backup…", {
-        description: "The download window will open when it’s ready.",
+      toast(t("settings.backup.saving"), {
+        description: t("settings.backup.savingDesc"),
         id: BACKUP_READY_TOAST_ID,
       });
       try {
@@ -168,24 +171,26 @@ export function EncryptedBackupProvider({
         if (mountedRef.current) {
           showAvailableToast(
             path === null
-              ? "Your backup will be available to download for 5 minutes."
-              : "You can download another copy for 5 minutes.",
+              ? t("settings.backup.available5min")
+              : t("settings.backup.anotherCopy5min"),
           );
         }
       } catch (err) {
         if (!mountedRef.current) return;
         const message =
-          err instanceof Error ? err.message : "Failed to save your key.";
+          err instanceof Error
+            ? err.message
+            : t("settings.backup.saveFailed");
         setSaveError(message);
         showAvailableToast(
-          `${message} It will be available to download for 5 minutes.`,
+          `${message} ${t("settings.backup.available5min")}`,
           true,
         );
       } finally {
         if (mountedRef.current) setIsSaving(false);
       }
     },
-    [isSaving, showAvailableToast],
+    [isSaving, showAvailableToast, t],
   );
 
   React.useEffect(() => {

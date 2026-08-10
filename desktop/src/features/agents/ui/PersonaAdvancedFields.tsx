@@ -6,7 +6,7 @@ import { cn } from "@/shared/lib/cn";
 import { EnvVarsEditor, type EnvVarsValue } from "./EnvVarsEditor";
 import {
   CreateAgentRespondToField,
-  OWNER_ONLY_ACCESS_DISABLED_REASON,
+  OWNER_ONLY_ACCESS_DISABLED_REASON_KEY,
 } from "./RespondToField";
 import type { PersonaBehaviorDraft } from "./personaBehaviorDraft";
 import {
@@ -22,7 +22,7 @@ import {
   NumericTuningFields,
 } from "./buzzAgentModelTuningFields";
 import {
-  CARD_MINT_KEY_ANNOTATIONS,
+  cardMintKeyAnnotations,
   PERSONA_FIELD_CONTROL_CLASS,
   PERSONA_FIELD_SHELL_CLASS,
   PERSONA_LABEL_OPTIONAL_CLASS,
@@ -143,7 +143,9 @@ export function PersonaAdvancedFields({
         allowlist={agentAccessOwnerOnly ? [] : behaviorDraft.respondToAllowlist}
         disabled={disabled || agentAccessOwnerOnly}
         disabledReason={
-          agentAccessOwnerOnly ? OWNER_ONLY_ACCESS_DISABLED_REASON : undefined
+          agentAccessOwnerOnly
+            ? t(OWNER_ONLY_ACCESS_DISABLED_REASON_KEY)
+            : undefined
         }
         mode={respondToMode}
         onAllowlistChange={(allowlist) =>
@@ -250,7 +252,7 @@ export function PersonaAdvancedFields({
         disabled={disabled}
         fileSatisfiedKeys={fileSatisfiedEnvKeys}
         hiddenKeys={effectiveHiddenKeys}
-        keyAnnotations={CARD_MINT_KEY_ANNOTATIONS}
+        keyAnnotations={cardMintKeyAnnotations(t)}
         onChange={onEnvVarsChange}
         requiredKeys={requiredEnvKeys}
         value={envVars}

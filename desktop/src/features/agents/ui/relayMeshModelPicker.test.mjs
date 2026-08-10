@@ -7,6 +7,13 @@ import {
 } from "./relayMeshModelPicker.ts";
 import { AUTO_MODEL_DROPDOWN_VALUE } from "./agentConfigOptions.tsx";
 
+const t = (key) =>
+  ({
+    "agents.autoCollective": "Auto (collective when available)",
+    "agents.loadingModels": "Loading models...",
+    "agents.customModelEllipsis": "Custom model...",
+  })[key] ?? key;
+
 const fallback = [{ id: "", label: "Default model" }];
 const live = [
   { id: "", label: "Auto (collective when available)" },
@@ -20,6 +27,7 @@ test("Buzz shared compute maps persisted auto to Default and hides custom input"
     isCustomEditing: false,
     model: "auto",
     provider: "relay-mesh",
+    t,
   });
   assert.equal(state.selectValue, AUTO_MODEL_DROPDOWN_VALUE);
   assert.equal(state.isRelayMesh, true);
@@ -34,6 +42,7 @@ test("Buzz shared compute fallback is Default auto while normal providers remain
     isCustomEditing: false,
     model: "",
     provider: "relay-mesh",
+    t,
   });
   assert.deepEqual(mesh.options, [
     { id: "", label: "Auto (collective when available)" },
@@ -45,6 +54,7 @@ test("Buzz shared compute fallback is Default auto while normal providers remain
     isCustomEditing: false,
     model: "auto",
     provider: "openai",
+    t,
   });
   assert.equal(openai.isCustom, true);
   assert.equal(openai.showCustomInput, true);
@@ -57,6 +67,7 @@ test("Buzz shared compute keeps Default auto when discovery is empty", () => {
     isCustomEditing: false,
     model: "auto",
     provider: "relay-mesh",
+    t,
   });
 
   assert.deepEqual(state.options, [
@@ -72,6 +83,7 @@ test("Buzz shared compute dropdown contains Default plus live models and no cust
     loading: false,
     loadingValue: "loading",
     allowCustom: false,
+    t,
   });
   assert.deepEqual(
     options.map((option) => option.label),

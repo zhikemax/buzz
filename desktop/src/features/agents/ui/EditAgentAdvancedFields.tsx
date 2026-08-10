@@ -5,7 +5,7 @@ import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 import { EnvVarsEditor, type EnvVarsValue } from "./EnvVarsEditor";
 import {
-  CARD_MINT_KEY_ANNOTATIONS,
+  cardMintKeyAnnotations,
   PERSONA_FIELD_CONTROL_CLASS,
   PERSONA_FIELD_SHELL_CLASS,
   PERSONA_LABEL_OPTIONAL_CLASS,
@@ -339,7 +339,7 @@ export function EditAgentAdvancedFields({
         helperText={t("agents.envVarsHelper")}
         inheritedFrom={inheritedEnvVars}
         inheritedLabel={t("agents.inheritedLabelTemplate")}
-        keyAnnotations={CARD_MINT_KEY_ANNOTATIONS}
+        keyAnnotations={cardMintKeyAnnotations(t)}
         onChange={onEnvVarsChange}
         requiredKeys={requiredEnvKeys}
         value={envVars}

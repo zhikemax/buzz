@@ -4,12 +4,13 @@ import { toast } from "sonner";
 
 import { useReminderMutations } from "@/features/reminders/hooks";
 import {
+  getTimePresets,
   parseCustomDateTime,
-  TIME_PRESETS,
   todayDateString,
 } from "@/features/reminders/lib/timePresets";
 import type { ReminderTarget } from "@/features/reminders/lib/reminderTypes";
 import { useIdentityQuery } from "@/shared/api/hooks";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -31,6 +32,8 @@ export function RemindMeLaterDialog({
   onOpenChange: (open: boolean) => void;
   target: ReminderTarget | null;
 }) {
+  const t = useT();
+  const timePresets = React.useMemo(() => getTimePresets(t), [t]);
   const pubkey = useIdentityQuery().data?.pubkey ?? "";
   const { create } = useReminderMutations(pubkey);
   const [note, setNote] = React.useState("");
@@ -44,11 +47,11 @@ export function RemindMeLaterDialog({
       { target, notBefore, note: note || undefined },
       {
         onSuccess: () => {
-          toast.success("Reminder set");
+          toast.success(t("inbox.reminderSet"));
           onOpenChange(false);
           setNote("");
         },
-        onError: () => toast.error("Failed to create reminder"),
+        onError: () => toast.error(t("reminders.toast.createFailed")),
       },
     );
   };
@@ -59,17 +62,15 @@ export function RemindMeLaterDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Remind me later
+            {t("inbox.remindLater")}
           </DialogTitle>
-          <DialogDescription>
-            Choose when you want to be reminded about this message.
-          </DialogDescription>
+          <DialogDescription>{t("reminders.dialog.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          {TIME_PRESETS.map((preset) => (
+          {timePresets.map((preset) => (
             <Button
-              key={preset.label}
+              key={preset.id}
               variant="outline"
               className="justify-start"
               disabled={create.isPending}
@@ -83,11 +84,11 @@ export function RemindMeLaterDialog({
         <div className="space-y-3 border-t pt-3">
           <p className="flex items-center gap-2 text-sm font-medium">
             <CalendarClock className="h-4 w-4" />
-            Custom date & time
+            {t("reminders.dialog.customDateTime")}
           </p>
           <div className="flex gap-2">
             <Input
-              aria-label="Reminder date"
+              aria-label={t("reminders.dialog.dateAria")}
               className="flex-1"
               min={todayDateString()}
               onChange={(e) => setCustomDate(e.target.value)}
@@ -95,7 +96,7 @@ export function RemindMeLaterDialog({
               value={customDate}
             />
             <Input
-              aria-label="Reminder time"
+              aria-label={t("reminders.dialog.timeAria")}
               className="w-[120px]"
               onChange={(e) => setCustomTime(e.target.value)}
               type="time"
@@ -109,11 +110,11 @@ export function RemindMeLaterDialog({
             htmlFor="reminder-note"
             className="text-sm font-medium text-muted-foreground"
           >
-            Note (optional)
+            {t("reminders.dialog.noteOptional")}
           </label>
           <Textarea
             id="reminder-note"
-            placeholder="Add a note..."
+            placeholder={t("reminders.dialog.notePlaceholder")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
@@ -127,7 +128,7 @@ export function RemindMeLaterDialog({
             onClick={() => onOpenChange(false)}
             disabled={create.isPending}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             className="relative"
@@ -141,7 +142,7 @@ export function RemindMeLaterDialog({
             {/* The hidden label keeps the button width stable while the
                 spinner overlays it. */}
             <span className={create.isPending ? "invisible" : undefined}>
-              Set reminder
+              {t("reminders.dialog.setReminder")}
             </span>
             {create.isPending ? (
               <span className="absolute inset-0 flex items-center justify-center">

@@ -9,6 +9,7 @@ import {
 } from "@/features/agents/ui/agentSessionTranscriptPresentation";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { ManagedAgent } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Shimmer } from "@/shared/ui/Shimmer";
@@ -39,6 +40,7 @@ export function BotActivityComposerAction({
   workingBotPubkeys,
   variant = "toolbar",
 }: BotActivityBarProps) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const hoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -79,7 +81,7 @@ export function BotActivityComposerAction({
       if (!passFilter(item)) {
         continue;
       }
-      const headline = getActivityHeadline(item);
+      const headline = getActivityHeadline(item, t);
       if (!headline || seen.has(headline)) {
         continue;
       }
@@ -92,7 +94,7 @@ export function BotActivityComposerAction({
     }
 
     return headlines;
-  }, [channelId, singleWorkingAgent, transcript]);
+  }, [channelId, singleWorkingAgent, t, transcript]);
   const [headlineIndex, setHeadlineIndex] = React.useState(0);
 
   const clearHoverTimer = React.useCallback(() => {
@@ -143,24 +145,28 @@ export function BotActivityComposerAction({
   const agentAvatarUrl = (agent: BotActivityAgent) =>
     profiles?.[agent.pubkey.toLowerCase()]?.avatarUrl ?? null;
   const selectedPubkey = openAgentSessionPubkey?.toLowerCase() ?? null;
+  const agentName = (agent: BotActivityAgent | undefined) =>
+    agent?.name ?? t("agents.agentFallback");
   const triggerLabel =
     workingAgents.length === 1
-      ? `${workingAgents[0]?.name ?? "Agent"} is working`
-      : `${workingAgents.length} agents working`;
+      ? t("agents.isWorking", { name: agentName(workingAgents[0]) })
+      : t("agents.nAgentsWorking", { count: workingAgents.length });
   const isInline = variant === "inline";
   const visibleStatusLabel =
     workingAgents.length === 1
-      ? `${workingAgents[0]?.name ?? "Agent"}: ${
-          activityHeadlines[headlineIndex % activityHeadlines.length] ??
-          "Working"
-        }`
-      : `${workingAgents[0]?.name ?? "Agent"} +${workingAgents.length - 1}`;
+      ? t("agents.workingStatusLine", {
+          name: agentName(workingAgents[0]),
+          status:
+            activityHeadlines[headlineIndex % activityHeadlines.length] ??
+            t("sidebar.working"),
+        })
+      : `${agentName(workingAgents[0])} +${workingAgents.length - 1}`;
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <button
-          aria-label={`${triggerLabel}. View activity.`}
+          aria-label={t("agents.viewActivityAria", { label: triggerLabel })}
           className={cn(
             "inline-flex items-center justify-center rounded-full border border-border/60 bg-background font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:border-primary/40 data-[state=open]:bg-primary/10 data-[state=open]:text-primary",
             isInline
@@ -210,7 +216,7 @@ export function BotActivityComposerAction({
                 {visibleStatusLabel}
               </Shimmer>
             ) : (
-              "working"
+              t("agents.workingLower")
             )}
           </span>
           {isInline ? null : (
@@ -228,7 +234,7 @@ export function BotActivityComposerAction({
         sideOffset={8}
       >
         <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-          Agents working
+          {t("agents.agentsWorking")}
         </div>
         <div className="mt-1 flex flex-col gap-1">
           {workingAgents.map((agent) => {
@@ -259,7 +265,7 @@ export function BotActivityComposerAction({
                 />
                 <span className="min-w-0 flex-1 truncate">{agent.name}</span>
                 <span className="shrink-0 whitespace-nowrap text-xs font-medium opacity-80">
-                  View activity
+                  {t("agents.viewActivity")}
                 </span>
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground/70" />
               </button>

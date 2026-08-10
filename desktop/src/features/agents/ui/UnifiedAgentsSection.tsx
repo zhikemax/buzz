@@ -124,7 +124,7 @@ export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
         <div className="space-y-3" data-testid="unified-agents-groups">
           <div className={IDENTITY_CARD_GRID_CLASS}>
             <CreateIdentityCard
-              ariaLabel="New agent"
+              ariaLabel={t("agents.newAgent")}
               dataTestId="new-agent-card"
               disabled={isPersonasPending}
               onClick={onOpenCatalog}
@@ -251,11 +251,13 @@ function AgentPersonaCard({
   onStartAgent: (pubkey: string) => void;
   onStartPersona: (persona: AgentPersona) => void;
 }) {
+  const t = useT();
   const title = persona.displayName;
   const modelLabel = resolveAgentCardModelLabel({
     agent,
     personaModel: persona.model,
     defaultModel,
+    t,
   });
   const isActive = agent ? isManagedAgentActive(agent) : false;
   const profileQuery = useUserProfileQuery(agent?.pubkey);
@@ -273,7 +275,7 @@ function AgentPersonaCard({
         avatarUrl,
         isAgentCardAvatarLoading(Boolean(agent), profileQuery.isPending),
       )}
-      ariaLabel={`${title} agent profile`}
+      ariaLabel={t("agents.agentProfileAria", { name: title })}
       avatar={
         agent ? (
           <AgentRuntimeAvatarControl
@@ -326,7 +328,7 @@ function AgentPersonaCard({
         agent?.personaOrphaned ? (
           <Badge className="gap-1" variant="warning">
             <AlertTriangle className="h-3 w-3" />
-            Configuration missing
+            {t("agents.configurationMissing")}
           </Badge>
         ) : null
       }
@@ -354,6 +356,7 @@ function StandaloneAgentCard({
   onRestartAgent: (pubkey: string) => void;
   onStartAgent: (pubkey: string) => void;
 }) {
+  const t = useT();
   const title = agent.name;
   const profileQuery = useUserProfileQuery(agent.pubkey);
   const friendlyError = friendlyAgentLastError(
@@ -365,7 +368,7 @@ function StandaloneAgentCard({
 
   return (
     <AgentIdentityCard
-      ariaLabel={`${title} agent profile`}
+      ariaLabel={t("agents.agentProfileAria", { name: title })}
       avatar={
         <AgentRuntimeAvatarControl
           activeTestId={`agent-runtime-active-${agent.pubkey}`}
@@ -395,6 +398,7 @@ function StandaloneAgentCard({
         agent,
         personaModel: null,
         defaultModel,
+        t,
       })}
       onClick={() => {
         onOpenAgentProfile(
@@ -406,7 +410,7 @@ function StandaloneAgentCard({
         agent.personaOrphaned ? (
           <Badge className="gap-1" variant="warning">
             <AlertTriangle className="h-3 w-3" />
-            Configuration missing
+            {t("agents.configurationMissing")}
           </Badge>
         ) : null
       }

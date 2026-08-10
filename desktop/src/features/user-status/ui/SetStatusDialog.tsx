@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { EmojiPicker } from "@/features/custom-emoji/ui/EmojiPicker";
 import { StatusEmoji } from "@/features/user-status/ui/StatusEmoji";
+import { useT, type MessageKey } from "@/shared/i18n";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +14,29 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 
-const PRESETS = [
-  { text: "In a meeting", emoji: "\uD83D\uDDE3\uFE0F" },
-  { text: "Commuting", emoji: "\uD83D\uDE8C" },
-  { text: "Out sick", emoji: "\uD83E\uDD12" },
-  { text: "Vacationing", emoji: "\uD83C\uDFD6\uFE0F" },
-  { text: "Working remotely", emoji: "\uD83C\uDFE0" },
-] as const;
+const PRESETS: ReadonlyArray<{
+  id: string;
+  textKey: MessageKey;
+  emoji: string;
+}> = [
+  {
+    id: "in-a-meeting",
+    textKey: "status.preset.meeting",
+    emoji: "\uD83D\uDDE3\uFE0F",
+  },
+  { id: "commuting", textKey: "status.preset.commuting", emoji: "\uD83D\uDE8C" },
+  { id: "out-sick", textKey: "status.preset.outSick", emoji: "\uD83E\uDD12" },
+  {
+    id: "vacationing",
+    textKey: "status.preset.vacationing",
+    emoji: "\uD83C\uDFD6\uFE0F",
+  },
+  {
+    id: "working-remotely",
+    textKey: "status.preset.workingRemotely",
+    emoji: "\uD83C\uDFE0",
+  },
+];
 
 type SetStatusDialogProps = {
   open: boolean;
@@ -40,6 +57,7 @@ export function SetStatusDialog({
   onClear,
   hasExistingStatus,
 }: SetStatusDialogProps) {
+  const t = useT();
   const [text, setText] = React.useState(initialText);
   const [emoji, setEmoji] = React.useState(initialEmoji);
   const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -85,10 +103,8 @@ export function SetStatusDialog({
         data-testid="set-status-dialog"
       >
         <DialogHeader>
-          <DialogTitle>Set a status</DialogTitle>
-          <DialogDescription>
-            Let others know what you're up to.
-          </DialogDescription>
+          <DialogTitle>{t("status.title")}</DialogTitle>
+          <DialogDescription>{t("status.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 pt-2">
@@ -97,7 +113,7 @@ export function SetStatusDialog({
               <div className="relative shrink-0">
                 <PopoverTrigger asChild>
                   <button
-                    aria-label="Choose status emoji"
+                    aria-label={t("status.chooseEmojiAria")}
                     className="flex h-9 w-9 items-center justify-center rounded-md border border-input text-lg transition-colors hover:bg-accent"
                     type="button"
                   >
@@ -110,7 +126,7 @@ export function SetStatusDialog({
                 </PopoverTrigger>
                 {emoji ? (
                   <button
-                    aria-label="Clear status emoji"
+                    aria-label={t("status.clearEmojiAria")}
                     className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-background bg-muted text-2xs leading-none text-muted-foreground hover:bg-accent hover:text-foreground"
                     onClick={(event) => {
                       event.stopPropagation();
@@ -135,23 +151,28 @@ export function SetStatusDialog({
               data-testid="set-status-input"
               onChange={(event) => setText(event.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="What's your status?"
+              placeholder={t("status.placeholder")}
               value={text}
             />
           </div>
 
           <div className="flex flex-wrap gap-1.5">
-            {PRESETS.map((preset) => (
-              <button
-                className="rounded-full border border-input px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                data-testid={`set-status-preset-${preset.text.toLowerCase().replace(/\s+/g, "-")}`}
-                key={preset.text}
-                onClick={() => handlePresetClick(preset)}
-                type="button"
-              >
-                {preset.emoji} {preset.text}
-              </button>
-            ))}
+            {PRESETS.map((preset) => {
+              const presetText = t(preset.textKey);
+              return (
+                <button
+                  className="rounded-full border border-input px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  data-testid={`set-status-preset-${preset.id}`}
+                  key={preset.id}
+                  onClick={() =>
+                    handlePresetClick({ text: presetText, emoji: preset.emoji })
+                  }
+                  type="button"
+                >
+                  {preset.emoji} {presetText}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-between gap-2 pt-1">
@@ -164,7 +185,7 @@ export function SetStatusDialog({
                   type="button"
                   variant="ghost"
                 >
-                  Clear status
+                  {t("status.clear")}
                 </Button>
               ) : null}
             </div>
@@ -176,7 +197,7 @@ export function SetStatusDialog({
                 type="button"
                 variant="ghost"
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 data-testid="set-status-save"
@@ -185,7 +206,7 @@ export function SetStatusDialog({
                 size="sm"
                 type="button"
               >
-                Save
+                {t("common.save")}
               </Button>
             </div>
           </div>

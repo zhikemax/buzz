@@ -11,6 +11,7 @@ import {
 import { useMyRelayMembershipQuery } from "@/features/community-members/hooks";
 import { isTimedOut } from "@/features/moderation/lib/restrictionState";
 import type { ChannelMember } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 
 import type { MemberModerationState } from "./MembersSidebarMemberCard";
@@ -22,6 +23,7 @@ import type { MemberModerationState } from "./MembersSidebarMemberCard";
  * is open and the caller can moderate.
  */
 export function useMembersSidebarModeration(open: boolean) {
+  const t = useT();
   const relayMembershipQuery = useMyRelayMembershipQuery();
   const relayRole = relayMembershipQuery.data?.role;
   const canModerate = relayRole === "owner" || relayRole === "admin";
@@ -55,29 +57,29 @@ export function useMembersSidebarModeration(open: boolean) {
         toast.success(success);
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Moderation action failed",
+          error instanceof Error ? error.message : t("moderation.actionFailed"),
         );
       }
     },
-    [],
+    [t],
   );
 
   const onBan = React.useCallback(
     (member: ChannelMember) =>
       void runModerationAction(
         () => banMutation.mutateAsync({ pubkey: member.pubkey }),
-        "Member banned",
+        t("moderation.ban.success"),
       ),
-    [banMutation, runModerationAction],
+    [banMutation, runModerationAction, t],
   );
 
   const onUnban = React.useCallback(
     (member: ChannelMember) =>
       void runModerationAction(
         () => unbanMutation.mutateAsync(member.pubkey),
-        "Ban lifted",
+        t("moderation.unban.success"),
       ),
-    [unbanMutation, runModerationAction],
+    [unbanMutation, runModerationAction, t],
   );
 
   const onTimeout = React.useCallback(
@@ -88,18 +90,18 @@ export function useMembersSidebarModeration(open: boolean) {
             pubkey: member.pubkey,
             expiresAt: expiresAtSecs,
           }),
-        "Member timed out",
+        t("moderation.timeout.authorTimedOut"),
       ),
-    [timeoutMutation, runModerationAction],
+    [timeoutMutation, runModerationAction, t],
   );
 
   const onUntimeout = React.useCallback(
     (member: ChannelMember) =>
       void runModerationAction(
         () => untimeoutMutation.mutateAsync(member.pubkey),
-        "Timeout lifted",
+        t("moderation.timeout.lifted"),
       ),
-    [untimeoutMutation, runModerationAction],
+    [untimeoutMutation, runModerationAction, t],
   );
 
   return {

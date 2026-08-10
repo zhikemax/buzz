@@ -290,16 +290,18 @@ export function PersonaCatalogDialog({
       >
         <AlertDialogContent data-testid="discard-create-agent-dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard agent changes?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("agents.discardAgentChangesTitle")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Your changes to this agent will be lost.
+              {t("agents.discardAgentChangesDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogCancel>{t("agents.keepEditing")}</AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button onClick={discardChangesAndNavigate} variant="destructive">
-                Discard changes
+                {t("agents.discardChanges")}
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -350,7 +352,7 @@ function PersonaCatalogChooser({
           data-testid="agent-catalog-drop-overlay"
         >
           <p className="rounded-full bg-background/90 px-4 py-2 text-sm font-medium text-primary shadow-sm">
-            Drop .agent.json or .agent.png to import
+            {t("agents.dropAgentToImport")}
           </p>
         </div>
       ) : null}
@@ -416,7 +418,7 @@ function PersonaCatalogChooser({
           ) : null}
           {!isLoading && personas.length === 0 && !error ? (
             <p className="px-4 py-2 text-xs text-sidebar-foreground/50">
-              No shared agents
+              {t("agents.catalog.noShared")}
             </p>
           ) : null}
         </div>
@@ -439,8 +441,12 @@ function PersonaCatalogChooser({
               <Button
                 aria-label={
                   isSelectedPersonaActive
-                    ? `${selectedPersona.displayName} is already in My Agents`
-                    : `Add ${selectedPersona.displayName} from Agent Catalog`
+                    ? t("agents.alreadyInMyAgentsAria", {
+                        name: selectedPersona.displayName,
+                      })
+                    : t("agents.addFromCatalogAria", {
+                        name: selectedPersona.displayName,
+                      })
                 }
                 className="pointer-events-auto"
                 data-testid={`persona-catalog-use-agent-target-${selectedPersona.id}`}
@@ -503,6 +509,7 @@ function CatalogNavigationButton({
 }
 
 function ImportAgentPane({ onImport }: { onImport: () => void }) {
+  const t = useT();
   return (
     <button
       className="m-5 flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/20 px-8 py-12 text-center transition-colors hover:border-primary/60 hover:bg-primary/5 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
@@ -513,13 +520,14 @@ function ImportAgentPane({ onImport }: { onImport: () => void }) {
       <span className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Upload className="h-6 w-6" />
       </span>
-      <span className="mt-4 text-base font-semibold">Import an agent</span>
+      <span className="mt-4 text-base font-semibold">
+        {t("agents.importAnAgent")}
+      </span>
       <span className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Drop an .agent.json or .agent.png file anywhere in this window, or
-        choose a file.
+        {t("agents.importAgentHint")}
       </span>
       <span className="mt-5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-        Choose file
+        {t("agents.chooseFile")}
       </span>
     </button>
   );

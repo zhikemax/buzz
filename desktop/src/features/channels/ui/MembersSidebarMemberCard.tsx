@@ -22,7 +22,8 @@ import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { PresenceDot } from "@/features/presence/ui/PresenceBadge";
 import {
   agentCommunityAvailability,
-  MANAGED_AGENT_PAIR_ACTION_LABELS,
+  localizeAgentCommunityAvailability,
+  MANAGED_AGENT_PAIR_ACTION_LABEL_KEYS,
   type ManagedAgentPairAction,
 } from "@/features/agents/managedAgentRuntimeStatus";
 import { truncatePubkey } from "@/shared/lib/pubkey";
@@ -32,7 +33,7 @@ import type {
   ManagedAgentRuntimeStatus,
   PresenceStatus,
 } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Badge } from "@/shared/ui/badge";
 import {
@@ -84,11 +85,20 @@ export type MemberModerationState = {
 };
 
 /** Timeout durations offered in the member menu, in seconds. */
-const TIMEOUT_PRESETS: { label: string; seconds: number }[] = [
-  { label: "1 hour", seconds: 60 * 60 },
-  { label: "24 hours", seconds: 24 * 60 * 60 },
-  { label: "7 days", seconds: 7 * 24 * 60 * 60 },
+const TIMEOUT_PRESETS: {
+  labelKey: "channel.timeout1h" | "channel.timeout24h" | "channel.timeout7d";
+  seconds: number;
+}[] = [
+  { labelKey: "channel.timeout1h", seconds: 60 * 60 },
+  { labelKey: "channel.timeout24h", seconds: 24 * 60 * 60 },
+  { labelKey: "channel.timeout7d", seconds: 7 * 24 * 60 * 60 },
 ];
+
+const ROLE_LABEL_KEYS = {
+  admin: "channel.roleAdmin",
+  member: "channel.roleMember",
+  guest: "channel.roleGuest",
+} as const;
 
 const MEMBER_ROW_INSET_DIVIDER_CLASS =
   "after:pointer-events-none after:absolute after:bottom-0 after:left-[3.75rem] after:right-0 after:h-px after:bg-border/60 after:content-[''] last:after:hidden";
@@ -105,14 +115,16 @@ function formatRoleLabel(member: ChannelMember, memberIsBot: boolean) {
   return null;
 }
 
-function formatRespondToLabel(agent: ManagedAgent) {
+function formatRespondToLabel(agent: ManagedAgent, t: TranslateFn) {
   switch (agent.respondTo) {
     case "anyone":
-      return "Anyone";
+      return t("profile.anyone");
     case "allowlist":
-      return `Selected people (${agent.respondToAllowlist.length})`;
+      return t("profile.selectedPeopleCount", {
+        count: String(agent.respondToAllowlist.length),
+      });
     default:
-      return "Only me";
+      return t("profile.onlyMe");
   }
 }
 
@@ -144,6 +156,7 @@ export function MembersSidebarMemberCard({
   profileAvatarUrl,
   viewerIsOwner,
 }: MembersSidebarMemberCardProps) {
+  const t = useT();
   const roleLabel = formatRoleLabel(member, memberIsBot);
   const disabled = isActionPending || isArchived;
   const canViewActivity =
@@ -221,10 +234,13 @@ export function MembersSidebarMemberCard({
             }
           >
             {managedAgentRuntime
-              ? agentCommunityAvailability(managedAgentRuntime)
+              ? localizeAgentCommunityAvailability(
+                  agentCommunityAvailability(managedAgentRuntime),
+                  t,
+                )
               : managedAgent && isManagedAgentActive(managedAgent)
-                ? "Running"
-                : "Stopped"}
+                ? t("agents.statusRunning")
+                : t("agents.statusStopped")}
           </Badge>
         ) : null}
         {managedAgent ? (
@@ -232,7 +248,7 @@ export function MembersSidebarMemberCard({
             className="sr-only"
             data-testid={`sidebar-managed-agent-respond-to-${member.pubkey}`}
           >
-            {formatRespondToLabel(managedAgent)}
+            {formatRespondToLabel(managedAgent, t)}
           </span>
         ) : null}
       </div>
@@ -249,7 +265,7 @@ export function MembersSidebarMemberCard({
     >
       {onOpenProfile ? (
         <button
-          aria-label={`Open profile for ${memberLabel}`}
+          aria-label={t("channel.openProfileAria", { name: memberLabel })}
           className="absolute inset-0 z-0 cursor-pointer focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
           data-testid={`sidebar-member-open-profile-${member.pubkey}`}
           onClick={() => onOpenProfile(member.pubkey)}
@@ -356,7 +372,7 @@ function MemberActionsMenu({
             onClick={() => onViewActivity?.(member.pubkey)}
           >
             <Activity className="h-4 w-4" />
-            View activity
+            {t("agents.viewActivity")}
           </DropdownMenuItem>
         ) : null}
         {memberIsBot && managedAgent ? (
@@ -371,7 +387,7 @@ function MemberActionsMenu({
                 ? getPairActionIcon(pairAction)
                 : getManagedAgentActionIcon(managedAgent)}
               {pairAction
-                ? MANAGED_AGENT_PAIR_ACTION_LABELS[pairAction]
+                ? t(MANAGED_AGENT_PAIR_ACTION_LABEL_KEYS[pairAction])
                 : getManagedAgentPrimaryActionLabel(managedAgent, t)}
             </DropdownMenuItem>
             {onEditRespondTo ? (
@@ -381,7 +397,7 @@ function MemberActionsMenu({
                 onClick={() => onEditRespondTo(managedAgent)}
               >
                 <Pencil className="h-4 w-4" />
-                Manage agent access...
+                {t("agents.manageAccess")}
               </DropdownMenuItem>
             ) : null}
             {canRemoveMember || showChangeRole ? (
@@ -396,21 +412,24 @@ function MemberActionsMenu({
               disabled={disabled}
             >
               <Shield className="h-4 w-4" />
-              Change role
+              {t("channel.changeRole")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
-              {PEOPLE_ROLES.map((role) => (
-                <DropdownMenuItem
-                  data-testid={`sidebar-role-${role}-${member.pubkey}`}
-                  disabled={disabled || member.role === role}
-                  key={role}
-                  onClick={() => onChangeRole(member, role)}
-                >
-                  {role[0]?.toUpperCase()}
-                  {role.slice(1)}
-                  {member.role === role ? " (current)" : ""}
-                </DropdownMenuItem>
-              ))}
+              {PEOPLE_ROLES.map((role) => {
+                const roleLabel = t(ROLE_LABEL_KEYS[role]);
+                return (
+                  <DropdownMenuItem
+                    data-testid={`sidebar-role-${role}-${member.pubkey}`}
+                    disabled={disabled || member.role === role}
+                    key={role}
+                    onClick={() => onChangeRole(member, role)}
+                  >
+                    {member.role === role
+                      ? t("channel.roleCurrent", { role: roleLabel })
+                      : roleLabel}
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         ) : null}
@@ -424,7 +443,7 @@ function MemberActionsMenu({
               onClick={() => onRemoveMember(member)}
             >
               <Trash2 className="h-4 w-4" />
-              Remove from channel
+              {t("channel.removeFromChannel")}
             </DropdownMenuItem>
           </>
         ) : null}
@@ -440,7 +459,7 @@ function MemberActionsMenu({
                 onClick={() => onUntimeout(member)}
               >
                 <ShieldCheck className="h-4 w-4" />
-                Lift timeout
+                {t("channel.liftTimeout")}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuSub>
@@ -449,7 +468,7 @@ function MemberActionsMenu({
                   disabled={disabled}
                 >
                   <Clock className="h-4 w-4" />
-                  Time out
+                  {t("channel.timeOut")}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   {TIMEOUT_PRESETS.map((preset) => (
@@ -464,7 +483,7 @@ function MemberActionsMenu({
                         )
                       }
                     >
-                      {preset.label}
+                      {t(preset.labelKey)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuSubContent>
@@ -477,7 +496,7 @@ function MemberActionsMenu({
                 onClick={() => onUnban(member)}
               >
                 <CircleSlash className="h-4 w-4" />
-                Lift ban
+                {t("channel.liftBan")}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
@@ -487,7 +506,7 @@ function MemberActionsMenu({
                 onClick={() => onBan(member)}
               >
                 <Ban className="h-4 w-4" />
-                Ban from community
+                {t("channel.banFromCommunity")}
               </DropdownMenuItem>
             )}
           </>

@@ -13,6 +13,7 @@ import {
   getChannelsWorkflows,
   triggerWorkflow,
 } from "@/shared/api/tauriWorkflows";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -70,6 +71,7 @@ export function WorkflowsView({
   onSelectWorkflow,
   selectedWorkflowId,
 }: WorkflowsViewProps) {
+  const t = useT();
   const [dialogState, setDialogState] = React.useState<DialogState>({
     mode: "closed",
   });
@@ -177,9 +179,9 @@ export function WorkflowsView({
       >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Workflows</h2>
+            <h2 className="text-lg font-semibold">{t("workflows.title")}</h2>
             <Button
-              aria-label="Refresh workflows"
+              aria-label={t("workflows.refreshAria")}
               disabled={allWorkflowsQuery.isFetching}
               onClick={() => void allWorkflowsQuery.refetch()}
               size="icon"
@@ -192,7 +194,7 @@ export function WorkflowsView({
           </div>
           <Button onClick={() => setDialogState({ mode: "create" })} size="sm">
             <Plus className="mr-1 h-4 w-4" />
-            Create Workflow
+            {t("workflows.create")}
           </Button>
         </div>
 
@@ -200,26 +202,26 @@ export function WorkflowsView({
           <WorkflowsListSkeleton />
         ) : allWorkflowsQuery.isError ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-            <p className="text-sm text-red-400">Failed to load workflows</p>
+            <p className="text-sm text-red-400">{t("workflows.loadFailed")}</p>
             <Button
               onClick={() => void allWorkflowsQuery.refetch()}
               size="sm"
               variant="outline"
             >
-              Retry
+              {t("common.retry")}
             </Button>
           </div>
         ) : allWorkflows.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
             <Zap className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No workflows yet</p>
+            <p className="text-sm">{t("workflows.empty")}</p>
             <Button
               onClick={() => setDialogState({ mode: "create" })}
               size="sm"
               variant="outline"
             >
               <Plus className="mr-1 h-4 w-4" />
-              Create your first workflow
+              {t("workflows.createFirst")}
             </Button>
           </div>
         ) : (

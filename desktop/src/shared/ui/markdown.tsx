@@ -20,6 +20,7 @@ import {
 } from "@/features/messages/lib/messageLink";
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import { invokeTauri } from "@/shared/api/tauri";
+import { detectLocale, translate, useT } from "@/shared/i18n";
 import { useChannelNavigation } from "@/shared/context/ChannelNavigationContext";
 import { cn } from "@/shared/lib/cn";
 import { parseSupportedLinkPreview } from "@/shared/lib/linkPreview";
@@ -194,6 +195,7 @@ function ImageZoomOverlay({
   sourceScope?: Element | null;
   src: string | undefined;
 }) {
+  const t = useT();
   const shouldReduceMotion = useReducedMotion();
   const prefersReducedMotion = shouldReduceMotion === true;
   const fallbackGalleryItems = React.useMemo<ImageGalleryItem[]>(
@@ -922,7 +924,7 @@ function ImageZoomOverlay({
             className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-muted shadow-sm backdrop-blur-xl backdrop-saturate-150"
           />
           <button
-            aria-label="Download image"
+            aria-label={t("media.downloadImage")}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-muted-foreground/10 hover:text-foreground outline-hidden focus-visible:ring-2 focus-visible:ring-ring/70 disabled:pointer-events-none disabled:opacity-45"
             disabled={!canActOnCurrentImage}
             type="button"
@@ -979,8 +981,8 @@ function ImageZoomOverlay({
             "data-image-lightbox-controls",
           ]}
           items={[
-            { label: "Copy image", onSelect: handleMenuCopy },
-            { label: "Download image", onSelect: handleMenuDownload },
+            { label: t("media.copyImage"), onSelect: handleMenuCopy },
+            { label: t("media.downloadImage"), onSelect: handleMenuDownload },
           ]}
           portalContainer={dialogRef.current ?? undefined}
           position={menu}
@@ -1004,6 +1006,7 @@ export const LinkPreviewImageLightbox =
  * React state avoids that repaint.
  */
 function ImageBlock({ alt, dim, resolvedSrc, src, thumbSrc }: ImageBlockProps) {
+  const t = useT();
   const [lightboxState, setLightboxState] = React.useState<{
     galleryIndex: number;
     galleryItems?: ImageGalleryItem[];
@@ -1161,10 +1164,15 @@ function ImageBlock({ alt, dim, resolvedSrc, src, thumbSrc }: ImageBlockProps) {
     if (!copySrc) return;
     invokeTauri("copy_image_to_clipboard", { url: copySrc })
       .then(() => {
-        toast.success("Copied to clipboard");
+        toast.success(
+          translate(detectLocale(), "common.copiedClipboard"),
+        );
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "Copy failed";
+        const msg =
+          err instanceof Error
+            ? err.message
+            : translate(detectLocale(), "common.copyFailed");
         toast.error(msg);
       });
   }, []);
@@ -1175,7 +1183,10 @@ function ImageBlock({ alt, dim, resolvedSrc, src, thumbSrc }: ImageBlockProps) {
       if (!downloadSrc) return;
       invokeTauri("download_image", { url: downloadSrc }).catch(
         (err: unknown) => {
-          const msg = err instanceof Error ? err.message : "Download failed";
+          const msg =
+            err instanceof Error
+              ? err.message
+              : translate(detectLocale(), "common.downloadFailed");
           toast.error(msg);
         },
       );
@@ -1222,8 +1233,11 @@ function ImageBlock({ alt, dim, resolvedSrc, src, thumbSrc }: ImageBlockProps) {
         <MediaContextMenu
           dataAttributes={["data-image-context-menu"]}
           items={[
-            { label: "Copy image", onSelect: () => handleCopyImage(src) },
-            { label: "Download image", onSelect: () => handleDownload(src) },
+            { label: t("media.copyImage"), onSelect: () => handleCopyImage(src) },
+            {
+              label: t("media.downloadImage"),
+              onSelect: () => handleDownload(src),
+            },
           ]}
           position={menu}
         />

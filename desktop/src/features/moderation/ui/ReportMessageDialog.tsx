@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { useSubmitReportMutation } from "@/features/moderation/hooks";
 import type { ReportType } from "@/features/moderation/hooks";
+import { useT, type MessageKey } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -17,14 +18,14 @@ import { Textarea } from "@/shared/ui/textarea";
 
 /** NIP-56 report categories, in the order shown to the reporter. `other` is
  *  last so it reads as the fallback rather than a first-class choice. */
-const REPORT_CATEGORIES: { value: ReportType; label: string }[] = [
-  { value: "spam", label: "Spam" },
-  { value: "profanity", label: "Profanity or hate speech" },
-  { value: "nudity", label: "Nudity or sexual content" },
-  { value: "impersonation", label: "Impersonation" },
-  { value: "malware", label: "Malware or scam" },
-  { value: "illegal", label: "Illegal content" },
-  { value: "other", label: "Other" },
+const REPORT_CATEGORIES: { value: ReportType; labelKey: MessageKey }[] = [
+  { value: "spam", labelKey: "moderation.report.category.spam" },
+  { value: "profanity", labelKey: "moderation.report.category.profanity" },
+  { value: "nudity", labelKey: "moderation.report.category.nudity" },
+  { value: "impersonation", labelKey: "moderation.report.category.impersonation" },
+  { value: "malware", labelKey: "moderation.report.category.malware" },
+  { value: "illegal", labelKey: "moderation.report.category.illegal" },
+  { value: "other", labelKey: "moderation.report.category.other" },
 ];
 
 export function ReportMessageDialog({
@@ -40,6 +41,7 @@ export function ReportMessageDialog({
   /** Reported message event id (the `e` tag target). */
   eventId: string;
 }) {
+  const t = useT();
   const submitReport = useSubmitReportMutation();
   const [category, setCategory] = React.useState<ReportType | null>(null);
   const [note, setNote] = React.useState("");
@@ -64,10 +66,10 @@ export function ReportMessageDialog({
       },
       {
         onSuccess: () => {
-          toast.success("Report submitted to community moderators");
+          toast.success(t("moderation.report.success"));
           onOpenChange(false);
         },
-        onError: () => toast.error("Failed to submit report"),
+        onError: () => toast.error(t("moderation.report.failed")),
       },
     );
   };
@@ -78,12 +80,9 @@ export function ReportMessageDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Flag className="h-4 w-4" />
-            Report message
+            {t("moderation.report.title")}
           </DialogTitle>
-          <DialogDescription>
-            Reports go to this community's moderators for review. The author is
-            not notified of who reported them.
-          </DialogDescription>
+          <DialogDescription>{t("moderation.report.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
@@ -95,7 +94,7 @@ export function ReportMessageDialog({
               disabled={submitReport.isPending}
               onClick={() => setCategory(item.value)}
             >
-              {item.label}
+              {t(item.labelKey)}
             </Button>
           ))}
         </div>
@@ -105,11 +104,11 @@ export function ReportMessageDialog({
             htmlFor="report-note"
             className="text-sm font-medium text-muted-foreground"
           >
-            Additional context (optional)
+            {t("moderation.report.contextLabel")}
           </label>
           <Textarea
             id="report-note"
-            placeholder="Add anything that helps moderators..."
+            placeholder={t("moderation.report.contextPlaceholder")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
@@ -123,14 +122,14 @@ export function ReportMessageDialog({
             onClick={() => onOpenChange(false)}
             disabled={submitReport.isPending}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="default"
             onClick={submit}
             disabled={!category || submitReport.isPending}
           >
-            Submit report
+            {t("moderation.report.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,6 +7,7 @@ import {
 } from "@/features/workflows/hooks";
 import type { Channel, Workflow } from "@/shared/api/types";
 import { getRelayHttpUrl } from "@/shared/api/tauri";
+import { useT, type MessageKey } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -33,32 +34,33 @@ type WorkflowDialogProps = {
 function getInitialYaml(
   mode: DialogMode,
   workflow: Workflow | null | undefined,
+  copySuffix: string,
 ): string {
   if (!workflow) return "";
   const def = { ...workflow.definition };
   if (mode === "duplicate") {
-    def.name = `${def.name ?? workflow.name} (copy)`;
+    def.name = `${def.name ?? workflow.name}${copySuffix}`;
   }
   return yamlStringify(def);
 }
 
-const TITLES: Record<DialogMode, string> = {
-  create: "Create Workflow",
-  edit: "Edit Workflow",
-  duplicate: "Duplicate Workflow",
-};
+const TITLES = {
+  create: "workflows.dialog.create.title",
+  edit: "workflows.dialog.edit.title",
+  duplicate: "workflows.dialog.duplicate.title",
+} satisfies Record<DialogMode, MessageKey>;
 
-const SUBMIT_LABELS: Record<DialogMode, string> = {
-  create: "Create",
-  edit: "Save",
-  duplicate: "Create Copy",
-};
+const SUBMIT_LABELS = {
+  create: "common.create",
+  edit: "common.save",
+  duplicate: "workflows.dialog.duplicate.submit",
+} satisfies Record<DialogMode, MessageKey>;
 
-const PENDING_LABELS: Record<DialogMode, string> = {
-  create: "Creating...",
-  edit: "Saving...",
-  duplicate: "Creating...",
-};
+const PENDING_LABELS = {
+  create: "workflows.dialog.create.pending",
+  edit: "common.saving",
+  duplicate: "workflows.dialog.duplicate.pending",
+} satisfies Record<DialogMode, MessageKey>;
 
 export function WorkflowDialog({
   channels,
@@ -67,6 +69,7 @@ export function WorkflowDialog({
   open,
   workflow,
 }: WorkflowDialogProps) {
+  const t = useT();
   const channelId =
     mode === "edit" && workflow?.channelId
       ? workflow.channelId
@@ -74,7 +77,7 @@ export function WorkflowDialog({
 
   const [selectedChannelId, setSelectedChannelId] = React.useState(channelId);
   const [yamlDefinition, setYamlDefinition] = React.useState(() =>
-    getInitialYaml(mode, workflow),
+    getInitialYaml(mode, workflow, t("workflows.duplicateSuffix")),
   );
   const [savedWebhookInfo, setSavedWebhookInfo] = React.useState<{
     relayHttpUrl: string;
@@ -102,7 +105,7 @@ export function WorkflowDialog({
           ? workflowChannelId
           : defaultChannelId;
       setSelectedChannelId(newChannelId);
-      setYamlDefinition(getInitialYaml(mode, workflow));
+      setYamlDefinition(getInitialYaml(mode, workflow, t("workflows.duplicateSuffix")));
       setSavedWebhookInfo(null);
       resetCreate();
       resetUpdate();
@@ -115,6 +118,7 @@ export function WorkflowDialog({
     defaultChannelId,
     resetCreate,
     resetUpdate,
+    t,
   ]);
 
   const handleOpenChange = React.useCallback(
@@ -155,20 +159,22 @@ export function WorkflowDialog({
       <Dialog onOpenChange={handleOpenChange} open={open}>
         <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg">
           <DialogHeader className="flex-shrink-0">
-            <DialogTitle>{TITLES[mode]}</DialogTitle>
+            <DialogTitle>{t(TITLES[mode])}</DialogTitle>
             <DialogDescription>
               {mode === "edit"
-                ? "Modify the workflow definition."
+                ? t("workflows.dialog.edit.description")
                 : channels.length === 1
-                  ? "Create a workflow scoped to this channel."
-                  : "Define a workflow and assign it to a channel."}
+                  ? t("workflows.dialog.create.singleChannel")
+                  : t("workflows.dialog.create.multiChannel")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
             {showChannelSelector ? (
               <div className="space-y-1.5">
-                <FieldLabel htmlFor="wf-channel-select">Channel</FieldLabel>
+                <FieldLabel htmlFor="wf-channel-select">
+                  {t("workflows.dialog.channel")}
+                </FieldLabel>
                 <ChannelCombobox
                   channels={channels}
                   disabled={mutation.isPending}
@@ -181,15 +187,17 @@ export function WorkflowDialog({
                 />
                 <p className="text-xs text-muted-foreground">
                   {selectedChannel
-                    ? `New workflows will belong to ${selectedChannel.name}.`
-                    : "Join or create a channel before adding a workflow."}
+                    ? t("workflows.dialog.newBelongsTo", {
+                        name: selectedChannel.name,
+                      })
+                    : t("workflows.dialog.joinChannelFirst")}
                 </p>
               </div>
             ) : (showChannelInfo || mode === "edit") && selectedChannel ? (
               <p className="text-sm text-muted-foreground">
                 {mode === "edit"
-                  ? "Editing workflow in"
-                  : "This workflow will be created in"}{" "}
+                  ? t("workflows.dialog.editingIn")
+                  : t("workflows.dialog.creatingIn")}{" "}
                 <span className="font-medium text-foreground">
                   {selectedChannel.name}
                 </span>
@@ -219,7 +227,7 @@ export function WorkflowDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={
@@ -230,7 +238,9 @@ export function WorkflowDialog({
               onClick={handleSubmit}
               type="button"
             >
-              {mutation.isPending ? PENDING_LABELS[mode] : SUBMIT_LABELS[mode]}
+              {mutation.isPending
+                ? t(PENDING_LABELS[mode])
+                : t(SUBMIT_LABELS[mode])}
             </Button>
           </div>
         </DialogContent>

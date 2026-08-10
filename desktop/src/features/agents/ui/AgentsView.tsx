@@ -479,7 +479,7 @@ export function AgentsView() {
                     ? "error"
                     : "ready"
               }
-              submitLabel="Add agent"
+              submitLabel={t("agents.addAgent")}
             />
           )}
           error={

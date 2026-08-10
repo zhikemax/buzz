@@ -1,7 +1,6 @@
-export type HuddleAction = "join" | "start";
+import { detectLocale, translate } from "@/shared/i18n";
 
-const HUDDLE_AUDIO_UNAVAILABLE_MESSAGE =
-  "Huddle audio isn’t available on this server. Ask an administrator to turn it on.";
+export type HuddleAction = "join" | "start";
 
 function rawErrorMessage(error: unknown): string | null {
   if (error instanceof Error) {
@@ -24,14 +23,17 @@ export function formatHuddleActionError(
     normalized?.includes("huddle_audio_unavailable") ||
     normalized?.includes("huddle audio unavailable in this deployment")
   ) {
-    return HUDDLE_AUDIO_UNAVAILABLE_MESSAGE;
+    return translate(detectLocale(), "huddle.error.audioUnavailable");
   }
 
   if (message) {
     return message;
   }
 
-  return action === "join"
-    ? "Couldn’t join the huddle."
-    : "Couldn’t start the huddle.";
+  return translate(
+    detectLocale(),
+    action === "join"
+      ? "huddle.error.couldNotJoin"
+      : "huddle.error.couldNotStart",
+  );
 }

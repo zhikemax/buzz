@@ -14,7 +14,7 @@ import {
   autoRestartBlurb,
   RestartDiffList,
 } from "@/features/agents/ui/RestartDiffBadge";
-import { useT } from "@/shared/i18n";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import type { ActiveTurnSummary } from "@/features/agents/activeAgentTurnsStore";
 import { ManagedAgentSessionPanel } from "@/features/agents/ui/ManagedAgentSessionPanel";
 import {
@@ -439,6 +439,7 @@ function ProfileLiveActivityEmbed({
   feedScope: ProfileActivityFeedScope;
   onOpenActivity: (channelId?: string | null) => void;
 }) {
+  const t = useT();
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi>();
   const [selectedChannelId, setSelectedChannelId] = React.useState<
     string | null
@@ -521,7 +522,11 @@ function ProfileLiveActivityEmbed({
     selectedTurn?.anchorAt ??
     null;
   const emptyState = feedScope.isLive ? "loading" : "idle";
-  const emptyDescription = "Live activity will appear here.";
+  const emptyDescription = t("profile.liveActivityHint");
+  const lastLiveLabel = formatLastLiveLabel(lastLiveAt, Date.now(), t);
+  const openActivityAria = t("profile.openActivityFeedAria", {
+    when: lastLiveLabel,
+  });
   const openSelectedActivity = React.useCallback(() => {
     onOpenActivity(activeChannelId);
   }, [activeChannelId, onOpenActivity]);
@@ -540,12 +545,12 @@ function ProfileLiveActivityEmbed({
   if (slides.length === 0) {
     return (
       <section
-        aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
+        aria-label={openActivityAria}
         className="relative flex h-56 cursor-pointer flex-col overflow-hidden rounded-2xl border bg-background text-left shadow-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-testid={`user-profile-live-activity-${activityAgent.pubkey}`}
       >
         <button
-          aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
+          aria-label={openActivityAria}
           className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={openSelectedActivity}
           type="button"
@@ -573,7 +578,7 @@ function ProfileLiveActivityEmbed({
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-start bg-linear-to-t from-background via-background/90 to-transparent px-3 pb-3 pt-24">
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-muted-foreground">
-                Latest Activity
+                {t("profile.latestActivity")}
               </span>
             </div>
           </div>
@@ -585,12 +590,12 @@ function ProfileLiveActivityEmbed({
   return (
     <div>
       <section
-        aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
+        aria-label={openActivityAria}
         className="relative flex h-56 cursor-pointer flex-col overflow-hidden rounded-2xl border bg-background text-left shadow-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-testid={`user-profile-live-activity-${activityAgent.pubkey}`}
       >
         <button
-          aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
+          aria-label={openActivityAria}
           className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={openSelectedActivity}
           type="button"
@@ -648,7 +653,7 @@ function ProfileLiveActivityEmbed({
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-start bg-linear-to-t from-background via-background/80 to-transparent px-3 pb-3 pt-16">
             <div className="min-w-0">
               <span className="block text-xs font-semibold text-muted-foreground">
-                Latest Activity
+                {t("profile.latestActivity")}
               </span>
               {activeChannelName ? (
                 <span
@@ -684,13 +689,14 @@ function ActivityCarouselDots({
   selectedIndex: number;
   slides: string[];
 }) {
+  const t = useT();
   if (slides.length <= 1) {
     return null;
   }
 
   return (
     <div
-      aria-label="Choose active channel feed"
+      aria-label={t("profile.chooseChannelFeedAria")}
       className="mt-2 flex items-center justify-center gap-1.5"
       role="tablist"
     >
@@ -700,7 +706,9 @@ function ActivityCarouselDots({
 
         return (
           <button
-            aria-label={`Show #${channelName} activity`}
+            aria-label={t("profile.showChannelActivityAria", {
+              name: channelName,
+            })}
             aria-selected={isSelected}
             className="group relative flex items-center justify-center before:absolute before:-inset-2 before:content-['']"
             data-testid={`user-profile-activity-dot-${channelId}`}
@@ -737,19 +745,20 @@ function LiveActivityOpenButton({
   lastLiveAt: number | null;
   onOpenActivity: (channelId?: string | null) => void;
 }) {
+  const t = useT();
   const now = useNow(15_000);
-  const label = formatLastLiveLabel(lastLiveAt, now);
+  const label = formatLastLiveLabel(lastLiveAt, now, t);
 
   return (
     <Button
-      aria-label={`Open full activity. Last live ${label}.`}
+      aria-label={t("profile.openFullActivityAria", { when: label })}
       className="absolute right-3 top-3 z-40 rounded-full bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
       onClick={(event) => {
         event.stopPropagation();
         onOpenActivity(activeChannelId);
       }}
       size="xs"
-      title={`Last live ${label}`}
+      title={t("profile.lastLiveTitle", { when: label })}
       type="button"
     >
       {label}
@@ -757,42 +766,47 @@ function LiveActivityOpenButton({
   );
 }
 
-function formatLastLiveLabel(timestamp: number | null, now: number): string {
+function formatLastLiveLabel(
+  timestamp: number | null,
+  now: number,
+  t: TranslateFn,
+): string {
   if (timestamp === null) {
-    return "No activity yet";
+    return t("profile.noActivityYet");
   }
 
   const elapsedMs = Math.max(0, now - timestamp);
   const totalSeconds = Math.floor(elapsedMs / 1000);
   if (totalSeconds < 60) {
-    return "Just now";
+    return t("profile.justNow");
   }
 
   const totalMinutes = Math.floor(totalSeconds / 60);
   if (totalMinutes < 60) {
-    return `${totalMinutes}m ago`;
+    return t("profile.minutesAgo", { count: totalMinutes });
   }
 
   const totalHours = Math.floor(totalMinutes / 60);
   if (totalHours < 24) {
-    return `${totalHours}h ago`;
+    return t("profile.hoursAgo", { count: totalHours });
   }
 
   const totalDays = Math.floor(totalHours / 24);
   if (totalDays < 7) {
-    return `${totalDays}d ago`;
+    return t("profile.daysAgo", { count: totalDays });
   }
 
   const totalWeeks = Math.floor(totalDays / 7);
-  return `${totalWeeks}w ago`;
+  return t("profile.weeksAgo", { count: totalWeeks });
 }
 
 function ArchiveStatusTooltip() {
+  const t = useT();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          aria-label="What archived means"
+          aria-label={t("profile.archivedMeansAria")}
           className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           data-testid="user-profile-archived-info"
           type="button"
@@ -801,10 +815,7 @@ function ArchiveStatusTooltip() {
         </button>
       </TooltipTrigger>
       <TooltipContent align="end" className="max-w-72 text-left" side="top">
-        <p className="text-sm">
-          Archived agents do not appear in search, autocomplete, or member-add
-          flows in this space. You can unarchive them at any time.
-        </p>
+        <p className="text-sm">{t("profile.archivedMeansBody")}</p>
       </TooltipContent>
     </Tooltip>
   );

@@ -5,6 +5,7 @@ import type {
   Project,
   ProjectActivitySummary,
 } from "@/features/projects/hooks";
+import { useT } from "@/shared/i18n";
 
 export type ProjectsOverviewSection =
   | "projects"
@@ -74,6 +75,7 @@ export function ProjectsOverviewPanel({
   projects,
   summaries,
 }: ProjectsOverviewPanelProps) {
+  const t = useT();
   const stats = overviewStats(projects, summaries);
 
   // The feed owns the full left column; the stat counters live at the top
@@ -94,7 +96,7 @@ export function ProjectsOverviewPanel({
             <StatPill
               count={projects.length}
               icon={Folders}
-              label="Projects"
+              label={t("projects.overview.projects")}
               onClick={() => onSelectSection("projects")}
             />
             <StatPill
@@ -103,19 +105,19 @@ export function ProjectsOverviewPanel({
                 0,
               )}
               icon={FolderGit2}
-              label="Repositories"
+              label={t("projects.overview.repositories")}
               onClick={() => onSelectSection("repositories")}
             />
             <StatPill
               count={stats.prs}
               icon={GitPullRequest}
-              label="Pull requests"
+              label={t("projects.overview.pullRequests")}
               onClick={() => onSelectSection("prs")}
             />
             <StatPill
               count={stats.issues}
               icon={CircleDot}
-              label="Issues"
+              label={t("projects.overview.issues")}
               onClick={() => onSelectSection("issues")}
             />
           </div>

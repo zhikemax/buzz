@@ -13,6 +13,7 @@ import type {
   RelayAgent,
 } from "@/shared/api/types";
 import { getRelayAgentChannelIds } from "@/features/profile/ui/UserProfilePanelUtils";
+import { useT } from "@/shared/i18n";
 
 type DeleteManagedAgentRulesContext = Omit<
   Parameters<typeof deleteManagedAgentWithRules>[0],
@@ -46,6 +47,7 @@ export function useProfileAgentDeletion({
   presenceLookup,
   relayAgents,
 }: UseProfileAgentDeletionInput) {
+  const t = useT();
   const removeAgentFromAllChannels = React.useCallback(
     async (agentPubkey: string) => {
       const normalizedPubkey = agentPubkey.toLowerCase();
@@ -80,6 +82,7 @@ export function useProfileAgentDeletion({
         relayAgents: relayAgents ?? [],
         removeAgentFromAllChannels,
         skipRemoteDeleteConfirm: true,
+        t,
       }),
     [
       channels,
@@ -87,6 +90,7 @@ export function useProfileAgentDeletion({
       presenceLookup,
       relayAgents,
       removeAgentFromAllChannels,
+      t,
     ],
   );
 
@@ -100,6 +104,7 @@ export function useProfileAgentDeletion({
         relayAgents: relayAgents ?? [],
         removeAgentFromAllChannels,
         selectedAgent: managedAgent,
+        t,
       }),
     [
       channels,
@@ -109,6 +114,7 @@ export function useProfileAgentDeletion({
       presenceLookup,
       relayAgents,
       removeAgentFromAllChannels,
+      t,
     ],
   );
 

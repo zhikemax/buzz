@@ -336,16 +336,7 @@ function RuntimeDetails({ runtime }: { runtime: AcpRuntimeCatalogEntry }) {
           {translate("onboard.runtimeAdapterOutdated")}
         </p>
         <p className="mt-1 text-xs leading-4 text-white">
-          This updates the machine-global{" "}
-          <code className="rounded bg-white/10 px-0.5 font-mono text-xs text-white">
-            codex-acp
-          </code>{" "}
-          adapter. Older Buzz releases using the legacy adapter contract may
-          lose community access until{" "}
-          <code className="rounded bg-white/10 px-0.5 font-mono text-xs text-white">
-            @zed-industries/codex-acp@0.16.0
-          </code>{" "}
-          is restored.
+          {translate("onboard.runtimeAdapterOutdatedDetail")}
         </p>
         <p className="mt-1 text-xs leading-4 text-white">
           {runtime.installHint}
@@ -487,6 +478,7 @@ function RuntimeCard({
   >;
   runtime: AcpRuntimeCatalogEntry;
 }) {
+  const t = useT();
   // Each card owns its own mutation instance so concurrent installs on
   // different cards each track their own isPending state and callbacks
   // independently (react-query v5 per-mutate callbacks only fire for the
@@ -584,7 +576,7 @@ function RuntimeCard({
         <RuntimeErrorTooltip
           className="absolute inset-x-3 bottom-2 flex min-w-0 items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap text-xs leading-4 text-destructive"
           detail={installError}
-          label="Installation failed"
+          label={t("onboard.runtimeInstallationFailed")}
           showIcon
           testId={`onboarding-runtime-error-${runtime.id}`}
         />

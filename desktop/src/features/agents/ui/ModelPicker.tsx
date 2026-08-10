@@ -15,6 +15,7 @@ import {
   useAgentConfigSurface,
   managedAgentsQueryKey,
 } from "@/features/agents/hooks";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ export function ModelPicker({
   agent: ManagedAgent;
   onModelChanged?: () => void;
 }) {
+  const t = useT();
   const [modelsData, setModelsData] =
     React.useState<AgentModelsResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -85,10 +87,12 @@ export function ModelPicker({
   const displayLabel =
     agent.model ??
     (modelsData?.agentDefaultModel
-      ? `${modelsData.agentDefaultModel} (default)`
+      ? t("agents.modelDefaultSuffix", {
+          model: modelsData.agentDefaultModel,
+        })
       : hasRequestedModels && loading
-        ? "Loading..."
-        : "Auto");
+        ? t("agents.loadingEllipsis")
+        : t("agents.modelAuto"));
 
   // Provenance label shown only for post-spawn agents where the model origin
   // is known from the config surface and the source is not a user-explicit
@@ -97,15 +101,15 @@ export function ModelPicker({
     const origin = configSurface?.normalized.model?.origin;
     if (!origin || origin === "buzzExplicit") return null;
     const labels: Record<string, string> = {
-      acpNativeRead: "from ACP",
-      acpConfigOption: "from ACP config",
-      envVar: "from env",
-      configFile: "from config file",
-      personaDefault: "template default",
-      runtimeOverride: "live override",
+      acpNativeRead: t("agents.originFromAcp"),
+      acpConfigOption: t("agents.originFromAcpConfig"),
+      envVar: t("agents.originFromEnv"),
+      configFile: t("agents.originFromConfigFile"),
+      personaDefault: t("agents.originTemplateDefault"),
+      runtimeOverride: t("agents.originLiveOverride"),
     };
     return labels[origin] ?? null;
-  }, [configSurface]);
+  }, [configSurface, t]);
 
   // Send a live `switch_model` frame to each channel the agent is working in
   // and wait for the harness to acknowledge. Any single `unsupported_model`
@@ -144,10 +148,10 @@ export function ModelPicker({
       if (isLiveSwitch) {
         const outcome = await sendLiveSwitch(modelId);
         if (outcome === "unsupported") {
-          toast.error("That model isn't available for this agent.");
+          toast.error(t("agents.modelUnavailable"));
           return;
         }
-        toast.success("Model switched for this session.");
+        toast.success(t("agents.modelSwitchedSession"));
         onModelChanged?.();
         return;
       }
@@ -197,11 +201,11 @@ export function ModelPicker({
           {loading ? (
             <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
               <Spinner className="h-4 w-4 border-2" />
-              Loading models...
+              {t("agents.loadingModels")}
             </div>
           ) : error ? (
             <div className="space-y-2 px-3 py-2 text-sm">
-              <p className="text-destructive">Failed to load models.</p>
+              <p className="text-destructive">{t("agents.failedLoadModels")}</p>
               <button
                 className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
                 onClick={() => {
@@ -210,12 +214,12 @@ export function ModelPicker({
                 }}
                 type="button"
               >
-                Retry
+                {t("common.retry")}
               </button>
             </div>
           ) : !modelsData ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">
-              Open to load available models.
+              {t("agents.openToLoadModels")}
             </div>
           ) : !modelsData.supportsSwitching ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">
@@ -223,11 +227,11 @@ export function ModelPicker({
                 <>
                   <p className="font-medium text-foreground">{agent.model}</p>
                   <p className="mt-0.5 text-xs">
-                    This runtime does not support switching models.
+                    {t("agents.runtimeNoModelSwitch")}
                   </p>
                 </>
               ) : (
-                "This agent uses the runtime's default model."
+                t("agents.usesRuntimeDefaultModel")
               )}
             </div>
           ) : (
@@ -245,7 +249,9 @@ export function ModelPicker({
         </DropdownMenuContent>
       </DropdownMenu>
       {needsRestart ? (
-        <span className="text-2xs text-warning">restart to apply</span>
+        <span className="text-2xs text-warning">
+          {t("agents.restartToApply")}
+        </span>
       ) : null}
     </span>
   );

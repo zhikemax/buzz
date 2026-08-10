@@ -10,6 +10,7 @@ import {
 import { selectProjectRepository } from "@/features/projects/projectModels";
 import { useCreateProjectPullRequestMutation } from "@/features/projects/pullRequestMutations";
 import { useProjectRepoSyncStatusQuery } from "@/features/projects/repoSyncHooks";
+import { useT } from "@/shared/i18n";
 
 import {
   CreateProjectWorkItemDialog,
@@ -37,6 +38,7 @@ export function CreatePullRequestDialog({
   projects: Project[];
   reposDir?: string | null;
 }) {
+  const t = useT();
   const repositoryOptions = React.useMemo(
     () =>
       projects.flatMap((project) =>
@@ -127,27 +129,27 @@ export function CreatePullRequestDialog({
       (pullRequest.targetBranch ?? repository?.defaultBranch) === targetBranch,
   );
   const selectionError = !repository
-    ? "Choose a repository."
+    ? t("projects.pr.create.chooseRepositoryOnly")
     : !targetBranch
-      ? "Choose a base branch."
+      ? t("projects.pr.create.chooseBase")
       : !sourceBranch
-        ? "Choose a compare branch."
+        ? t("projects.pr.create.chooseCompare")
         : sourceBranch === targetBranch
-          ? "The base and compare branches must be different."
+          ? t("projects.pr.create.branchesMustDiffer")
           : hasOpenPullRequest
-            ? "An open pull request already compares these branches."
+            ? t("projects.pr.create.openExists")
             : !sourceCommit
-              ? "The compare branch must be pushed before opening a pull request."
+              ? t("projects.pr.create.pushCompareFirst")
               : null;
   const description =
     repository && sourceBranch && targetBranch
       ? `${repository.name}: ${sourceBranch} → ${targetBranch}${sourceCommit ? ` at ${sourceCommit.slice(0, 7)}` : ""}`
-      : "Choose a repository and branches to compare.";
+      : t("projects.pr.create.chooseRepository");
 
   async function handleCreate(input: CreatePullRequestDialogInput) {
     if (!project || !repository || !sourceCommit || selectionError) {
       throw new Error(
-        selectionError ?? "Pull request branches are incomplete.",
+        selectionError ?? t("projects.pr.create.incomplete"),
       );
     }
     const pullRequestId = await createMutation.mutateAsync({
@@ -158,13 +160,13 @@ export function CreatePullRequestDialog({
       mergeBase: sourceSyncQuery.data?.mergeBase ?? null,
       reviewers: [],
     });
-    toast.success("Pull request created.");
+    toast.success(t("projects.toast.prCreated"));
     await onCreated(project, repository, pullRequestId);
   }
 
   return (
     <CreateProjectWorkItemDialog
-      bodyPlaceholder="Add context for reviewers"
+      bodyPlaceholder={t("projects.pr.create.bodyPlaceholder")}
       description={description}
       isCreating={createMutation.isPending}
       itemName="pull-request"
@@ -175,12 +177,12 @@ export function CreatePullRequestDialog({
       }}
       open={open}
       submitDisabled={Boolean(selectionError)}
-      title="Open a pull request"
-      titlePlaceholder="Describe the change"
+      title={t("projects.pr.create.title")}
+      titlePlaceholder={t("projects.pr.create.titlePlaceholder")}
     >
       <div className="grid gap-3 rounded-xl border border-border/60 bg-muted/25 p-3 sm:grid-cols-2">
         <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
-          <span>Repository</span>
+          <span>{t("projects.pr.create.repository")}</span>
           <select
             className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal outline-hidden focus:ring-1 focus:ring-ring"
             data-testid="create-pull-request-repository"
@@ -201,7 +203,7 @@ export function CreatePullRequestDialog({
           </select>
         </label>
         <label className="space-y-1.5 text-sm font-medium">
-          <span>Base</span>
+          <span>{t("projects.pr.create.base")}</span>
           <select
             className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal outline-hidden focus:ring-1 focus:ring-ring"
             data-testid="create-pull-request-base-branch"
@@ -217,7 +219,7 @@ export function CreatePullRequestDialog({
           </select>
         </label>
         <label className="space-y-1.5 text-sm font-medium">
-          <span>Compare</span>
+          <span>{t("projects.pr.create.compare")}</span>
           <select
             className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal outline-hidden focus:ring-1 focus:ring-ring"
             data-testid="create-pull-request-compare-branch"
@@ -226,7 +228,7 @@ export function CreatePullRequestDialog({
             value={sourceBranch}
           >
             <option disabled value="">
-              Select branch
+              {t("projects.pr.create.selectBranch")}
             </option>
             {branchOptions.map((branch) => (
               <option key={branch} value={branch}>

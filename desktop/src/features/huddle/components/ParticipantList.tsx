@@ -10,6 +10,7 @@ import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import type { VoiceRegistryEntry } from "@/features/settings/ui/voiceSettingsLogic";
 import { invokeTauri } from "@/shared/api/tauri";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { truncatePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
@@ -63,6 +64,7 @@ function buildParticipantIdentities({
   profiles,
   managedAgents,
   relayAgents,
+  t,
 }: {
   agentPubkeys?: string[];
   activeSpeakers?: string[];
@@ -74,6 +76,7 @@ function buildParticipantIdentities({
   >;
   managedAgents?: { avatarUrl: string | null; name: string; pubkey: string }[];
   relayAgents?: { name: string; pubkey: string }[];
+  t: TranslateFn;
 }): ParticipantIdentity[] {
   const agentSet = new Set(
     (agentPubkeys ?? []).map((pubkey) => pubkey.toLowerCase()),
@@ -113,7 +116,13 @@ function buildParticipantIdentities({
     const displayName =
       profile?.displayName?.trim() ||
       agent?.name?.trim() ||
-      `${isAgent ? "Agent" : "Participant"} ${truncatePubkey(pubkey)}`;
+      (isAgent
+        ? t("huddle.participants.fallbackAgent", {
+            short: truncatePubkey(pubkey),
+          })
+        : t("huddle.participants.fallbackParticipant", {
+            short: truncatePubkey(pubkey),
+          }));
     const speakerLevel =
       normalizedSpeakerLevels.get(normalizedPubkey) ??
       (activeSpeakerSet.has(normalizedPubkey) ? 0.55 : 0);
@@ -141,6 +150,7 @@ export function HuddleParticipantsControl({
   appearance = "bar",
   className,
 }: ParticipantListProps) {
+  const t = useT();
   const { data } = useUsersBatchQuery(participants);
   const profiles = React.useMemo(() => {
     const resolvedProfiles: Record<
@@ -211,6 +221,7 @@ export function HuddleParticipantsControl({
         profiles,
         managedAgents: managedAgentsQuery.data,
         relayAgents: relayAgentsQuery.data,
+        t,
       }),
     [
       agentPubkeys,
@@ -220,6 +231,7 @@ export function HuddleParticipantsControl({
       participants,
       profiles,
       relayAgentsQuery.data,
+      t,
     ],
   );
 
@@ -227,8 +239,8 @@ export function HuddleParticipantsControl({
 
   const participantLabel =
     participants.length === 1
-      ? "1 participant"
-      : `${participants.length} participants`;
+      ? t("huddle.participants.one")
+      : t("huddle.participants.many", { count: participants.length });
   const visibleIdentities = identities.slice(0, MAX_VISIBLE_PARTICIPANTS);
   const hiddenParticipantCount = identities.length - visibleIdentities.length;
   const participantDetails = (
@@ -239,7 +251,7 @@ export function HuddleParticipantsControl({
       sideOffset={10}
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium">Participants</h2>
+        <h2 className="text-sm font-medium">{t("huddle.participants.title")}</h2>
         <span className="shrink-0 text-xs text-foreground/60">
           {participantLabel}
         </span>
@@ -255,7 +267,9 @@ export function HuddleParticipantsControl({
             >
               <UserProfilePopover
                 pubkey={pubkey}
-                triggerAriaLabel={`Open profile for ${displayName}`}
+                triggerAriaLabel={t("huddle.participants.openProfile", {
+                  name: displayName,
+                })}
                 triggerElement="span"
               >
                 <ParticipantAvatar participant={participant} size="list" />
@@ -266,13 +280,19 @@ export function HuddleParticipantsControl({
                   {displayName}
                 </div>
                 <div className="truncate text-xs text-foreground/60">
-                  {isActive ? "Speaking" : isAgent ? "Agent" : "In huddle"}
+                  {isActive
+                    ? t("huddle.participants.speaking")
+                    : isAgent
+                      ? t("huddle.participants.agent")
+                      : t("huddle.participants.inHuddle")}
                 </div>
               </div>
 
               {isAgent && onRemoveAgent && (
                 <Button
-                  aria-label={`Remove ${displayName} from huddle`}
+                  aria-label={t("huddle.participants.removeAgent", {
+                    name: displayName,
+                  })}
                   className="h-7 w-7 shrink-0 text-foreground/65 hover:bg-destructive/15 hover:text-destructive"
                   onClick={() => void onRemoveAgent(pubkey)}
                   size="icon"
@@ -333,14 +353,16 @@ export function HuddleParticipantsControl({
               participant.isActive &&
               onInterruptAgentSpeech ? (
                 <Button
-                  aria-label={`Stop ${participant.displayName} speaking`}
+                  aria-label={t("huddle.participants.stopSpeakingAria", {
+                    name: participant.displayName,
+                  })}
                   className="h-5 min-h-0 w-full rounded-sm bg-destructive/15 px-0 py-0 text-xs font-medium leading-none text-destructive hover:bg-destructive/20 hover:text-destructive"
                   onClick={() => onInterruptAgentSpeech(participant.pubkey)}
                   size="sm"
                   type="button"
                   variant="ghost"
                 >
-                  Stop
+                  {t("huddle.participants.stopSpeaking")}
                 </Button>
               ) : (
                 <span className="w-full truncate text-center text-xs font-medium leading-none text-foreground/80">
@@ -372,7 +394,9 @@ export function HuddleParticipantsControl({
             settings={resolvedAgentVoiceSettings[participant.pubkey]}
             trigger={
               <button
-                aria-label={`Voice settings for ${participant.displayName}`}
+                aria-label={t("huddle.participants.voiceSettingsAria", {
+                  name: participant.displayName,
+                })}
                 className="inline-flex shrink-0 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 data-testid="huddle-agent-voice-menu-trigger"
                 type="button"
@@ -397,7 +421,9 @@ export function HuddleParticipantsControl({
       {hiddenParticipantCount > 0 ? (
         <PopoverTrigger asChild>
           <Button
-            aria-label={`Show all huddle participants (${participants.length})`}
+            aria-label={t("huddle.participants.showAllAria", {
+              count: participants.length,
+            })}
             className={cn(
               "relative z-10 shrink-0 px-1 text-2xs font-semibold shadow-none tabular-nums",
               appearance === "room"

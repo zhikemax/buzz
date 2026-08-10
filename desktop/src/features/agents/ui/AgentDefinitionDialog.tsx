@@ -87,7 +87,7 @@ import { AgentDefinitionDialogShell } from "./AgentDefinitionDialogShell";
 import { AddCustomHarnessDialog } from "./AddCustomHarnessDialog";
 import { useT } from "@/shared/i18n";
 import {
-  ADD_CUSTOM_HARNESS_OPTION,
+  addCustomHarnessOption,
   runtimeDropdownAction,
   usePendingHarnessSelection,
 } from "./addCustomHarness";
@@ -555,6 +555,7 @@ export function AgentDefinitionDialog({
     model,
     modelFieldVisible,
     provider: effectiveProvider,
+    t,
   });
   // On internal Block builds, BUZZ_AGENT_PROVIDER is baked in and a boot
   // migration rewrites any persisted Databricks v1 values → v2. Hide the v1
@@ -591,9 +592,9 @@ export function AgentDefinitionDialog({
       runtimesLoading,
       t,
     });
-  runtimeDropdownOptions.push(ADD_CUSTOM_HARNESS_OPTION);
+  runtimeDropdownOptions.push(addCustomHarnessOption(t));
   const runtimeSummaryLabel = selectedRuntime
-    ? formatRuntimeOptionLabel(selectedRuntime)
+    ? formatRuntimeOptionLabel(selectedRuntime, t)
     : runtime.trim() || t("agents.notConfigured");
   const providerDropdownOptions: PersonaDropdownOption[] = [
     ...providerOptions
@@ -611,6 +612,7 @@ export function AgentDefinitionDialog({
       loading: modelDiscoveryLoading && discoveredModelOptions === null,
       loadingValue: MODEL_DISCOVERY_LOADING_VALUE,
       options: modelOptions,
+      t,
     })
       .filter(
         (option) => isRelayMesh || option.value !== AUTO_MODEL_DROPDOWN_VALUE,

@@ -3,6 +3,7 @@ import type * as React from "react";
 
 import type { AgentPersona, AgentTeam } from "@/shared/api/types";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { resolveTeamPersonas } from "@/features/agents/lib/teamPersonas";
 import {
@@ -65,6 +66,8 @@ export function AddChannelBotTeamsSection({
   selectedPersonaIds,
   teams,
 }: AddChannelBotTeamsSectionProps) {
+  const t = useT();
+
   if (isLoading || teams.length === 0) {
     return null;
   }
@@ -72,9 +75,9 @@ export function AddChannelBotTeamsSection({
   return (
     <div className="space-y-3">
       <div>
-        <div className="text-sm font-medium">Teams</div>
+        <div className="text-sm font-medium">{t("channel.addBot.teamsTitle")}</div>
         <p className="text-xs text-muted-foreground">
-          Select a team to toggle all its agents at once.
+          {t("channel.addBot.teamsHint")}
         </p>
       </div>
 
@@ -132,8 +135,10 @@ export function AddChannelBotTeamsSection({
                         >
                           <Check className="h-4 w-4" />
                           {allInChannel
-                            ? "All in channel"
-                            : `${inChannelCount} in channel`}
+                            ? t("channel.addBot.allInChannel")
+                            : t("channel.addBot.inChannelCount", {
+                                count: inChannelCount,
+                              })}
                         </span>
                       ) : null}
                     </SelectionChipButton>

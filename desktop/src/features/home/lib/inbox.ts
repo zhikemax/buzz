@@ -19,6 +19,7 @@ import type {
   RelayEvent,
 } from "@/shared/api/types";
 import {
+  detectLocale,
   getDateFormatLocale,
   intlDateLocale,
   translate,
@@ -176,12 +177,6 @@ function projectRootItem(item: FeedItem, groupItems: readonly FeedItem[]) {
   );
 }
 
-function projectTypeLabel(item: FeedItem) {
-  if (item.kind === 1618) return "Pull request";
-  if (item.kind === 1621) return "Issue";
-  return "Project update";
-}
-
 function projectTypeLabelKey(item: FeedItem): MessageKey {
   if (item.kind === 1618) return "inbox.type.pullRequest";
   if (item.kind === 1621) return "inbox.type.issue";
@@ -228,42 +223,11 @@ function feedHeadline(item: FeedItem, groupItems: readonly FeedItem[] = []) {
     const root = projectRootItem(item, groupItems);
     return (
       (tagValue(root, "subject") ?? root.content.trim().split("\n")[0]) ||
-      projectTypeLabel(root)
+      translate(detectLocale(), projectTypeLabelKey(root))
     );
   }
 
-  switch (item.kind) {
-    case 40007:
-      return "Reminder";
-    case 43001:
-      return "Job requested";
-    case 43002:
-      return "Job accepted";
-    case 43003:
-      return "Progress update";
-    case 43004:
-      return "Job result";
-    case 43005:
-      return "Job cancelled";
-    case 43006:
-      return "Job failed";
-    case 45001:
-      return "Forum post";
-    case 45003:
-      return "Forum reply";
-    case 46010:
-      return "Approval requested";
-    default:
-      if (item.category === "mention") {
-        return "Mention";
-      }
-
-      if (item.category === "agent_activity") {
-        return "Agent update";
-      }
-
-      return "Channel update";
-  }
+  return translate(detectLocale(), activityHeadlineKey(item));
 }
 
 function feedPreview(item: FeedItem) {
@@ -273,24 +237,26 @@ function feedPreview(item: FeedItem) {
   }
 
   if (item.kind === 46010) {
-    return "A workflow is waiting for approval.";
+    return translate(detectLocale(), "inbox.feed.approvalWaiting");
   }
 
   if (item.kind === 40007) {
-    return "A reminder is waiting for you.";
+    return translate(detectLocale(), "inbox.feed.reminderWaiting");
   }
 
-  return "No additional details were attached to this event.";
+  return translate(detectLocale(), "inbox.feed.noDetails");
 }
 
 function categoryLabelFor(category: FeedItemCategory) {
-  return category === "needs_action"
-    ? "Needs Action"
-    : category === "mention"
-      ? "Mention"
-      : category === "agent_activity"
-        ? "Agent update"
-        : "Activity";
+  const key: MessageKey =
+    category === "needs_action"
+      ? "inbox.category.needsAction"
+      : category === "mention"
+        ? "inbox.category.mention"
+        : category === "agent_activity"
+          ? "inbox.category.agentUpdate"
+          : "inbox.category.activity";
+  return translate(detectLocale(), key);
 }
 
 export function isThreadActivityItem(item: FeedItem) {

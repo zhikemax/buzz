@@ -1,3 +1,9 @@
+import {
+  detectLocale,
+  translate,
+  type MessageKey,
+  type TranslateFn,
+} from "@/shared/i18n";
 import type {
   AgentActivityAction,
   AgentActivityDescriptor,
@@ -6,6 +12,7 @@ import type {
   TranscriptItem,
 } from "./agentSessionTypes";
 import {
+  formatBuzzPartLabel,
   formatToolTitle,
   getBuzzToolInfo,
   normalizeToolNameText,
@@ -29,7 +36,16 @@ export type ToolClassificationInput = {
 
 type ToolClassifierProvider = (
   input: ToolClassificationInput,
+  t: TranslateFn,
 ) => AgentActivityDescriptor | null;
+
+/** Non-React fallback — uses the persisted/browser locale. */
+function defaultTranslate(
+  key: MessageKey,
+  params?: Record<string, string | number>,
+) {
+  return translate(detectLocale(), key, params);
+}
 
 const DEVELOPER_TOOL_BASES = new Set([
   "shell",
@@ -83,22 +99,22 @@ const BUZZ_CLI_READ_VERBS = new Set([
   "notes",
 ]);
 
-const TOOL_CLASS_LABELS: Record<AgentActivityRenderClass, string> = {
-  message: "Message",
-  "relay-op": "Buzz relay op",
-  "file-edit": "File edit",
-  "file-read": "File read",
-  "skill-read": "Skill read",
-  image: "Image",
-  shell: "Shell command",
-  status: "Status",
-  thought: "Thought",
-  plan: "Plan",
-  permission: "Permission",
-  error: "Error",
-  generic: "Tool",
-  "raw-rail": "Raw event",
-  suppressed: "Suppressed",
+const TOOL_CLASS_LABEL_KEYS: Record<AgentActivityRenderClass, MessageKey> = {
+  message: "agents.renderClassMessage",
+  "relay-op": "agents.renderClassRelayOp",
+  "file-edit": "agents.renderClassFileEdit",
+  "file-read": "agents.renderClassFileRead",
+  "skill-read": "agents.renderClassSkillRead",
+  image: "agents.renderClassImage",
+  shell: "agents.renderClassShell",
+  status: "agents.renderClassStatus",
+  thought: "agents.renderClassThought",
+  plan: "agents.renderClassPlan",
+  permission: "agents.renderClassPermission",
+  error: "agents.renderClassError",
+  generic: "agents.renderClassGeneric",
+  "raw-rail": "agents.renderClassRawRail",
+  suppressed: "agents.renderClassSuppressed",
 };
 
 const providers: ToolClassifierProvider[] = [
@@ -109,9 +125,10 @@ const providers: ToolClassifierProvider[] = [
 
 export function classifyTool(
   input: ToolClassificationInput,
+  t: TranslateFn = defaultTranslate,
 ): AgentActivityDescriptor {
   for (const provider of providers) {
-    const descriptor = provider(input);
+    const descriptor = provider(input, t);
     if (descriptor) {
       return input.isError || descriptor.renderClass === "error"
         ? {
@@ -119,32 +136,42 @@ export function classifyTool(
             renderClass: "error",
             label: descriptor.label.endsWith("failed")
               ? descriptor.label
-              : `${descriptor.label} failed`,
+              : t("agents.labelFailed", { label: descriptor.label }),
           }
         : descriptor;
     }
   }
 
-  return genericDescriptor(input);
+  return genericDescriptor(input, t);
 }
 
-export function classifyToolItem(item: ToolItem): AgentActivityDescriptor {
-  return classifyTool({
-    title: item.title,
-    toolName: item.toolName,
-    buzzToolName: item.buzzToolName,
-    args: item.args,
-    result: item.result,
-    isError: item.isError,
-  });
+export function classifyToolItem(
+  item: ToolItem,
+  t: TranslateFn = defaultTranslate,
+): AgentActivityDescriptor {
+  return classifyTool(
+    {
+      title: item.title,
+      toolName: item.toolName,
+      buzzToolName: item.buzzToolName,
+      args: item.args,
+      result: item.result,
+      isError: item.isError,
+    },
+    t,
+  );
 }
 
-export function renderClassLabel(renderClass: AgentActivityRenderClass) {
-  return TOOL_CLASS_LABELS[renderClass];
+export function renderClassLabel(
+  renderClass: AgentActivityRenderClass,
+  t: TranslateFn = defaultTranslate,
+) {
+  return t(TOOL_CLASS_LABEL_KEYS[renderClass]);
 }
 
 function classifyLoadSkillTool(
   input: ToolClassificationInput,
+  t: TranslateFn,
 ): AgentActivityDescriptor | null {
   const isLoadSkill = [input.toolName, input.title, input.buzzToolName].some(
     (value) => value && normalizeToolNameText(value) === "load_skill",
@@ -152,14 +179,16 @@ function classifyLoadSkillTool(
   if (!isLoadSkill) return null;
 
   const skillRef = getToolString(input.args, ["name"]);
-  const object = skillRef ?? "skill";
+  const object = skillRef ?? t("agents.objectSkill");
   const isSupportingFile = skillRef?.includes("/") ?? false;
 
   return {
     renderClass: "skill-read",
-    label: isSupportingFile ? "Read skill file" : "Read skill",
+    label: isSupportingFile
+      ? t("agents.readSkillFile")
+      : t("agents.readSkill"),
     preview: skillRef,
-    action: { verb: "Read", object },
+    action: { verb: t("agents.verbRead"), object },
     source: "harness",
     groupKey: isSupportingFile ? "skill:load-file" : "skill:load",
   };
@@ -167,21 +196,25 @@ function classifyLoadSkillTool(
 
 function classifyDeveloperHarnessTool(
   input: ToolClassificationInput,
+  t: TranslateFn,
 ): AgentActivityDescriptor | null {
   const kind = resolveDeveloperToolKind(input);
   if (!kind) return null;
 
   if (kind === "shell") {
     const command = getToolString(input.args, ["command"]);
-    const buzzCli = command ? parseBuzzCliCommand(command) : null;
+    const buzzCli = command ? parseBuzzCliCommand(command, t) : null;
     if (buzzCli) {
       return buzzCli;
     }
     return {
       renderClass: "shell",
-      label: "Ran command",
+      label: t("agents.ranCommand"),
       preview: command,
-      action: { verb: "Ran", object: command ?? "command" },
+      action: {
+        verb: t("agents.verbRan"),
+        object: command ?? t("agents.objectCommand"),
+      },
       source: "harness",
       groupKey: "shell:command",
     };
@@ -191,9 +224,12 @@ function classifyDeveloperHarnessTool(
     const path = getToolString(input.args, ["path"]);
     return {
       renderClass: "file-read",
-      label: "Read file",
+      label: t("agents.readFile"),
       preview: path,
-      action: { verb: "Read", object: path ?? "file" },
+      action: {
+        verb: t("agents.verbRead"),
+        object: path ?? t("agents.objectFile"),
+      },
       source: "harness",
       groupKey: "read_file",
     };
@@ -203,11 +239,11 @@ function classifyDeveloperHarnessTool(
     const source = getToolString(input.args, ["source"]);
     return {
       renderClass: "image",
-      label: "Viewed image",
+      label: t("agents.viewedImage"),
       preview: source ? basenameOrUrl(source) : null,
       action: {
-        verb: "Viewed",
-        object: source ? basenameOrUrl(source) : "image",
+        verb: t("agents.verbViewed"),
+        object: source ? basenameOrUrl(source) : t("agents.objectImage"),
       },
       source: "harness",
       groupKey: "view_image",
@@ -218,21 +254,24 @@ function classifyDeveloperHarnessTool(
     const path = getToolString(input.args, ["path"]);
     return {
       renderClass: "file-edit",
-      label: "Edited file",
+      label: t("agents.editedFile"),
       preview: path,
-      action: { verb: "Edited", object: path ?? "file" },
+      action: {
+        verb: t("agents.verbEdited"),
+        object: path ?? t("agents.objectFile"),
+      },
       source: "harness",
       groupKey: "file-edit:str_replace",
     };
   }
 
   if (kind === "todo") {
-    const preview = getTodoPreview(input.args);
+    const preview = getTodoPreview(input.args, t);
     return {
       renderClass: "plan",
-      label: "Updated todos",
+      label: t("agents.updatedTodos"),
       preview,
-      action: { verb: "Updated", object: preview },
+      action: { verb: t("agents.verbUpdated"), object: preview },
       source: "harness",
       groupKey: "plan:todo",
     };
@@ -241,9 +280,12 @@ function classifyDeveloperHarnessTool(
   if (kind === "stop_hook") {
     return {
       renderClass: "suppressed",
-      label: "Checked todos",
+      label: t("agents.checkedTodos"),
       preview: null,
-      action: { verb: "Checked", object: "todos" },
+      action: {
+        verb: t("agents.verbChecked"),
+        object: t("agents.objectTodos"),
+      },
       source: "harness",
       groupKey: "suppressed:stop-hook",
     };
@@ -252,9 +294,12 @@ function classifyDeveloperHarnessTool(
   if (kind === "post_compact_hook") {
     return {
       renderClass: "status",
-      label: "Context compacted",
+      label: t("agents.contextCompacted"),
       preview: null,
-      action: { verb: "Compacted", object: "context" },
+      action: {
+        verb: t("agents.verbCompacted"),
+        object: t("agents.objectContext"),
+      },
       source: "harness",
       groupKey: "status:post-compact",
     };
@@ -263,9 +308,12 @@ function classifyDeveloperHarnessTool(
   const preview = genericPreview(input);
   return {
     renderClass: "generic",
-    label: "Ran tool",
+    label: t("agents.ranTool"),
     preview,
-    action: { verb: "Ran", object: preview ?? "tool" },
+    action: {
+      verb: t("agents.verbRan"),
+      object: preview ?? t("agents.objectTool"),
+    },
     source: "harness",
     groupKey: "generic:dev-mcp",
   };
@@ -273,23 +321,24 @@ function classifyDeveloperHarnessTool(
 
 function classifyBuzzTool(
   input: ToolClassificationInput,
+  t: TranslateFn,
 ): AgentActivityDescriptor | null {
   const name = [input.buzzToolName, input.toolName, input.title].find(
-    (value) => value && getBuzzToolInfo(value),
+    (value) => value && getBuzzToolInfo(value, t),
   );
   if (!name) return null;
 
-  const info = getBuzzToolInfo(name);
+  const info = getBuzzToolInfo(name, t);
   if (!info) return null;
 
   const operation = normalizeToolNameText(name);
-  const label = formatToolTitle(name, input.title);
-  const preview = extractBuzzToolPreview(input.args);
+  const label = formatToolTitle(name, input.title, t);
+  const preview = extractBuzzToolPreview(input.args, t);
   return {
     renderClass: isBuzzMessageSend(operation) ? "message" : "relay-op",
     label,
     preview,
-    action: actionForBuzzOperation(operation, preview, info.tone),
+    action: actionForBuzzOperation(operation, preview, info.tone, t),
     tone: info.tone,
     operation,
     object: preview,
@@ -300,13 +349,17 @@ function classifyBuzzTool(
 
 function genericDescriptor(
   input: ToolClassificationInput,
+  t: TranslateFn,
 ): AgentActivityDescriptor {
   const preview = genericPreview(input);
   return {
     renderClass: "generic",
-    label: "Ran tool",
+    label: t("agents.ranTool"),
     preview,
-    action: { verb: "Ran", object: preview ?? "tool" },
+    action: {
+      verb: t("agents.verbRan"),
+      object: preview ?? t("agents.objectTool"),
+    },
     source: "fallback",
     groupKey: `generic:${normalizeToolNameText(input.toolName || input.title)}`,
   };
@@ -355,6 +408,7 @@ function classifyDeveloperToolName(value: string | null | undefined) {
 
 export function parseBuzzCliCommand(
   command: string,
+  t: TranslateFn = defaultTranslate,
 ): AgentActivityDescriptor | null {
   const tokens = tokenizeShellCommand(command);
   const range = findBuzzCommand(tokens);
@@ -370,9 +424,9 @@ export function parseBuzzCliCommand(
   const tone = buzzCliTone(group, verb);
   return {
     renderClass: isSend ? "message" : "relay-op",
-    label: titleForBuzzCli(group, verb),
+    label: titleForBuzzCli(group, verb, t),
     preview,
-    action: actionForBuzzOperation(operation, preview, tone),
+    action: actionForBuzzOperation(operation, preview, tone, t),
     tone,
     operation,
     object: preview,
@@ -381,16 +435,10 @@ export function parseBuzzCliCommand(
   };
 }
 
-function titleForBuzzCli(group: string, verb: string) {
-  if (group === "messages" && verb === "send") return "Send Message";
+function titleForBuzzCli(group: string, verb: string, t: TranslateFn) {
+  if (group === "messages" && verb === "send") return t("agents.sendMessage");
   return [group, verb]
-    .map((part) =>
-      part
-        .split(/[-_]+/)
-        .filter(Boolean)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" "),
-    )
+    .map((part) => formatBuzzPartLabel(part, t))
     .filter(Boolean)
     .join(" ");
 }
@@ -399,11 +447,12 @@ function actionForBuzzOperation(
   operation: string,
   object: string | null,
   tone: AgentActivityTone,
+  t: TranslateFn,
 ): AgentActivityAction {
   const verb = buzzOperationVerbToken(operation);
   return {
-    verb: buzzOperationVerb(verb, tone),
-    object: object ?? buzzOperationObject(operation),
+    verb: buzzOperationVerb(verb, tone, t),
+    object: object ?? buzzOperationObject(operation, t),
   };
 }
 
@@ -414,24 +463,30 @@ function buzzOperationVerbToken(operation: string) {
   return operation.split("_")[0] ?? "run";
 }
 
-function buzzOperationVerb(verb: string, tone: AgentActivityTone) {
-  if (verb === "add") return "Added";
-  if (verb === "archive") return "Archived";
-  if (verb === "create") return "Created";
-  if (verb === "delete") return "Deleted";
-  if (verb === "get" || verb === "list" || verb === "members") return "Read";
-  if (verb === "remove") return "Removed";
-  if (verb === "runs") return "Read";
-  if (verb === "search") return "Searched";
-  if (verb === "send") return "Sent";
-  if (verb === "thread") return "Read";
-  if (verb === "unarchive") return "Unarchived";
-  if (tone === "read") return "Read";
-  return "Updated";
+function buzzOperationVerb(
+  verb: string,
+  tone: AgentActivityTone,
+  t: TranslateFn,
+) {
+  if (verb === "add") return t("agents.verbAdded");
+  if (verb === "archive") return t("agents.verbArchived");
+  if (verb === "create") return t("agents.verbCreated");
+  if (verb === "delete") return t("agents.verbDeleted");
+  if (verb === "get" || verb === "list" || verb === "members") {
+    return t("agents.verbRead");
+  }
+  if (verb === "remove") return t("agents.verbRemoved");
+  if (verb === "runs") return t("agents.verbRead");
+  if (verb === "search") return t("agents.verbSearched");
+  if (verb === "send") return t("agents.verbSent");
+  if (verb === "thread") return t("agents.verbRead");
+  if (verb === "unarchive") return t("agents.verbUnarchived");
+  if (tone === "read") return t("agents.verbRead");
+  return t("agents.verbUpdated");
 }
 
-function buzzOperationObject(operation: string) {
-  if (isBuzzMessageSend(operation)) return "message";
+function buzzOperationObject(operation: string, t: TranslateFn) {
+  if (isBuzzMessageSend(operation)) return t("agents.objectMessage");
   if (operation.includes(".")) {
     const [group] = operation.split(".");
     return group ? group.replace(/[-_]+/g, " ") : "Buzz";
@@ -581,7 +636,10 @@ function getFlagValue(tokens: string[], start: number, flag: string) {
   return null;
 }
 
-function extractBuzzToolPreview(args: Record<string, unknown>): string | null {
+function extractBuzzToolPreview(
+  args: Record<string, unknown>,
+  t: TranslateFn,
+): string | null {
   const content = getToolString(args, ["content", "message", "text", "body"]);
   if (content) return content;
   const query = getToolString(args, ["query", "search"]);
@@ -592,7 +650,7 @@ function extractBuzzToolPreview(args: Record<string, unknown>): string | null {
   if (workflowId) return workflowId;
   const pubkeys = getToolStringList(args, ["pubkeys", "pubkey"]);
   if (pubkeys.length === 1) return pubkeys[0];
-  if (pubkeys.length > 1) return `${pubkeys.length} users`;
+  if (pubkeys.length > 1) return t("agents.nUsers", { count: pubkeys.length });
   return getToolString(args, ["event_id", "eventId", "name"]);
 }
 
@@ -626,10 +684,13 @@ function basenameOrUrl(source: string): string {
   return trimmed.split(/[/\\]/).pop() ?? trimmed;
 }
 
-function getTodoPreview(args: Record<string, unknown>): string | null {
+function getTodoPreview(
+  args: Record<string, unknown>,
+  t: TranslateFn,
+): string | null {
   const todos = args.todos;
-  if (!Array.isArray(todos)) return "todo list";
-  if (todos.length === 0) return "empty list";
+  if (!Array.isArray(todos)) return t("agents.todoList");
+  if (todos.length === 0) return t("agents.emptyList");
   const first = todos[0];
   const firstText =
     first && typeof first === "object"
@@ -637,5 +698,7 @@ function getTodoPreview(args: Record<string, unknown>): string | null {
       : null;
   if (firstText)
     return todos.length > 1 ? `${firstText} (+${todos.length - 1})` : firstText;
-  return `${todos.length} item${todos.length === 1 ? "" : "s"}`;
+  return todos.length === 1
+    ? t("agents.oneItem")
+    : t("agents.nItems", { count: todos.length });
 }

@@ -11,6 +11,7 @@
 
 import * as React from "react";
 
+import type { TranslateFn } from "@/shared/i18n";
 import {
   NO_RUNTIME_DROPDOWN_VALUE,
   type PersonaDropdownOption,
@@ -23,10 +24,14 @@ import {
  */
 export const ADD_CUSTOM_HARNESS_VALUE = "\u0000add-custom-harness";
 
-export const ADD_CUSTOM_HARNESS_OPTION: PersonaDropdownOption = {
-  label: "Add custom harness…",
-  value: ADD_CUSTOM_HARNESS_VALUE,
-};
+export function addCustomHarnessOption(
+  t: TranslateFn,
+): PersonaDropdownOption {
+  return {
+    label: t("agents.addCustomHarnessEllipsis"),
+    value: ADD_CUSTOM_HARNESS_VALUE,
+  };
+}
 
 export type RuntimeDropdownAction =
   | { kind: "add-custom-harness" }

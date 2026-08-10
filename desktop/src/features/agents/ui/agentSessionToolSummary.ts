@@ -1,3 +1,4 @@
+import type { TranslateFn } from "@/shared/i18n";
 import type {
   AgentActivityAction,
   ToolStatus,
@@ -59,8 +60,13 @@ type ToolItem = Extract<TranscriptItem, { type: "tool" }>;
 export type CompactFileEditSummary = FileEditDiffSummary;
 
 /** Build the muted compact summary label and preview for any tool row. */
-export function buildCompactToolSummary(item: ToolItem): CompactToolSummary {
-  const descriptor = item.descriptor ?? classifyToolItem(item);
+export function buildCompactToolSummary(
+  item: ToolItem,
+  t: TranslateFn,
+): CompactToolSummary {
+  // Re-classify with the active locale so labels/verbs follow language switches
+  // even when a descriptor was stored earlier in English.
+  const descriptor = classifyToolItem(item, t);
   const fileEditDiff = buildFileEditDiff(item, descriptor);
   const fileEditSummary = fileEditDiff
     ? {
@@ -81,7 +87,7 @@ export function buildCompactToolSummary(item: ToolItem): CompactToolSummary {
   return {
     action: descriptor.action ?? null,
     kind: descriptor.renderClass,
-    label: labelForStatus(descriptor, item.status, failed, running),
+    label: labelForStatus(descriptor, item.status, failed, running, t),
     preview: fileEditSummary?.filename ?? descriptor.preview,
     fileEditSummary,
     fileEditDiff,
@@ -99,15 +105,18 @@ function labelForStatus(
   status: ToolStatus,
   failed: boolean,
   running: boolean,
+  t: TranslateFn,
 ) {
   const label = descriptor.label;
   if (descriptor.groupKey === "file-edit:str_replace") {
-    if (failed) return "Edit failed";
-    if (running) return "Editing file";
-    return "Edited file";
+    if (failed) return t("agents.editFailed");
+    if (running) return t("agents.editingFile");
+    return t("agents.editedFile");
   }
   if (failed) {
-    return label.endsWith("failed") ? label : `${label} failed`;
+    return label.endsWith("failed")
+      ? label
+      : t("agents.labelFailed", { label });
   }
   if (running) return label;
   if (status === "completed") return label;

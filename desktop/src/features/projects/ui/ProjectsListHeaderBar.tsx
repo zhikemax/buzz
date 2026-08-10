@@ -7,42 +7,8 @@ import type {
 } from "@/features/projects/lib/projectsViewHelpers";
 import { ProjectsListScopeDropdown } from "@/features/projects/ui/ProjectsListScopeDropdown";
 import { ProjectsViewModeToggle } from "@/features/projects/ui/ProjectsToolbar";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
-
-const PROJECT_SCOPE_OPTIONS: Array<{
-  label: string;
-  value: ProjectsRepositoryScope;
-}> = [
-  { label: "All", value: "all" },
-  { label: "Accessible", value: "accessible" },
-  { label: "My Projects", value: "mine" },
-  { label: "Local", value: "local" },
-];
-const REPOSITORY_SCOPE_OPTIONS: Array<{
-  label: string;
-  value: ProjectsRepositoryScope;
-}> = [
-  { label: "All", value: "all" },
-  { label: "Accessible", value: "accessible" },
-  { label: "My Repositories", value: "mine" },
-  { label: "Local", value: "local" },
-  { label: "Buzz-hosted", value: "buzz" },
-  { label: "Linked", value: "linked" },
-];
-const PULL_REQUEST_SCOPE_OPTIONS: Array<{
-  label: string;
-  value: ProjectsWorkItemScope;
-}> = [
-  { label: "All", value: "all" },
-  { label: "My Pull Requests", value: "mine" },
-];
-const ISSUE_SCOPE_OPTIONS: Array<{
-  label: string;
-  value: ProjectsWorkItemScope;
-}> = [
-  { label: "All", value: "all" },
-  { label: "My Issues", value: "mine" },
-];
 
 type ProjectsListHeaderBarProps = {
   filter: ProjectsFilter;
@@ -82,33 +48,58 @@ export function ProjectsListHeaderBar({
   variant,
   viewMode,
 }: ProjectsListHeaderBarProps) {
+  const t = useT();
+
+  const projectScopeOptions = [
+    { label: t("projects.scope.all"), value: "all" as const },
+    { label: t("projects.scope.accessible"), value: "accessible" as const },
+    { label: t("projects.scope.myProjects"), value: "mine" as const },
+    { label: t("projects.scope.local"), value: "local" as const },
+  ];
+  const repositoryScopeOptions = [
+    { label: t("projects.scope.all"), value: "all" as const },
+    { label: t("projects.scope.accessible"), value: "accessible" as const },
+    { label: t("projects.scope.myRepositories"), value: "mine" as const },
+    { label: t("projects.scope.local"), value: "local" as const },
+    { label: t("projects.scope.buzzHosted"), value: "buzz" as const },
+    { label: t("projects.scope.linked"), value: "linked" as const },
+  ];
+  const pullRequestScopeOptions = [
+    { label: t("projects.scope.all"), value: "all" as const },
+    { label: t("projects.scope.myPullRequests"), value: "mine" as const },
+  ];
+  const issueScopeOptions = [
+    { label: t("projects.scope.all"), value: "all" as const },
+    { label: t("projects.scope.myIssues"), value: "mine" as const },
+  ];
+
   const scopeDropdown =
     filter === "prs" ? (
       <ProjectsListScopeDropdown
-        label="Filter pull requests"
+        label={t("projects.filter.pullRequests")}
         onChange={onPullRequestScopeChange}
-        options={PULL_REQUEST_SCOPE_OPTIONS}
+        options={pullRequestScopeOptions}
         value={pullRequestScope}
       />
     ) : filter === "issues" ? (
       <ProjectsListScopeDropdown
-        label="Filter issues"
+        label={t("projects.filter.issues")}
         onChange={onIssueScopeChange}
-        options={ISSUE_SCOPE_OPTIONS}
+        options={issueScopeOptions}
         value={issueScope}
       />
     ) : filter === "projects" ? (
       <ProjectsListScopeDropdown
-        label="Filter projects"
+        label={t("projects.filter.projects")}
         onChange={onRepositoryScopeChange}
-        options={PROJECT_SCOPE_OPTIONS}
+        options={projectScopeOptions}
         value={repositoryScope}
       />
     ) : (
       <ProjectsListScopeDropdown
-        label="Filter repositories"
+        label={t("projects.filter.repositories")}
         onChange={onRepositoryScopeChange}
-        options={REPOSITORY_SCOPE_OPTIONS}
+        options={repositoryScopeOptions}
         value={repositoryScope}
       />
     );
@@ -126,7 +117,7 @@ export function ProjectsListHeaderBar({
       {scopeDropdown}
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="sr-only">Sort projects</span>
+          <span className="sr-only">{t("projects.sort.label")}</span>
           <select
             className="h-8 rounded-md bg-transparent px-2 text-xs text-foreground outline-hidden hover:bg-muted/50 focus:ring-1 focus:ring-ring"
             onChange={(event) =>
@@ -134,9 +125,9 @@ export function ProjectsListHeaderBar({
             }
             value={sort}
           >
-            <option value="updated">Recent activity</option>
-            <option value="created">Created date</option>
-            <option value="name">Name</option>
+            <option value="updated">{t("projects.sort.recentActivity")}</option>
+            <option value="created">{t("projects.sort.createdDate")}</option>
+            <option value="name">{t("projects.sort.name")}</option>
           </select>
         </label>
         <ProjectsViewModeToggle

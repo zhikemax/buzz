@@ -16,6 +16,7 @@ import {
 import { relativeTime } from "@/features/projects/lib/projectsViewHelpers";
 import type { ChannelMember } from "@/shared/api/types";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import {
   ProjectFeedRow,
@@ -155,6 +156,7 @@ export function ProjectIssueDetail({
   project: Project;
   stackMetaRail?: boolean;
 }) {
+  const t = useT();
   const commentMutation = useCreateProjectIssueCommentMutation(project);
   const authorLabel = resolveUserLabel({ profiles, pubkey: issue.author });
   const members = React.useMemo(
@@ -174,15 +176,17 @@ export function ProjectIssueDetail({
           mediaTags,
           mentionPubkeys,
         });
-        toast.success("Comment posted.");
+        toast.success(t("projects.toast.commentPosted"));
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Failed to post comment.",
+          error instanceof Error
+            ? error.message
+            : t("projects.toast.commentFailed"),
         );
         throw error;
       }
     },
-    [commentMutation, issue],
+    [commentMutation, issue, t],
   );
 
   return (
@@ -223,7 +227,7 @@ export function ProjectIssueDetail({
           />
           <h4 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <MessageSquare className="h-3.5 w-3.5" />
-            Add Your Comment
+            {t("projects.issue.panel.addYourComment")}
           </h4>
           <div data-testid="project-issue-comment-composer">
             <ForumComposer
@@ -232,7 +236,7 @@ export function ProjectIssueDetail({
               isSending={commentMutation.isPending}
               members={members}
               onSubmit={handleCommentSubmit}
-              placeholder="Add a comment…"
+              placeholder={t("projects.issue.panel.addComment")}
               profiles={profiles}
             />
           </div>
@@ -259,6 +263,7 @@ function IssueMetaRail({
   profiles?: UserProfileLookup;
   stacked?: boolean;
 }) {
+  const t = useT();
   const authorProfile = profiles?.[normalizePubkey(issue.author)];
   const authorLabel = resolveUserLabel({ profiles, pubkey: issue.author });
   const status = issueStatusVisual(issue.status);
@@ -270,7 +275,7 @@ function IssueMetaRail({
         stacked ? "border-t" : "border-t xl:border-l xl:border-t-0",
       )}
     >
-      <OverviewRailSection title="Status">
+      <OverviewRailSection title={t("projects.issue.panel.rail.status")}>
         <span
           className={`inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs font-medium ${status.className}`}
         >
@@ -278,7 +283,7 @@ function IssueMetaRail({
           {issue.status}
         </span>
       </OverviewRailSection>
-      <OverviewRailSection title="Author">
+      <OverviewRailSection title={t("projects.issue.panel.rail.author")}>
         <ProfileIdentityButton
           align="center"
           avatarSize="xs"
@@ -289,7 +294,7 @@ function IssueMetaRail({
         />
       </OverviewRailSection>
       {issue.labels.length > 0 ? (
-        <OverviewRailSection title="Labels">
+        <OverviewRailSection title={t("projects.issue.panel.rail.labels")}>
           <div className="flex flex-wrap gap-1.5">
             {issue.labels.map((label) => (
               <span
@@ -302,16 +307,16 @@ function IssueMetaRail({
           </div>
         </OverviewRailSection>
       ) : null}
-      <OverviewRailSection title="Activity">
+      <OverviewRailSection title={t("projects.issue.panel.rail.activity")}>
         <dl className="space-y-1.5 text-xs text-muted-foreground">
           <div className="flex items-center justify-between gap-3">
-            <dt>Created</dt>
+            <dt>{t("projects.issue.panel.rail.created")}</dt>
             <dd className="font-medium text-foreground">
               {relativeTime(issue.createdAt)}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt>Updated</dt>
+            <dt>{t("projects.issue.panel.rail.updated")}</dt>
             <dd className="font-medium text-foreground">
               {relativeTime(issue.updatedAt)}
             </dd>
@@ -337,17 +342,22 @@ export function ProjectIssuesPanel({
   const issues = issuesQuery.data ?? [];
   const selectedIssue =
     issues.find((issue) => issue.id === selectedIssueId) ?? null;
+  const t = useT();
 
   if (issuesQuery.isLoading) {
-    return <p className="p-4 text-sm text-muted-foreground">Loading issues…</p>;
+    return (
+      <p className="p-4 text-sm text-muted-foreground">
+        {t("projects.issue.panel.loading")}
+      </p>
+    );
   }
 
   if (issues.length === 0) {
     return (
       <p className="p-4 text-sm text-muted-foreground">
         {issuesQuery.error
-          ? "Could not load issues for this repository."
-          : "No issues yet."}
+          ? t("projects.error.loadIssues")
+          : t("projects.empty.noIssues")}
       </p>
     );
   }

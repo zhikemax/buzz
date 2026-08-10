@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import type { Workflow } from "@/shared/api/types";
+import { type MessageKey, useT } from "@/shared/i18n";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import {
@@ -34,9 +35,10 @@ type WorkflowCardProps = {
   onDelete: (workflow: Workflow) => void;
 };
 
-function StatusBadge({ status }: { status: Workflow["status"] }) {
+function StatusBadge({ status }: { status: Workflow["status"] | "disabled" }) {
+  const t = useT();
   const variants: Record<
-    Workflow["status"],
+    Workflow["status"] | "disabled",
     "success" | "secondary" | "warning"
   > = {
     active: "success",
@@ -44,7 +46,11 @@ function StatusBadge({ status }: { status: Workflow["status"] }) {
     archived: "warning",
   };
 
-  return <Badge variant={variants[status]}>{status}</Badge>;
+  return (
+    <Badge variant={variants[status]}>
+      {t(`workflows.status.${status}` as MessageKey)}
+    </Badge>
+  );
 }
 
 export function WorkflowCard({
@@ -57,9 +63,10 @@ export function WorkflowCard({
   onDuplicate,
   onDelete,
 }: WorkflowCardProps) {
+  const t = useT();
   const displayStatus = getWorkflowDisplayStatus(workflow);
   const description = getWorkflowDescription(workflow.definition);
-  const triggerSummary = getWorkflowTriggerSummary(workflow.definition);
+  const triggerSummary = getWorkflowTriggerSummary(workflow.definition, t);
 
   return (
     <div
@@ -73,7 +80,9 @@ export function WorkflowCard({
         onClick={() => onSelect(workflow.id)}
         type="button"
       >
-        <span className="sr-only">View {workflow.name}</span>
+        <span className="sr-only">
+          {t("workflows.viewSr", { name: workflow.name })}
+        </span>
       </button>
 
       <div className="flex items-start justify-between">
@@ -103,7 +112,7 @@ export function WorkflowCard({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              aria-label="Workflow actions"
+              aria-label={t("workflows.actionsAria")}
               className="relative z-10 h-7 w-7 shrink-0"
               size="icon"
               variant="ghost"
@@ -114,22 +123,22 @@ export function WorkflowCard({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onTrigger(workflow.id)}>
               <Play className="mr-2 h-4 w-4" />
-              Trigger
+              {t("workflows.trigger")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(workflow)}>
               <Pencil className="mr-2 h-4 w-4" />
-              Edit
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDuplicate(workflow)}>
               <Copy className="mr-2 h-4 w-4" />
-              Duplicate
+              {t("common.duplicate")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => onDelete(workflow)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

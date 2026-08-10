@@ -1,3 +1,5 @@
+import { translate, type TranslateFn } from "@/shared/i18n";
+
 export type ProjectGitErrorPresentation = {
   title: string;
   description: string;
@@ -19,6 +21,7 @@ function isGitHubUrl(cloneUrl: string | null | undefined) {
 export function projectCloneErrorPresentation(
   error: unknown,
   cloneUrl?: string | null,
+  t: TranslateFn = translate,
 ): ProjectGitErrorPresentation {
   const message = errorText(error);
   const github = isGitHubUrl(cloneUrl);
@@ -29,17 +32,16 @@ export function projectCloneErrorPresentation(
     )
   ) {
     return {
-      title: "Repository access required",
+      title: t("projects.gitError.accessRequired.title"),
       description: github
-        ? "This repository requires GitHub authentication. Buzz currently clones public GitHub repositories without credentials."
-        : "Buzz could not authenticate with this repository. Check your access and try again.",
+        ? t("projects.gitError.accessRequired.githubDesc")
+        : t("projects.gitError.accessRequired.genericDesc"),
     };
   }
   if (/\b404\b|repository not found|repository does not exist/.test(message)) {
     return {
-      title: "Repository not found",
-      description:
-        "Check that the repository link is correct and that the repository still exists.",
+      title: t("projects.gitError.notFound.title"),
+      description: t("projects.gitError.notFound.desc"),
     };
   }
   if (
@@ -48,8 +50,8 @@ export function projectCloneErrorPresentation(
     )
   ) {
     return {
-      title: "Couldn’t reach the repository",
-      description: "Check your connection and try cloning again.",
+      title: t("projects.gitError.network.title"),
+      description: t("projects.gitError.network.desc"),
     };
   }
   if (
@@ -58,15 +60,14 @@ export function projectCloneErrorPresentation(
     )
   ) {
     return {
-      title: "Local folder already exists",
-      description:
-        "Choose a different repositories directory or remove the existing checkout.",
+      title: t("projects.gitError.exists.title"),
+      description: t("projects.gitError.exists.desc"),
     };
   }
   return {
-    title: "Couldn’t clone repository",
+    title: t("projects.gitError.cloneFailed.title"),
     description: github
-      ? "Try again, or open the repository on GitHub for more information."
-      : "Try again. If the problem continues, contact the repository owner.",
+      ? t("projects.gitError.cloneFailed.githubDesc")
+      : t("projects.gitError.cloneFailed.genericDesc"),
   };
 }

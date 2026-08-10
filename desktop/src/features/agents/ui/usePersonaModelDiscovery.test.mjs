@@ -21,6 +21,49 @@ function response(overrides = {}) {
   };
 }
 
+
+function t(key, params = {}) {
+  const catalog = {
+    "agents.editFailed": "Edit failed",
+    "agents.editingFile": "Editing file",
+    "agents.editedFile": "Edited file",
+    "agents.labelFailed": `${params.label} failed`,
+    "agents.activityResponding": "Responding",
+    "agents.activityUserPrompt": "User prompt",
+    "agents.activityPlanning": "Planning",
+    "agents.defaultModel": "Default model",
+    "agents.defaultAuto": "Default (auto)",
+    "agents.thisAgentCapitalized": "This agent",
+    "agents.thisProvider": "this provider",
+    "agents.reportedNoModels":
+      `${params.name} reported no models. Check that the CLI is installed and signed in, then reopen this screen.`,
+    "agents.unknownModelDiscoveryError": "Unknown model discovery error",
+    "agents.discoveryWaitingRoster":
+      "Buzz is waiting for the relay's member roster. Try again shortly; if this persists, check the relay's membership configuration.",
+    "agents.discoveryNoSharingMembers":
+      "No members are sharing compute right now. On a member machine, open Settings > Compute, choose a model, and turn on Share this machine.",
+    "agents.discoverySharedComputeUnavailable":
+      "This version of Buzz cannot use shared compute. Update Buzz or choose another provider.",
+    "agents.discoverySharedComputeMalformed":
+      "Buzz received an invalid shared compute status. Check the member machine, then try again.",
+    "agents.discoverySharedComputeCheckFailed":
+      "Buzz couldn't check shared compute through the relay. Check your relay connection and try again.",
+    "agents.discoveryAuthRequired":
+      `${params.name} requires sign-in before models can load. Sign in with the ${params.namePossessive} CLI in a terminal, then try again.`,
+    "agents.agentPossessive": "agent's",
+    "agents.discoveryAnthropicKeyRequired":
+      "Enter an Anthropic API key to load Anthropic models.",
+    "agents.discoveryOpenaiCompatKeyRequired":
+      "Enter an OpenAI runtime API key (OPENAI_COMPAT_API_KEY) to load OpenAI models.",
+    "agents.discoveryUsingBuiltIn":
+      `Using built-in model options. Could not load live models for ${params.provider}.`,
+    "settings.agents.defaultModel": "Default model",
+    "settings.agents.defaultModelWithId": `Default model (${params.model})`,
+    "settings.agents.provider.openaiCompat": "OpenAI-compatible",
+    "settings.agents.provider.relayMesh": "Buzz shared compute",
+  };
+  return catalog[key] ?? key;
+}
 test("merges the harness's own 'default' catalog entry into the canonical default row", () => {
   const options = getDiscoveredPersonaModelOptions(
     response({
@@ -31,7 +74,7 @@ test("merges the harness's own 'default' catalog entry into the canonical defaul
       ],
     }),
     "",
-  );
+  t);
 
   // Exactly one default row (id ""), and no raw "default" entry remains.
   assert.deepEqual(
@@ -51,7 +94,7 @@ test("default row shows the harness-reported current model when available", () =
       ],
     }),
     "",
-  );
+  t);
 
   assert.equal(options[0].id, "");
   assert.equal(options[0].label, "Default model (gpt-5.5[high])");
@@ -70,7 +113,7 @@ test("the 'default' id match is case-insensitive and trimmed", () => {
       ],
     }),
     "",
-  );
+  t);
 
   assert.deepEqual(
     options.map((option) => option.id),
@@ -86,7 +129,7 @@ test("explicit-model providers get no default row (no harness default entry)", (
       ],
     }),
     "anthropic",
-  );
+  t);
 
   assert.deepEqual(
     options.map((option) => option.id),
@@ -100,7 +143,7 @@ test("relay-mesh keeps its automatic routing default row", () => {
       models: [{ id: "llama-3", name: "Llama 3", description: null }],
     }),
     "relay-mesh",
-  );
+  t);
 
   assert.equal(options[0].id, "");
   assert.equal(options[0].label, "Default (auto)");
@@ -111,10 +154,10 @@ test("returns null when discovery is unsupported or empty", () => {
     getDiscoveredPersonaModelOptions(
       response({ supportsSwitching: false }),
       "",
-    ),
+  t),
     null,
   );
-  assert.equal(getDiscoveredPersonaModelOptions(null, ""), null);
+  assert.equal(getDiscoveredPersonaModelOptions(null, "", t), null);
 });
 
 // ── synthesizeEmptyDiscoveryStatus ────────────────────────────────────────────
@@ -123,7 +166,7 @@ test("synthesizeEmptyDiscoveryStatus_emptyModels_producesWarningStatus", () => {
   const status = synthesizeEmptyDiscoveryStatus(
     response({ models: [], agentName: "Claude Code" }),
     "",
-  );
+  t);
   assert.equal(status?.tone, "warning");
   assert.match(status?.message ?? "", /Claude Code/);
   assert.match(status?.message ?? "", /reported no models/);
@@ -137,7 +180,7 @@ test("synthesizeEmptyDiscoveryStatus_supportsSwitchingFalse_producesWarningStatu
       agentName: "Codex",
     }),
     "",
-  );
+  t);
   assert.equal(status?.tone, "warning");
   assert.match(status?.message ?? "", /Codex/);
 });
@@ -152,7 +195,7 @@ test("synthesizeEmptyDiscoveryStatus_withUsableModels_returnsNull", () => {
         agentName: "Claude Code",
       }),
       "",
-    ),
+  t),
     null,
   );
 });
@@ -161,7 +204,7 @@ test("synthesizeEmptyDiscoveryStatus_emptyAgentName_usesGenericFallback", () => 
   const status = synthesizeEmptyDiscoveryStatus(
     response({ models: [], agentName: "" }),
     "",
-  );
+  t);
   assert.equal(status?.tone, "warning");
   assert.match(status?.message ?? "", /This agent/);
 });

@@ -18,6 +18,7 @@ import { useChannelsQuery } from "@/features/channels/hooks";
 import { usePresenceQuery } from "@/features/presence/hooks";
 import type { AgentPersona, Channel, ManagedAgent } from "@/shared/api/types";
 import { removeChannelMember } from "@/shared/api/tauri";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import {
   deleteManagedAgentWithRules,
@@ -34,6 +35,7 @@ import {
 } from "../lib/instanceInputForDefinition";
 
 export function useManagedAgentActions() {
+  const t = useT();
   const { globalConfig } = useGlobalAgentConfig();
   const relayAgentsQuery = useRelayAgentsQuery();
   const managedAgentsQuery = useManagedAgentsQuery();
@@ -167,7 +169,7 @@ export function useManagedAgentActions() {
       });
     } catch (error) {
       setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to start agent.",
+        error instanceof Error ? error.message : t("agents.failedStartAgent"),
       );
     }
   }
@@ -189,7 +191,9 @@ export function useManagedAgentActions() {
       });
     } catch (error) {
       setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to restart agent.",
+        error instanceof Error
+          ? error.message
+          : t("agents.failedRestartAgent"),
       );
     } finally {
       setRestartingAgentPubkey(null);
@@ -223,7 +227,7 @@ export function useManagedAgentActions() {
       const input = await buildInstanceInputForDefinition(persona, runtime);
 
       const created = await createAgentMutation.mutateAsync(input);
-      toast.success("Agent created");
+      toast.success(t("agents.agentCreated"));
       const notices = [...warnings];
 
       if (created.spawnError) {
@@ -241,7 +245,7 @@ export function useManagedAgentActions() {
       void relayAgentsQuery.refetch();
     } catch (error) {
       setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to start agent.",
+        error instanceof Error ? error.message : t("agents.failedStartAgent"),
       );
     } finally {
       setPersonaStartPending(persona.id, false);
@@ -268,6 +272,7 @@ export function useManagedAgentActions() {
         channels,
         relayAgents: relayAgentsQuery.data ?? [],
         stopManagedAgent: stopMutation.mutateAsync,
+        t,
       });
       if (agent.backend.type === "local") {
         clearActiveTurnsForAgentOnStop(pubkey);
@@ -277,7 +282,7 @@ export function useManagedAgentActions() {
       }
     } catch (error) {
       setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to stop agent.",
+        error instanceof Error ? error.message : t("agents.failedStopAgent"),
       );
     }
   }
@@ -310,6 +315,7 @@ export function useManagedAgentActions() {
         deleteManagedAgent: deleteMutation.mutateAsync,
         presenceLookup: managedPresenceQuery.data,
         relayAgents: relayAgentsQuery.data ?? [],
+        t,
       });
       if (result.cancelled) return;
       await removeAgentFromAllChannels(pubkey);
@@ -318,7 +324,7 @@ export function useManagedAgentActions() {
       }
     } catch (error) {
       setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to delete agent.",
+        error instanceof Error ? error.message : t("agents.failedDeleteAgent"),
       );
     }
   }
@@ -335,14 +341,14 @@ export function useManagedAgentActions() {
       });
       setActionNoticeMessage(
         updated.startOnAppLaunch
-          ? `Will start ${updated.name} automatically when the desktop app opens.`
-          : `${updated.name} will stay manual-start only.`,
+          ? t("agents.willStartOnLaunch", { name: updated.name })
+          : t("agents.manualStartOnly", { name: updated.name }),
       );
     } catch (error) {
       setActionErrorMessage(
         error instanceof Error
           ? error.message
-          : "Failed to update startup preference.",
+          : t("agents.failedUpdateStartup"),
       );
     }
   }
@@ -354,12 +360,21 @@ export function useManagedAgentActions() {
     setActionErrorMessage(null);
     setActionNoticeMessage(() => {
       if (result.started) {
-        return `Added ${result.agent.name} to ${channel.name} and spawned it.`;
+        return t("agents.addedAndSpawned", {
+          name: result.agent.name,
+          channel: channel.name,
+        });
       }
       if (result.membershipAdded) {
-        return `Added ${result.agent.name} to ${channel.name}.`;
+        return t("agents.addedToChannel", {
+          name: result.agent.name,
+          channel: channel.name,
+        });
       }
-      return `${result.agent.name} is already in ${channel.name}.`;
+      return t("agents.alreadyInChannel", {
+        name: result.agent.name,
+        channel: channel.name,
+      });
     });
     void managedAgentsQuery.refetch();
     void relayAgentsQuery.refetch();
@@ -368,12 +383,20 @@ export function useManagedAgentActions() {
   async function runBulkAction(
     targets: ManagedAgent[],
     confirmLabel: string,
-    failureNoun: string,
+    failureNounSingular: string,
+    failureNounPlural: string,
     action: (agent: ManagedAgent) => Promise<unknown>,
   ): Promise<boolean> {
     if (targets.length === 0) return false;
     const confirmed = window.confirm(
-      `${confirmLabel} ${targets.length} agent${targets.length === 1 ? "" : "s"}?`,
+      t("agents.bulkConfirmAgents", {
+        action: confirmLabel,
+        count: targets.length,
+        agents:
+          targets.length === 1
+            ? t("agents.agentSingular")
+            : t("agents.agentPlural"),
+      }),
     );
     if (!confirmed) return false;
     clearFeedback();
@@ -381,7 +404,12 @@ export function useManagedAgentActions() {
     const failures = results.filter((r) => r.status === "rejected");
     if (failures.length > 0) {
       setActionErrorMessage(
-        `${failures.length} of ${targets.length} ${failureNoun}${failures.length === 1 ? "" : "s"} failed.`,
+        t("agents.bulkFailures", {
+          failed: failures.length,
+          total: targets.length,
+          noun:
+            failures.length === 1 ? failureNounSingular : failureNounPlural,
+        }),
       );
     }
     return true;
@@ -390,14 +418,16 @@ export function useManagedAgentActions() {
   async function handleBulkStopRunning() {
     await runBulkAction(
       managedAgents.filter((a) => isManagedAgentActive(a)),
-      "Stop",
-      "stop",
+      t("agents.bulkStop"),
+      t("agents.bulkStopNoun"),
+      t("agents.bulkStopsNoun"),
       async (a) => {
         await stopManagedAgentWithRules({
           agent: a,
           channels: channelsQuery.data ?? [],
           relayAgents: relayAgentsQuery.data ?? [],
           stopManagedAgent: stopMutation.mutateAsync,
+          t,
         });
         if (a.backend.type === "local") {
           clearActiveTurnsForAgentOnStop(a.pubkey);

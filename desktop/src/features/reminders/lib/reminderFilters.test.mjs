@@ -7,6 +7,9 @@ import {
   groupReminders,
   isDue,
 } from "./reminderFilters.ts";
+import { translate } from "../../../shared/i18n/locale.ts";
+
+const t = (key, params) => translate("en", key, params);
 
 /**
  * Build a Reminder fixture. `notBefore` and `status` are the only fields the
@@ -117,27 +120,39 @@ test("groupReminders_buckets_overdue_today_upcoming", () => {
   // A timestamp strictly between now and end-of-day, robust to running near
   // midnight: the midpoint can never coincide with either boundary.
   const todaySecs = Math.floor((realNow + realEndOfTodaySecs) / 2);
-  const groups = groupReminders([
-    reminder({ id: "over", notBefore: realNow - 100 }),
-    reminder({ id: "today", notBefore: todaySecs }),
-    reminder({ id: "soon", notBefore: realEndOfTodaySecs + 86_400 }),
-  ]);
+  const groups = groupReminders(
+    [
+      reminder({ id: "over", notBefore: realNow - 100 }),
+      reminder({ id: "today", notBefore: todaySecs }),
+      reminder({ id: "soon", notBefore: realEndOfTodaySecs + 86_400 }),
+    ],
+    false,
+    t,
+  );
   const labels = groups.map((g) => g.label);
-  assert.deepEqual(labels, ["Overdue", "Today", "Upcoming"]);
+  assert.deepEqual(labels, [
+    t("reminders.group.overdue"),
+    t("reminders.group.today"),
+    t("reminders.group.upcoming"),
+  ]);
 });
 
 test("groupReminders_omits_empty_buckets", () => {
-  const groups = groupReminders([reminder({ notBefore: realNow - 100 })]);
+  const groups = groupReminders([reminder({ notBefore: realNow - 100 })], false, t);
   assert.deepEqual(
     groups.map((g) => g.label),
-    ["Overdue"],
+    [t("reminders.group.overdue")],
   );
 });
 
 test("groupReminders_excludes_done_when_includeDone_false", () => {
-  const groups = groupReminders([
-    reminder({ notBefore: realNow - 100, status: "done" }),
-  ]);
+  const groups = groupReminders(
+    [
+      reminder({ notBefore: realNow - 100, status: "done" }),
+    ],
+    false,
+    t,
+  );
   assert.equal(groups.length, 0);
 });
 
@@ -149,8 +164,9 @@ test("groupReminders_appends_completed_group_when_includeDone_true", () => {
       reminder({ id: "d2", status: "done", createdAt: 2 }),
     ],
     true,
+    t,
   );
-  const completed = groups.find((g) => g.label === "Completed");
+  const completed = groups.find((g) => g.label === t("reminders.group.completed"));
   assert.ok(completed);
   // Done reminders are sorted newest-first by createdAt.
   assert.deepEqual(
@@ -163,19 +179,20 @@ test("groupReminders_never_surfaces_cancelled_reminders", () => {
   const groups = groupReminders(
     [reminder({ notBefore: realNow - 100, status: "cancelled" })],
     true,
+    t,
   );
   assert.equal(groups.length, 0);
 });
 
 test("groupReminders_empty_list_returns_empty", () => {
-  assert.deepEqual(groupReminders([]), []);
+  assert.deepEqual(groupReminders([], false, t), []);
 });
 
 test("groupReminders_buckets_epoch_zero_notBefore_as_overdue", () => {
   // Guards on `notBefore !== undefined`, matching isDue/dueSince: 0 is kept.
-  const groups = groupReminders([reminder({ notBefore: 0 })]);
+  const groups = groupReminders([reminder({ notBefore: 0 })], false, t);
   assert.deepEqual(
     groups.map((g) => g.label),
-    ["Overdue"],
+    [t("reminders.group.overdue")],
   );
 });

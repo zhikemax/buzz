@@ -9,6 +9,7 @@ import {
   useChannelsQuery,
 } from "@/features/channels/hooks";
 import type { Channel, ChannelRole, ManagedAgent } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
 import {
@@ -34,6 +35,7 @@ export function AddAgentToChannelDialog({
   ) => void;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const channelsQuery = useChannelsQuery();
   const [channelId, setChannelId] = React.useState("");
   const [role, setRole] = React.useState<Exclude<ChannelRole, "owner">>("bot");
@@ -113,18 +115,18 @@ export function AddAgentToChannelDialog({
       <DialogContent className="max-w-xl overflow-hidden p-0">
         <div className="flex max-h-[85vh] flex-col">
           <DialogHeader className="shrink-0 border-b border-border/60 px-6 py-5 pr-14">
-            <DialogTitle>Add agent to channel</DialogTitle>
+            <DialogTitle>{t("agents.addAgentToChannelTitle")}</DialogTitle>
             <DialogDescription>
-              Add {agent?.name ?? "this agent"} to a channel so desktop chat can
-              `@mention` it. Running agents pick up new channels automatically
-              via membership notifications.
+              {t("agents.addAgentToChannelDesc", {
+                name: agent?.name ?? t("agents.thisAgent"),
+              })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
             <div className="space-y-1.5">
               <label className="text-sm font-medium" htmlFor="agent-channel-id">
-                Channel
+                {t("agents.channelLabel")}
               </label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs"
@@ -136,7 +138,7 @@ export function AddAgentToChannelDialog({
                 value={channelId}
               >
                 {channels.length === 0 ? (
-                  <option value="">No channels available</option>
+                  <option value="">{t("agents.noChannelsAvailable")}</option>
                 ) : null}
                 {channels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
@@ -145,15 +147,14 @@ export function AddAgentToChannelDialog({
                 ))}
               </select>
               <p className="text-xs text-muted-foreground">
-                Only channels accessible to the current desktop user are shown
-                here.
+                {t("agents.channelsAccessibleHint")}
               </p>
             </div>
 
             {isAlreadyMember ? (
               <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
                 <span>✓</span>
-                <span>Already a member of this channel</span>
+                <span>{t("agents.alreadyChannelMember")}</span>
               </div>
             ) : null}
 
@@ -162,7 +163,7 @@ export function AddAgentToChannelDialog({
                 className="text-sm font-medium"
                 htmlFor="agent-channel-role"
               >
-                Role
+                {t("agents.roleLabel")}
               </label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs"
@@ -174,22 +175,25 @@ export function AddAgentToChannelDialog({
                 value={role}
               >
                 <option value="bot">bot</option>
-                <option value="member">member</option>
-                <option value="guest">guest</option>
-                <option value="admin">admin</option>
+                <option value="member">{t("channel.roleMember")}</option>
+                <option value="guest">{t("channel.roleGuest")}</option>
+                <option value="admin">{t("channel.roleAdmin")}</option>
               </select>
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
               <p className="text-sm font-semibold tracking-tight">
-                Agent pubkey
+                {t("agents.agentPubkey")}
               </p>
               <div className="mt-3 flex items-center justify-between gap-3">
                 <code className="min-w-0 flex-1 break-all rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-xs">
-                  {agent?.pubkey ?? "No agent selected"}
+                  {agent?.pubkey ?? t("agents.noAgentSelected")}
                 </code>
                 {agent ? (
-                  <CopyButton label="Copy pubkey" value={agent.pubkey} />
+                  <CopyButton
+                    label={t("agents.copyPubkey")}
+                    value={agent.pubkey}
+                  />
                 ) : null}
               </div>
             </div>
@@ -214,7 +218,7 @@ export function AddAgentToChannelDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={
@@ -228,10 +232,10 @@ export function AddAgentToChannelDialog({
               type="button"
             >
               {attachAgentMutation.isPending
-                ? "Adding..."
+                ? t("agents.adding")
                 : isAlreadyMember
-                  ? "Re-add to channel"
-                  : "Add to channel"}
+                  ? t("agents.reAddToChannel")
+                  : t("agents.addToChannel")}
             </Button>
           </div>
         </div>

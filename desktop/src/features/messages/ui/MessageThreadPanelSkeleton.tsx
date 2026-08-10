@@ -6,6 +6,7 @@ import {
 } from "@/features/messages/lib/messageThreadPanelLayout";
 import { useEscapeKey } from "@/shared/hooks/useEscapeKey";
 import { useIsThreadPanelOverlay } from "@/shared/hooks/use-mobile";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import {
   AuxiliaryPanel,
@@ -104,18 +105,19 @@ export function MessageThreadPanelSkeleton({
   widthPx,
   transparentChrome = false,
 }: MessageThreadPanelSkeletonProps) {
+  const t = useT();
   const isOverlay = useIsThreadPanelOverlay();
   const hasConstrainedColumn = columnMaxWidthPx != null;
   useEscapeKey(onClose, isOverlay || isSinglePanelView || isFocusMode);
 
   const threadHeaderContent = (
     <AuxiliaryPanelHeaderGroup
-      backButtonAriaLabel="Back to conversation"
+      backButtonAriaLabel={t("msg.backToConversation")}
       // Matches the loaded panel's header so it doesn't shift on resolve.
       leading={headerLeading}
       onBack={isSinglePanelView && !isFocusMode ? onClose : undefined}
     >
-      <AuxiliaryPanelTitle>Thread</AuxiliaryPanelTitle>
+      <AuxiliaryPanelTitle>{t("msg.thread")}</AuxiliaryPanelTitle>
     </AuxiliaryPanelHeaderGroup>
   );
 

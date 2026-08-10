@@ -5,12 +5,10 @@ import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useChannelsQuery } from "@/features/channels/hooks";
 import { useAgentSession } from "@/shared/context/AgentSessionContext";
 import type { Channel } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { getAgentWorkingState } from "./agentWorkingSignal";
 import { useRelayAgentsQuery } from "./hooks";
-
-const INACCESSIBLE_ACTIVITY_MESSAGE =
-  "This agent is active in a channel you haven't joined, so its activity can't be opened from here.";
 
 /**
  * Can the viewer actually open this channel? Joined channels always;
@@ -73,6 +71,7 @@ export function resolveOpenableActivityChannelId({
  * disappeared on routes without an AgentSessionProvider.
  */
 export function useOpenAgentActivity() {
+  const t = useT();
   const { onOpenAgentSession } = useAgentSession();
   const { goChannel } = useAppNavigation();
   const relayAgentsQuery = useRelayAgentsQuery();
@@ -144,7 +143,7 @@ export function useOpenAgentActivity() {
       // room's activity content, so we warn and stop instead.
       if (options?.channelId) {
         if (!findOpenableChannel(options.channelId)) {
-          toast.warning(INACCESSIBLE_ACTIVITY_MESSAGE);
+          toast.warning(t("agents.inaccessibleActivity"));
           return false;
         }
         if (!onOpenAgentSession) {
@@ -167,11 +166,11 @@ export function useOpenAgentActivity() {
       // Say so plainly rather than failing silently — without leaking which
       // room, or navigating into it.
       if (getAgentWorkingState(pubkey).channels.length > 0) {
-        toast.warning(INACCESSIBLE_ACTIVITY_MESSAGE);
+        toast.warning(t("agents.inaccessibleActivity"));
       }
       return false;
     },
-    [findOpenableChannel, goChannel, onOpenAgentSession, resolveChannelId],
+    [findOpenableChannel, goChannel, onOpenAgentSession, resolveChannelId, t],
   );
 
   return { canOpenAgentActivity, openAgentActivity };

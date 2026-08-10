@@ -1,10 +1,28 @@
 import type { ManagedAgentRuntimeStatus } from "@/shared/api/types";
+import type { MessageKey, TranslateFn } from "@/shared/i18n";
 
 export type AgentCommunityAvailability =
   | "Here"
   | "Waking"
   | "Needs setup on this device"
   | "Unavailable";
+
+const AVAILABILITY_LABEL_KEYS: Record<
+  AgentCommunityAvailability,
+  MessageKey
+> = {
+  Here: "agents.availabilityHere",
+  Waking: "agents.availabilityWaking",
+  "Needs setup on this device": "agents.availabilityNeedsSetup",
+  Unavailable: "agents.availabilityUnavailable",
+};
+
+export function localizeAgentCommunityAvailability(
+  value: AgentCommunityAvailability,
+  t: TranslateFn,
+): string {
+  return t(AVAILABILITY_LABEL_KEYS[value]);
+}
 
 export function agentCommunityAvailability(
   runtime: ManagedAgentRuntimeStatus,
@@ -26,12 +44,13 @@ export function agentCommunityAvailability(
 
 export function agentCommunityStatusDetail(
   runtime: ManagedAgentRuntimeStatus,
+  t: TranslateFn,
 ): string | null {
-  if (!runtime.localSetup)
-    return "Set up this agent on this device to start it.";
-  if (runtime.lifecycle === "stopped") return "Stopped by you";
+  if (!runtime.localSetup) return t("agents.availabilityNeedsSetupDetail");
+  if (runtime.lifecycle === "stopped")
+    return t("agents.availabilityStoppedByYou");
   if (runtime.lifecycle === "failed")
-    return runtime.error ?? "Could not connect";
+    return runtime.error ?? t("agents.availabilityCouldNotConnect");
   return null;
 }
 
@@ -53,6 +72,16 @@ export function managedAgentPairAction(
   return "stop";
 }
 
+export const MANAGED_AGENT_PAIR_ACTION_LABEL_KEYS: Record<
+  ManagedAgentPairAction,
+  MessageKey
+> = {
+  start: "agents.startAgent",
+  stop: "agents.stopAgent",
+  restart: "agents.restartAgent",
+};
+
+/** @deprecated Prefer MANAGED_AGENT_PAIR_ACTION_LABEL_KEYS + t() */
 export const MANAGED_AGENT_PAIR_ACTION_LABELS: Record<
   ManagedAgentPairAction,
   string

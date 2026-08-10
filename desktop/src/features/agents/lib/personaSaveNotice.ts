@@ -1,4 +1,5 @@
 import type { PersonaSharePublicationResult } from "@/shared/api/tauriPersonas";
+import type { TranslateFn } from "@/shared/i18n";
 
 /**
  * The confirmation shown after a persona edit is saved.
@@ -12,13 +13,14 @@ import type { PersonaSharePublicationResult } from "@/shared/api/tauriPersonas";
 export function personaSaveNotice(
   displayName: string,
   publicationStatus: PersonaSharePublicationResult["publicationStatus"] | null,
+  t: TranslateFn,
 ): string {
   switch (publicationStatus) {
     case "published":
-      return `Updated ${displayName} and published it to the community catalog.`;
+      return t("agents.updatedAndPublished", { name: displayName });
     case "queued":
-      return `Updated ${displayName}. Publishing to the community catalog is queued and will appear after the relay accepts the update.`;
+      return t("agents.updatedPublishQueued", { name: displayName });
     default:
-      return `Updated ${displayName}.`;
+      return t("agents.updatedNamed", { name: displayName });
   }
 }

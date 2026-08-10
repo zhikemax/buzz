@@ -3,6 +3,7 @@ import { ReadOnlyRelayClient } from "@/shared/api/readOnlyRelayClient";
 import { relayRequiresMembership } from "@/shared/api/relayMembers";
 import { signRelayEvent } from "@/shared/api/tauri";
 import type { RelayEvent } from "@/shared/api/types";
+import { detectLocale, translate } from "@/shared/i18n";
 
 export const KIND_NIP43_LEAVE_REQUEST = 28936;
 
@@ -22,8 +23,8 @@ const defaultDependencies: LeaveCommunityDependencies = {
   publishActive: (event) =>
     relayClient.publishEvent(
       event,
-      "Timed out while leaving the community. Try again.",
-      "Couldn't send the leave request. Check your connection and try again.",
+      translate(detectLocale(), "community.leaveTimeout"),
+      translate(detectLocale(), "community.leaveSendFailed"),
     ),
   createRelayClient: (relayUrl) => new ReadOnlyRelayClient(relayUrl),
 };
@@ -79,7 +80,7 @@ export async function leaveCommunity(
       error instanceof Error &&
       error.message.toLowerCase().includes("timed out")
     ) {
-      throw new Error("Timed out while leaving the community. Try again.");
+      throw new Error(translate(detectLocale(), "community.leaveTimeout"));
     }
     throw error;
   } finally {

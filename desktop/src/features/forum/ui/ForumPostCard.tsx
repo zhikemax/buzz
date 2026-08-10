@@ -114,7 +114,7 @@ export function ForumPostCard({
             role="presentation"
           >
             <DeleteActionMenu
-              label="post"
+              labelKey="post"
               onConfirm={() => onDelete(post.eventId)}
             />
           </div>

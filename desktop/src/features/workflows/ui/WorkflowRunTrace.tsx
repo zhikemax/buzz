@@ -1,19 +1,32 @@
 import { Check, Clock, SkipForward, X } from "lucide-react";
 
 import type { WorkflowApproval, WorkflowRun } from "@/shared/api/types";
-import { Badge, type BadgeProps } from "@/shared/ui/badge";
 import { WorkflowApprovalCard } from "@/features/workflows/ui/WorkflowApprovalCard";
+import { type MessageKey, type TranslateFn, useT } from "@/shared/i18n";
+import { Badge, type BadgeProps } from "@/shared/ui/badge";
 
 type WorkflowRunTraceProps = {
   run: WorkflowRun;
   approvals?: WorkflowApproval[];
 };
 
-function formatStatusLabel(status: string) {
+function formatStatusFallback(status: string) {
   return status.replace(/_/g, " ");
 }
 
-function StepStatusBadge({ status }: { status: string }) {
+function workflowStatusLabel(t: TranslateFn, status: string) {
+  const key = `workflows.status.${status}` as MessageKey;
+  const translated = t(key);
+  return translated !== key ? translated : formatStatusFallback(status);
+}
+
+function StepStatusBadge({
+  status,
+  t,
+}: {
+  status: string;
+  t: TranslateFn;
+}) {
   const variants: Record<string, BadgeProps["variant"]> = {
     completed: "success",
     failed: "destructive",
@@ -27,7 +40,7 @@ function StepStatusBadge({ status }: { status: string }) {
 
   return (
     <Badge variant={variants[status] ?? "secondary"}>
-      {formatStatusLabel(status)}
+      {workflowStatusLabel(t, status)}
     </Badge>
   );
 }
@@ -59,10 +72,12 @@ export function WorkflowRunTrace({
   run,
   approvals = [],
 }: WorkflowRunTraceProps) {
+  const t = useT();
+
   if (run.executionTrace.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-border/70 bg-background/60 px-4 py-6 text-center text-sm text-muted-foreground">
-        No steps recorded yet.
+        {t("workflows.trace.noSteps")}
       </p>
     );
   }
@@ -85,7 +100,7 @@ export function WorkflowRunTrace({
               <span className="min-w-0 flex-1 truncate font-mono text-xs font-medium">
                 {step.stepId}
               </span>
-              <StepStatusBadge status={step.status} />
+              <StepStatusBadge status={step.status} t={t} />
               {duration ? (
                 <span className="text-xs text-muted-foreground">
                   {duration}
@@ -95,7 +110,7 @@ export function WorkflowRunTrace({
             {Object.keys(step.output).length > 0 ? (
               <div className="mt-3">
                 <p className="mb-1 text-2xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                  Output
+                  {t("workflows.trace.output")}
                 </p>
                 <pre className="max-h-32 overflow-auto rounded-lg bg-muted/40 px-3 py-2 font-mono text-xs text-muted-foreground">
                   {JSON.stringify(step.output, null, 2)}
@@ -105,7 +120,7 @@ export function WorkflowRunTrace({
             {step.error ? (
               <div className="mt-3">
                 <p className="mb-1 text-2xs font-medium uppercase tracking-[0.16em] text-red-400">
-                  Error
+                  {t("workflows.trace.error")}
                 </p>
                 <pre className="max-h-32 overflow-auto rounded-lg bg-red-500/10 px-3 py-2 font-mono text-xs text-red-400">
                   {step.error}
@@ -115,7 +130,7 @@ export function WorkflowRunTrace({
             {pendingApproval ? (
               <div className="mt-3">
                 <p className="mb-2 text-2xs font-medium uppercase tracking-[0.16em] text-amber-600">
-                  Pending approval
+                  {t("workflows.trace.pendingApproval")}
                 </p>
                 <WorkflowApprovalCard approval={pendingApproval} />
               </div>

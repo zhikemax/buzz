@@ -12,6 +12,8 @@ import {
   resolveUserLabel,
   type UserProfileLookup,
 } from "@/features/profile/lib/identity";
+import type { TranslateFn } from "@/shared/i18n";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -49,11 +51,15 @@ type ProjectsIssuesListProps = {
   viewMode: "grid" | "list";
 };
 
-function nextStepLabel(status: ProjectIssue["status"]) {
-  if (status === "Done" || status === "Closed") return "View issue";
-  if (status === "In Review") return "Review issue";
-  if (status === "Triage") return "Triage issue";
-  return "Open issue";
+function nextStepLabel(
+  status: ProjectIssue["status"],
+  t: TranslateFn,
+) {
+  if (status === "Done" || status === "Closed")
+    return t("projects.issue.list.view");
+  if (status === "In Review") return t("projects.issue.list.review");
+  if (status === "Triage") return t("projects.issue.list.triage");
+  return t("projects.issue.list.open");
 }
 
 function IssueHeader({
@@ -69,6 +75,7 @@ function IssueHeader({
   profiles?: UserProfileLookup;
   project: Project;
 }) {
+  const t = useT();
   const authorLabel = resolveUserLabel({ profiles, pubkey: issue.author });
 
   return (
@@ -85,12 +92,16 @@ function IssueHeader({
         {includeDate ? (
           <>
             <span>·</span>
-            <span>created {relativeTime(issue.createdAt)}</span>
+            <span>
+              {t("projects.issue.list.created", {
+                time: relativeTime(issue.createdAt),
+              })}
+            </span>
           </>
         ) : null}
         <span>·</span>
         <span className="inline-flex items-center gap-1">
-          <span>by</span>
+          <span>{t("projects.issue.list.by")}</span>
           <ProjectAuthorIdentity
             label={authorLabel}
             profiles={profiles}
@@ -125,6 +136,7 @@ function IssueGridCard({
   profiles?: UserProfileLookup;
   project: Project;
 }) {
+  const t = useT();
   return (
     <Card
       className="group relative flex min-h-40 flex-col overflow-hidden border-border/60 bg-transparent p-4 shadow-none transition-colors duration-150 hover:bg-muted/20"
@@ -135,7 +147,9 @@ function IssueGridCard({
         onClick={() => onOpen(project, issue)}
         type="button"
       >
-        <span className="sr-only">View {issue.title}</span>
+        <span className="sr-only">
+          {t("projects.detail.viewProject", { name: issue.title })}
+        </span>
       </button>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex min-w-0 items-start gap-3">
@@ -151,7 +165,7 @@ function IssueGridCard({
             type="button"
             variant="outline"
           >
-            {nextStepLabel(issue.status)}
+            {nextStepLabel(issue.status, t)}
           </Button>
         </div>
 
@@ -190,6 +204,7 @@ function IssueListRow({
   profiles?: UserProfileLookup;
   project: Project;
 }) {
+  const t = useT();
   return (
     <div
       className={PROJECT_LIST_ROW_CLASS}
@@ -200,7 +215,9 @@ function IssueListRow({
         onClick={() => onOpen(project, issue)}
         type="button"
       >
-        <span className="sr-only">View {issue.title}</span>
+        <span className="sr-only">
+          {t("projects.detail.viewProject", { name: issue.title })}
+        </span>
       </button>
       <div className={PROJECT_LIST_ROW_CONTENT_CLASS}>
         <ProjectEventTypeIcon className="h-5 w-5" kind="issue" />
@@ -228,10 +245,12 @@ function IssueListRow({
           >
             {relativeTime(issue.createdAt)}
           </span>
-          <ProjectListRowMenu label={`More options for ${issue.title}`}>
+          <ProjectListRowMenu
+            label={t("projects.detail.moreOptions", { name: issue.title })}
+          >
             <DropdownMenuItem onSelect={() => onOpen(project, issue)}>
               <Eye className="h-4 w-4" />
-              {nextStepLabel(issue.status)}
+              {nextStepLabel(issue.status, t)}
             </DropdownMenuItem>
           </ProjectListRowMenu>
         </div>
@@ -252,6 +271,7 @@ export function ProjectsIssuesList({
   profiles,
   viewMode,
 }: ProjectsIssuesListProps) {
+  const t = useT();
   if (isLoading) {
     return (
       <div
@@ -260,7 +280,7 @@ export function ProjectsIssuesList({
           !embedded && "border border-border/60",
         )}
       >
-        Loading issues...
+        {t("projects.issue.panel.loading")}
       </div>
     );
   }
@@ -289,7 +309,7 @@ export function ProjectsIssuesList({
             !embedded && "border border-dashed border-border/60",
           )}
         >
-          No issues yet.
+          {t("projects.empty.noIssues")}
         </div>
       </div>
     );

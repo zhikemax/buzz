@@ -113,15 +113,19 @@ export function useTeamActions(
     try {
       if ("id" in input) {
         await updateTeamMutation.mutateAsync(input);
-        actions.setActionNoticeMessage(`Updated team "${input.name}".`);
+        actions.setActionNoticeMessage(
+          t("agents.updatedTeam", { name: input.name }),
+        );
       } else {
         await createTeamMutation.mutateAsync(input);
-        actions.setActionNoticeMessage(`Created team "${input.name}".`);
+        actions.setActionNoticeMessage(
+          t("agents.createdTeam", { name: input.name }),
+        );
       }
       setTeamDialogState(null);
     } catch (error) {
       actions.setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to save team.",
+        error instanceof Error ? error.message : t("agents.failedSaveTeam"),
       );
     }
   }
@@ -132,11 +136,13 @@ export function useTeamActions(
 
     try {
       await deleteTeamMutation.mutateAsync(team.id);
-      actions.setActionNoticeMessage(`Deleted team "${team.name}".`);
+      actions.setActionNoticeMessage(
+        t("agents.deletedTeam", { name: team.name }),
+      );
       setTeamToDelete(null);
     } catch (error) {
       actions.setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to delete team.",
+        error instanceof Error ? error.message : t("agents.failedDeleteTeam"),
       );
     }
   }
@@ -246,14 +252,16 @@ export function useTeamActions(
       {
         onSuccess: (saved) => {
           if (saved) {
-            actions.setActionNoticeMessage(`Exported ${team.name}.`);
+            actions.setActionNoticeMessage(
+              t("agents.exportedNamed", { name: team.name }),
+            );
           }
         },
         onError: (error) => {
           actions.setActionErrorMessage(
             error instanceof Error
               ? error.message
-              : "Failed to export team snapshot.",
+              : t("agents.failedExportTeamSnapshot"),
           );
         },
       },
@@ -278,7 +286,7 @@ export function useTeamActions(
       actions.setActionErrorMessage(
         err instanceof Error
           ? err.message
-          : "Failed to read team snapshot file.",
+          : t("agents.failedReadTeamSnapshot"),
       );
     }
   }
@@ -305,7 +313,9 @@ export function useTeamActions(
       }
     } catch (err) {
       setTeamSnapshotImportConfirmError(
-        err instanceof Error ? err.message : "Failed to import team snapshot.",
+        err instanceof Error
+          ? err.message
+          : t("agents.failedImportTeamSnapshot"),
       );
     }
   }

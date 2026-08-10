@@ -1,6 +1,7 @@
 import { Code, Plus } from "lucide-react";
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Input } from "@/shared/ui/input";
@@ -9,10 +10,11 @@ import { WorkflowStepCard } from "./WorkflowStepCard";
 import { FieldLabel, FormSelect } from "./workflowFormPrimitives";
 import {
   DEFAULT_FORM_STATE,
-  TRIGGER_LABELS,
   TRIGGER_TYPES,
+  formatWorkflowParseError,
   formStateToYaml,
   nextStepId,
+  triggerLabel,
   yamlToFormState,
 } from "./workflowFormTypes";
 import type {
@@ -20,6 +22,7 @@ import type {
   TriggerConfig,
   TriggerType,
   WorkflowFormState,
+  WorkflowParseError,
 } from "./workflowFormTypes";
 
 function TriggerConfigFields({
@@ -29,13 +32,15 @@ function TriggerConfigFields({
   trigger: TriggerConfig;
   onUpdate: (trigger: TriggerConfig) => void;
 }) {
+  const t = useT();
+
   switch (trigger.on) {
     case "message_posted":
     case "diff_posted":
       return (
         <div className="space-y-1.5">
           <FieldLabel htmlFor="wf-trigger-filter">
-            Filter expression (optional)
+            {t("workflows.form.filter")}
           </FieldLabel>
           <Input
             autoCapitalize="off"
@@ -43,11 +48,11 @@ function TriggerConfigFields({
             onChange={(event) =>
               onUpdate({ ...trigger, filter: event.target.value })
             }
-            placeholder='e.g. contains(text, "deploy")'
+            placeholder={t("workflows.form.filterPlaceholder")}
             value={trigger.filter ?? ""}
           />
           <p className="text-xs text-muted-foreground">
-            Evalexpr filter — leave empty to trigger on all matching events.
+            {t("workflows.form.filterHint")}
           </p>
         </div>
       );
@@ -55,7 +60,7 @@ function TriggerConfigFields({
       return (
         <div className="space-y-1.5">
           <FieldLabel htmlFor="wf-trigger-emoji">
-            Emoji filter (optional)
+            {t("workflows.form.emojiFilter")}
           </FieldLabel>
           <Input
             autoCapitalize="off"
@@ -63,18 +68,18 @@ function TriggerConfigFields({
             onChange={(event) =>
               onUpdate({ ...trigger, emoji: event.target.value })
             }
-            placeholder="e.g. thumbsup"
+            placeholder={t("workflows.form.emojiPlaceholder")}
             value={trigger.emoji ?? ""}
           />
           <p className="text-xs text-muted-foreground">
-            Leave empty to trigger on any reaction.
+            {t("workflows.form.emojiHint")}
           </p>
         </div>
       );
     case "webhook":
       return (
         <p className="text-xs text-muted-foreground">
-          A unique webhook URL will be generated when the workflow is created.
+          {t("workflows.form.webhookHint")}
         </p>
       );
     case "schedule":
@@ -82,7 +87,7 @@ function TriggerConfigFields({
         <div className="space-y-3">
           <div className="space-y-1.5">
             <FieldLabel htmlFor="wf-trigger-cron">
-              Cron expression (optional)
+              {t("workflows.form.cron")}
             </FieldLabel>
             <Input
               autoCapitalize="off"
@@ -90,13 +95,13 @@ function TriggerConfigFields({
               onChange={(event) =>
                 onUpdate({ ...trigger, cron: event.target.value })
               }
-              placeholder="e.g. 0 9 * * 1-5 (weekdays at 9am UTC)"
+              placeholder={t("workflows.form.cronPlaceholder")}
               value={trigger.cron ?? ""}
             />
           </div>
           <div className="space-y-1.5">
             <FieldLabel htmlFor="wf-trigger-interval">
-              Interval (optional)
+              {t("workflows.form.interval")}
             </FieldLabel>
             <Input
               autoCapitalize="off"
@@ -104,12 +109,12 @@ function TriggerConfigFields({
               onChange={(event) =>
                 onUpdate({ ...trigger, interval: event.target.value })
               }
-              placeholder="e.g. 1h, 30m"
+              placeholder={t("workflows.form.intervalPlaceholder")}
               value={trigger.interval ?? ""}
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Provide either a cron expression or a simple interval.
+            {t("workflows.form.scheduleHint")}
           </p>
         </div>
       );
@@ -129,6 +134,7 @@ export function WorkflowFormBuilder({
   onChange,
   yaml,
 }: WorkflowFormBuilderProps) {
+  const t = useT();
   // Parse once on mount instead of calling yamlToFormState three times
   const initialParseRef = React.useRef(yaml ? yamlToFormState(yaml) : null);
   const [mode, setMode] = React.useState<"form" | "yaml">(
@@ -141,7 +147,7 @@ export function WorkflowFormBuilder({
       ? initialParseRef.current.state
       : DEFAULT_FORM_STATE,
   );
-  const [parseError, setParseError] = React.useState<string | null>(
+  const [parseError, setParseError] = React.useState<WorkflowParseError | null>(
     initialParseRef.current !== null && !initialParseRef.current.ok
       ? initialParseRef.current.error
       : null,
@@ -212,13 +218,17 @@ export function WorkflowFormBuilder({
           variant="ghost"
         >
           <Code className="h-4 w-4" />
-          {mode === "form" ? "Edit as YAML" : "Back to form"}
+          {mode === "form"
+            ? t("workflows.form.editYaml")
+            : t("workflows.form.backToForm")}
         </Button>
       </div>
 
       {parseError ? (
         <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          Cannot switch to form view: {parseError}
+          {t("workflows.form.cannotSwitch", {
+            error: formatWorkflowParseError(t, parseError),
+          })}
         </p>
       ) : null}
 
@@ -232,13 +242,13 @@ export function WorkflowFormBuilder({
             value={yaml}
           />
           <p className="text-xs text-muted-foreground">
-            Edit the raw YAML definition directly.
+            {t("workflows.form.yamlHint")}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <FieldLabel htmlFor="wf-name">Workflow name</FieldLabel>
+            <FieldLabel htmlFor="wf-name">{t("workflows.form.name")}</FieldLabel>
             <Input
               autoCapitalize="off"
               autoCorrect="off"
@@ -247,14 +257,14 @@ export function WorkflowFormBuilder({
               onChange={(event) =>
                 updateFormState({ ...formState, name: event.target.value })
               }
-              placeholder="e.g. deploy_notifier"
+              placeholder={t("workflows.form.namePlaceholder")}
               value={formState.name}
             />
           </div>
 
           <div className="space-y-1.5">
             <FieldLabel htmlFor="wf-description">
-              Description (optional)
+              {t("workflows.form.description")}
             </FieldLabel>
             <Textarea
               autoCapitalize="off"
@@ -267,7 +277,7 @@ export function WorkflowFormBuilder({
                   description: event.target.value,
                 })
               }
-              placeholder="What does this workflow do?"
+              placeholder={t("workflows.form.descriptionPlaceholder")}
               value={formState.description}
             />
           </div>
@@ -285,13 +295,15 @@ export function WorkflowFormBuilder({
               }
             />
             <label className="text-sm" htmlFor="wf-enabled">
-              Workflow is enabled
+              {t("workflows.form.enabled")}
             </label>
           </div>
 
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <FieldLabel htmlFor="wf-trigger-type">Trigger</FieldLabel>
+              <FieldLabel htmlFor="wf-trigger-type">
+                {t("workflows.form.trigger")}
+              </FieldLabel>
               <FormSelect
                 disabled={disabled}
                 id="wf-trigger-type"
@@ -305,7 +317,7 @@ export function WorkflowFormBuilder({
               >
                 {TRIGGER_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {TRIGGER_LABELS[type]}
+                    {triggerLabel(t, type)}
                   </option>
                 ))}
               </FormSelect>
@@ -318,7 +330,7 @@ export function WorkflowFormBuilder({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <FieldLabel>Steps</FieldLabel>
+              <FieldLabel>{t("workflows.form.steps")}</FieldLabel>
               <Button
                 className="h-7 gap-1.5 text-xs"
                 disabled={disabled}
@@ -328,13 +340,13 @@ export function WorkflowFormBuilder({
                 variant="outline"
               >
                 <Plus className="h-4 w-4" />
-                Add step
+                {t("workflows.form.addStep")}
               </Button>
             </div>
 
             {formState.steps.length === 0 ? (
               <p className="py-4 text-center text-xs text-muted-foreground">
-                No steps yet — add one to get started.
+                {t("workflows.form.noSteps")}
               </p>
             ) : (
               <div className="space-y-2">

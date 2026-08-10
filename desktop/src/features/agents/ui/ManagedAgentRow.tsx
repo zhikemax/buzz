@@ -15,6 +15,7 @@ import type {
   PresenceLookup,
   PresenceStatus,
 } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { AgentConfigPanel } from "./AgentConfigPanel";
@@ -51,9 +52,12 @@ export function ManagedAgentRow({
   onOpenProfile: (pubkey: string) => void;
   onSelectLogAgent: (pubkey: string | null) => void;
 }) {
+  const t = useT();
   const isLocal = agent.backend.type === "local";
   const runtimeSource =
-    agent.backend.type === "provider" ? `Remote (${agent.backend.id})` : null;
+    agent.backend.type === "provider"
+      ? t("agents.remoteNamed", { id: agent.backend.id })
+      : null;
   const personaLabel = agent.personaId
     ? (personaLabelsById[agent.personaId] ?? null)
     : null;
@@ -73,12 +77,12 @@ export function ManagedAgentRow({
   const isWorking = activeWorkingChannels.length > 0;
   const processDetail =
     agent.pid !== null
-      ? `PID ${agent.pid}`
+      ? t("agents.pidLabel", { pid: agent.pid })
       : agent.lastExitCode !== null
-        ? `Exit ${agent.lastExitCode}`
+        ? t("agents.exitLabel", { code: agent.lastExitCode })
         : isLocal
-          ? "Ready to launch"
-          : "Managed remotely";
+          ? t("agents.readyToLaunch")
+          : t("agents.managedRemotely");
   // When the harness recovered a meaningful error string from the agent's
   // log tail (Max's seam in `managed_agents/storage.rs`), promote it to
   // user-visible copy below the process detail. Specifically renders the
@@ -216,6 +220,7 @@ function AgentSummary({
   personaLabel: string | null;
   presenceStatus: PresenceStatus | undefined;
 }) {
+  const t = useT();
   const { goChannel } = useAppNavigation();
   const { openAgentActivity } = useOpenAgentActivity();
 
@@ -260,10 +265,12 @@ function AgentSummary({
             <PubKey pubkey={agent.pubkey} />
             {agent.backend.type === "local" ? (
               <span>
-                {agent.startOnAppLaunch ? "Auto-start" : "Manual start"}
+                {agent.startOnAppLaunch
+                  ? t("agents.autoStart")
+                  : t("agents.manualStart")}
               </span>
             ) : (
-              <span>Remote deployment</span>
+              <span>{t("agents.remoteDeployment")}</span>
             )}
           </div>
           {agent.personaOrphaned ? (
@@ -334,6 +341,7 @@ function WorkingBadge({
   anchorAt: number;
   onNavigate: (channelId: string) => void;
 }) {
+  const t = useT();
   // The 1s tick lives here, at the leaf, so only visible working badges
   // re-render each second — idle rows never mount this hook.
   const now = useNow(1000);
@@ -347,7 +355,10 @@ function WorkingBadge({
         onNavigate(channelId);
       }}
     >
-      Working in #{name} · {formatElapsed(now - anchorAt)}
+      {t("agents.workingInChannel", {
+        name,
+        elapsed: formatElapsed(now - anchorAt),
+      })}
     </Badge>
   );
 }
@@ -367,9 +378,10 @@ function StatusBlock({
   processDetail: string;
   status: ManagedAgent["status"];
 }) {
+  const t = useT();
   return (
     <div className="space-y-1 lg:pt-0.5">
-      <SubsectionLabel className="lg:hidden">Status</SubsectionLabel>
+      <SubsectionLabel className="lg:hidden">{t("profile.status")}</SubsectionLabel>
       <AgentStatusBadge
         isWorking={isWorking}
         presenceLoaded={presenceLoaded}
@@ -401,9 +413,12 @@ function RuntimeBlock({
   agent: ManagedAgent;
   runtimeSource: string | null;
 }) {
+  const t = useT();
   return (
     <div className="space-y-1 lg:pt-0.5">
-      <SubsectionLabel className="lg:hidden">Runtime</SubsectionLabel>
+      <SubsectionLabel className="lg:hidden">
+        {t("profile.tabRuntime")}
+      </SubsectionLabel>
       <p className="truncate font-mono text-xs text-foreground">
         {agent.agentCommand}
       </p>
@@ -418,9 +433,10 @@ function RuntimeBlock({
 }
 
 function AgentOriginBadge({ agent }: { agent: ManagedAgent }) {
+  const t = useT();
   return (
     <Badge variant="outline">
-      {agent.backend.type === "local" ? "Local" : "Remote"}
+      {agent.backend.type === "local" ? t("agents.local") : t("agents.remote")}
     </Badge>
   );
 }

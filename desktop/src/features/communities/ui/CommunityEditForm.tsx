@@ -10,6 +10,7 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Spinner } from "@/shared/ui/spinner";
 import { JoinPolicyNotice } from "@/features/onboarding/ui/JoinPolicyNotice";
+import { useT } from "@/shared/i18n";
 import { normalizeRelayUrl, probeRelayReachable } from "../relayProbe";
 
 const POLICY_DISCOVERY_DELAY_MS = 250;
@@ -27,7 +28,7 @@ export type CommunityEditFormProps = {
 };
 
 export function CommunityEditForm({
-  cancelLabel = "Cancel",
+  cancelLabel,
   initialName,
   initialRelayUrl,
   isSubmitting = false,
@@ -36,6 +37,8 @@ export function CommunityEditForm({
   onSubmit,
   submitLabel,
 }: CommunityEditFormProps) {
+  const t = useT();
+  const resolvedCancelLabel = cancelLabel ?? t("common.cancel");
   const [name, setName] = React.useState(initialName);
   const [relayUrl, setRelayUrl] = React.useState(initialRelayUrl);
   const [error, setError] = React.useState<string | null>(null);
@@ -94,12 +97,12 @@ export function CommunityEditForm({
       event.preventDefault();
       const trimmedName = name.trim();
       if (!trimmedName) {
-        setError("Please enter a community name.");
+        setError(t("community.edit.nameRequired"));
         return;
       }
       const normalizedUrl = normalizeRelayUrl(relayUrl);
       if (!normalizedUrl) {
-        setError("Enter a valid ws:// or wss:// relay URL.");
+        setError(t("community.edit.urlInvalid"));
         return;
       }
 
@@ -122,14 +125,14 @@ export function CommunityEditForm({
             return;
           }
           if (policy.ageAttestationRequired && !ageConfirmed) {
-            setError("Confirm that you are at least 18 years old.");
+            setError(t("community.edit.ageRequired"));
             return;
           }
           if (
             (policy.termsMarkdown || policy.privacyMarkdown) &&
             !agreementConfirmed
           ) {
-            setError("Agree to the Terms of Service and Privacy Policy.");
+            setError(t("community.edit.agreementRequired"));
             return;
           }
         } catch (policyError) {
@@ -159,7 +162,7 @@ export function CommunityEditForm({
       }
 
       if (!reachable) {
-        setProbeWarning("Can't reach this relay — check the URL");
+        setProbeWarning(t("community.edit.probeFailed"));
         return;
       }
 
@@ -174,6 +177,7 @@ export function CommunityEditForm({
       onSubmit,
       policyRelayUrl,
       relayUrl,
+      t,
       useAnywayOverride,
     ],
   );
@@ -202,7 +206,7 @@ export function CommunityEditForm({
           className="text-sm font-medium text-foreground"
           htmlFor="community-edit-name"
         >
-          Community name
+          {t("community.edit.nameLabel")}
         </label>
         <Input
           autoFocus
@@ -213,7 +217,7 @@ export function CommunityEditForm({
             setName(event.target.value);
             setError(null);
           }}
-          placeholder="Design team"
+          placeholder={t("community.edit.namePlaceholder")}
           type="text"
           value={name}
         />
@@ -224,7 +228,7 @@ export function CommunityEditForm({
           className="text-sm font-medium text-foreground"
           htmlFor="community-edit-url"
         >
-          Community URL
+          {t("community.edit.urlLabel")}
         </label>
         <Input
           className="h-10 bg-background"
@@ -318,9 +322,15 @@ export function CommunityEditForm({
           type="submit"
         >
           {isProbing ? (
-            <Spinner aria-label="Checking relay" className="h-4 w-4 border-2" />
+            <Spinner
+              aria-label={t("community.edit.checkingRelay")}
+              className="h-4 w-4 border-2"
+            />
           ) : isSubmitting ? (
-            <Spinner aria-label="Saving" className="h-4 w-4 border-2" />
+            <Spinner
+              aria-label={t("community.edit.saving")}
+              className="h-4 w-4 border-2"
+            />
           ) : (
             submitLabel
           )}
@@ -333,7 +343,7 @@ export function CommunityEditForm({
           type="button"
           variant="ghost"
         >
-          {cancelLabel}
+          {resolvedCancelLabel}
         </Button>
 
         {error ? (
@@ -352,7 +362,7 @@ export function CommunityEditForm({
               type="button"
               variant="outline"
             >
-              Use anyway
+              {t("community.edit.useAnyway")}
             </Button>
           </div>
         ) : null}

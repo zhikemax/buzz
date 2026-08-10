@@ -1,6 +1,10 @@
 import type { Workflow } from "@/shared/api/types";
-import { TRIGGER_LABELS } from "./workflowFormTypes";
-import type { TriggerType } from "./workflowFormTypes";
+import type { TranslateFn } from "@/shared/i18n";
+import {
+  triggerLabel,
+  TRIGGER_TYPES,
+  type TriggerType,
+} from "./workflowFormTypes";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -36,6 +40,7 @@ export function getWorkflowDescription(
 
 export function getWorkflowTriggerSummary(
   definition: Record<string, unknown>,
+  t: TranslateFn,
 ): string | null {
   const trigger = asRecord(definition.trigger);
   if (!trigger) return null;
@@ -43,7 +48,9 @@ export function getWorkflowTriggerSummary(
   const on = trigger.on;
   if (typeof on !== "string") return null;
 
-  const label = TRIGGER_LABELS[on as TriggerType] ?? on;
+  const label = TRIGGER_TYPES.includes(on as TriggerType)
+    ? triggerLabel(t, on as TriggerType)
+    : on;
   switch (on) {
     case "message_posted":
     case "diff_posted":

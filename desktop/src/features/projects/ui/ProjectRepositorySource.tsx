@@ -14,6 +14,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -59,6 +60,7 @@ export function RepositoryBranchDropdown({
   onCreateBranch?: () => void;
   onDeleteBranch?: () => void;
 }) {
+  const t = useT();
   const selectableBranches =
     branchOptions.length > 0 ? branchOptions : [branch];
   const selectedValue = selectedTag ? `tag:${selectedTag}` : `branch:${branch}`;
@@ -99,7 +101,9 @@ export function RepositoryBranchDropdown({
           }}
           value={selectedValue}
         >
-          <DropdownMenuLabel>Branches</DropdownMenuLabel>
+          <DropdownMenuLabel>
+            {t("projects.repo.source.branches")}
+          </DropdownMenuLabel>
           {selectableBranches.map((option) => (
             <DropdownMenuRadioItem key={option} value={`branch:${option}`}>
               <GitBranch className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -109,7 +113,9 @@ export function RepositoryBranchDropdown({
           {tagOptions.length > 0 ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Tags</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {t("projects.repo.source.tags")}
+              </DropdownMenuLabel>
               {tagOptions.map((option) => (
                 <DropdownMenuRadioItem
                   key={option.name}
@@ -137,7 +143,7 @@ export function RepositoryBranchDropdown({
                   title={createBranchTitle}
                 >
                   <Plus className="h-4 w-4" />
-                  Create branch…
+                  {t("projects.branch.create.menu")}
                 </DropdownMenuItem>
                 {createBranchDisabled && createBranchTitle ? (
                   <p className="max-w-56 px-2 py-1 text-xs text-muted-foreground">
@@ -155,7 +161,7 @@ export function RepositoryBranchDropdown({
                 title={deleteBranchTitle}
               >
                 <Trash2 className="h-4 w-4" />
-                Delete {branch}
+                {t("projects.branch.delete.menu", { branch })}
               </DropdownMenuItem>
             ) : null}
           </>
@@ -216,6 +222,7 @@ export function RepoSourceDropdown({
 }: {
   controls: RepoSourceHeaderControls;
 }) {
+  const t = useT();
   const isLocal = controls.source === "local";
   const cloneLocal = controls.localDisabled && controls.onCloneLocal;
   const RemoteIcon =
@@ -275,7 +282,9 @@ export function RepoSourceDropdown({
             )}
             <span className="text-muted-foreground">{controls.localLabel}</span>
             <span className="ml-auto rounded-md border border-input/60 bg-background px-2 py-0.5 text-xs font-medium text-foreground shadow-xs group-focus:border-input">
-              {controls.clonePending ? "Cloning…" : "Clone"}
+              {controls.clonePending
+                ? t("projects.repo.source.cloning")
+                : t("projects.repo.source.clone")}
             </span>
           </DropdownMenuItem>
         ) : null}
@@ -291,13 +300,16 @@ export function RepoSyncActionButton({
 }: {
   controls: RepoSourceHeaderControls;
 }) {
+  const t = useT();
   if (controls.remoteKind === "external") {
     return controls.externalUrl ? (
       <Button
         asChild
         className={PROJECT_PANEL_ACTION_BUTTON_CLASS}
         size="sm"
-        title={`Open repository on ${controls.remoteLabel}`}
+        title={t("projects.repo.source.openOnRemote", {
+          label: controls.remoteLabel,
+        })}
         variant="ghost"
       >
         <a href={controls.externalUrl} rel="noreferrer" target="_blank">
@@ -319,7 +331,7 @@ export function RepoSyncActionButton({
         disabled={controls.pullDisabled}
         onClick={controls.onPull}
         size="sm"
-        title={controls.pullTitle ?? "Pull remote commits"}
+        title={controls.pullTitle ?? t("projects.repo.source.pullTitle")}
         variant="ghost"
       >
         {controls.pullPending ? (
@@ -339,7 +351,7 @@ export function RepoSyncActionButton({
         disabled={controls.pushDisabled}
         onClick={controls.onPush}
         size="sm"
-        title={controls.pushTitle ?? "Push local commits"}
+        title={controls.pushTitle ?? t("projects.repo.source.pushTitle")}
         variant="ghost"
       >
         {controls.pushPending ? (
@@ -359,7 +371,7 @@ export function RepoSyncActionButton({
       disabled={controls.fetchPending}
       onClick={controls.onFetch}
       size="sm"
-      title={controls.fetchTitle ?? "Check for remote changes"}
+      title={controls.fetchTitle ?? t("projects.repo.source.fetchTitle")}
       variant="ghost"
     >
       {controls.fetchPending ? (

@@ -11,6 +11,7 @@ import {
   useRelayMembersQuery,
 } from "@/features/community-members/hooks";
 import type { RelayMember, RelayMemberRole } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
@@ -23,21 +24,33 @@ import {
 import { AddMemberDialog } from "./AddMemberDialog";
 import { ConfirmRemoveDialog } from "./ConfirmRemoveDialog";
 
-function formatRelativeDate(dateString: string): string {
+function formatRelativeDate(dateString: string, t: TranslateFn): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60_000);
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1) return t("time.justNow");
+  if (diffMins < 60) return t("profile.minutesAgo", { count: diffMins });
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffHours < 24) return t("profile.hoursAgo", { count: diffHours });
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 30) return `${diffDays}d ago`;
+  if (diffDays < 30) return t("profile.daysAgo", { count: diffDays });
   return date.toLocaleDateString();
 }
 
+function roleLabel(role: RelayMemberRole, t: TranslateFn): string {
+  switch (role) {
+    case "owner":
+      return t("settings.invites.role.owner");
+    case "admin":
+      return t("settings.invites.role.admin");
+    default:
+      return t("settings.invites.role.member");
+  }
+}
+
 function RoleBadge({ role }: { role: RelayMemberRole }) {
+  const t = useT();
   return (
     <span
       className={cn(
@@ -47,7 +60,7 @@ function RoleBadge({ role }: { role: RelayMemberRole }) {
         role === "member" && "bg-muted text-muted-foreground",
       )}
     >
-      {role}
+      {roleLabel(role, t)}
     </span>
   );
 }
@@ -78,6 +91,7 @@ function MemberRow({
   onRemove: (member: RelayMember) => void;
   onChangeRole: (pubkey: string, newRole: string) => void;
 }) {
+  const t = useT();
   const isSelf = currentPubkey?.toLowerCase() === member.pubkey.toLowerCase();
   const isOwner = viewerRole === "owner";
   const isAdmin = viewerRole === "admin";
@@ -105,12 +119,18 @@ function MemberRow({
             </span>
             <RoleBadge role={member.role} />
             {isSelf ? (
-              <span className="text-xs text-muted-foreground">(you)</span>
+              <span className="text-xs text-muted-foreground">
+                {t("settings.invites.you")}
+              </span>
             ) : null}
           </div>
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
             <PubKey className="text-xs" pubkey={member.pubkey} />
-            <span>Joined {formatRelativeDate(member.createdAt)}</span>
+            <span>
+              {t("settings.invites.added", {
+                date: formatRelativeDate(member.createdAt, t),
+              })}
+            </span>
           </p>
         </div>
       </div>
@@ -124,7 +144,7 @@ function MemberRow({
               variant="ghost"
             >
               <MoreHorizontal className="h-4 w-4" />
-              <span className="sr-only">Actions</span>
+              <span className="sr-only">{t("search.section.actions")}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -134,14 +154,14 @@ function MemberRow({
                   <DropdownMenuItem
                     onClick={() => onChangeRole(member.pubkey, "admin")}
                   >
-                    Make Admin
+                    {t("settings.invites.makeAdmin")}
                   </DropdownMenuItem>
                 ) : null}
                 {member.role === "admin" ? (
                   <DropdownMenuItem
                     onClick={() => onChangeRole(member.pubkey, "member")}
                   >
-                    Make Member
+                    {t("settings.invites.makeMember")}
                   </DropdownMenuItem>
                 ) : null}
               </>
@@ -152,7 +172,7 @@ function MemberRow({
                 className="text-destructive focus:text-destructive"
                 onClick={() => onRemove(member)}
               >
-                Remove
+                {t("invites.remove.action")}
               </DropdownMenuItem>
             ) : null}
           </DropdownMenuContent>
@@ -169,6 +189,7 @@ export function CommunityMembersCard({
 }: {
   currentPubkey?: string;
 }) {
+  const t = useT();
   const membersQuery = useRelayMembersQuery();
   const myMembershipQuery = useMyRelayMembershipQuery();
   const changeRoleMutation = useChangeRelayMemberRoleMutation();
@@ -201,11 +222,15 @@ export function CommunityMembersCard({
       { pubkey, newRole },
       {
         onSuccess: () => {
-          toast.success(`Role changed to ${newRole}`);
+          toast.success(
+            t("community.toast.roleChanged", { role: newRole }),
+          );
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error ? error.message : "Failed to change role",
+            error instanceof Error
+              ? error.message
+              : t("community.toast.roleChangeFailed"),
           );
         },
       },
@@ -219,11 +244,11 @@ export function CommunityMembersCard({
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold tracking-tight">
-              Community Members
+              {t("settings.invites.members")}
             </h2>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage who has access to this relay.
+            {t("settings.invites.description")}
           </p>
         </div>
 
@@ -234,7 +259,7 @@ export function CommunityMembersCard({
             size="sm"
           >
             <Plus className="h-4 w-4" />
-            Add Member
+            {t("invites.add.submit")}
           </Button>
         ) : null}
       </div>
@@ -246,7 +271,9 @@ export function CommunityMembersCard({
       ) : null}
 
       {membersQuery.isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">Loading members...</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {t("channel.loadingMembers")}
+        </p>
       ) : members.length > 0 ? (
         <div className="mt-4 space-y-2">
           {members.map((member) => (
@@ -264,7 +291,9 @@ export function CommunityMembersCard({
           ))}
         </div>
       ) : membersQuery.isSuccess ? (
-        <p className="mt-4 text-sm text-muted-foreground">No members yet.</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {t("settings.invites.empty")}
+        </p>
       ) : null}
 
       <AddMemberDialog

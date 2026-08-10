@@ -103,14 +103,17 @@ test("validateLinkedAgentRuntimeEdit allows available runtime changes", () => {
 });
 
 test("validateLinkedAgentRuntimeEdit rejects unavailable linked-agent runtime changes", () => {
-  assert.equal(
+  assert.deepEqual(
     validateLinkedAgentRuntimeEdit({
       input: updateInput({ runtime: "claude" }),
       managedAgent: agent(),
       previousPersona: persona({ runtime: "goose" }),
       runtimes: [runtime({ availability: "cli_missing", command: null })],
     }),
-    "Claude Code is not available. Install it before saving this linked agent.",
+    {
+      kind: "runtimeUnavailable",
+      runtimeLabel: "Claude Code",
+    },
   );
 });
 

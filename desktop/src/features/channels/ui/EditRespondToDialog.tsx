@@ -5,9 +5,10 @@ import { useAgentAccessOwnerOnlyQuery } from "@/features/agents/useAgentAccessOw
 import { runLocationForBackend } from "@/features/agents/lib/agentAccessWarning";
 import {
   CreateAgentRespondToField,
-  OWNER_ONLY_ACCESS_DISABLED_REASON,
+  OWNER_ONLY_ACCESS_DISABLED_REASON_KEY,
 } from "@/features/agents/ui/RespondToField";
 import type { ManagedAgent, RespondToMode } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function EditRespondToDialog({
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }) {
+  const t = useT();
   const updateMutation = useUpdateManagedAgentMutation();
   const { data: agentAccessOwnerOnly } = useAgentAccessOwnerOnlyQuery({
     enabled: open,
@@ -63,16 +65,18 @@ export function EditRespondToDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage agent access</DialogTitle>
+          <DialogTitle>{t("agents.manageAgentAccess")}</DialogTitle>
           <DialogDescription>
-            Choose who can send instructions to {agent?.name ?? "this agent"}.
+            {t("agents.manageAgentAccessDesc", {
+              name: agent?.name ?? t("agents.thisAgent"),
+            })}
           </DialogDescription>
         </DialogHeader>
         <CreateAgentRespondToField
           allowlist={accessLocked ? [] : respondToAllowlist}
           disabled={updateMutation.isPending || accessLocked}
           disabledReason={
-            accessLocked ? OWNER_ONLY_ACCESS_DISABLED_REASON : undefined
+            accessLocked ? t(OWNER_ONLY_ACCESS_DISABLED_REASON_KEY) : undefined
           }
           mode={accessLocked ? "owner-only" : respondTo}
           onAllowlistChange={setRespondToAllowlist}
@@ -92,7 +96,7 @@ export function EditRespondToDialog({
             type="button"
             variant="outline"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             disabled={
@@ -102,7 +106,9 @@ export function EditRespondToDialog({
             size="sm"
             type="button"
           >
-            {updateMutation.isPending ? "Saving..." : "Save access"}
+            {updateMutation.isPending
+              ? t("common.saving")
+              : t("agents.saveAccess")}
           </Button>
         </div>
       </DialogContent>

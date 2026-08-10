@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { invokeTauri } from "@/shared/api/tauri";
+import { detectLocale, translate } from "@/shared/i18n";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import {
   MediaContextMenu,
@@ -48,23 +49,30 @@ export function useVideoContextMenu(
     const entries: MediaContextMenuItem[] = [];
     if (downloadUrl) {
       entries.push({
-        label: "Download video",
+        label: translate(detectLocale(), "video.download"),
         onSelect: () => {
           close();
           invokeTauri("download_file", {
             url: downloadUrl,
             filename: resolveVideoDownloadFilename(filename),
           }).catch((err: unknown) => {
-            toast.error(err instanceof Error ? err.message : "Download failed");
+            toast.error(
+              err instanceof Error
+                ? err.message
+                : translate(detectLocale(), "common.downloadFailed"),
+            );
           });
         },
       });
     }
     entries.push({
-      label: "Copy link",
+      label: translate(detectLocale(), "common.copyLink"),
       onSelect: () => {
         close();
-        copyTextToClipboard(downloadUrl ?? src, "Link copied to clipboard");
+        copyTextToClipboard(
+          downloadUrl ?? src,
+          translate(detectLocale(), "common.linkCopied"),
+        );
       },
     });
     return entries;

@@ -1,4 +1,5 @@
 import type { ManagedAgentBackend } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 
 import { summarizeRunOn } from "./runOnSummary";
 
@@ -21,17 +22,20 @@ export function RunOnSummarySection({
 }: {
   backend: ManagedAgentBackend;
 }) {
-  const summary = summarizeRunOn(backend);
+  const t = useT();
+  const summary = summarizeRunOn(backend, t);
 
   return (
     <div className="space-y-1.5" data-testid="edit-agent-run-on">
-      <span className="text-sm font-medium text-foreground">Run on</span>
+      <span className="text-sm font-medium text-foreground">
+        {t("agents.runOn")}
+      </span>
       {summary.location === "local" ? (
         <p
           className="text-sm text-muted-foreground"
           data-testid="edit-agent-run-on-location"
         >
-          This computer
+          {t("agents.thisComputer")}
         </p>
       ) : (
         <div className="space-y-2 rounded-2xl border border-border bg-muted/30 px-4 py-3">
@@ -58,15 +62,13 @@ export function RunOnSummarySection({
             </dl>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No saved settings — the provider applies its defaults.
+              {t("agents.noSavedProviderSettings")}
             </p>
           )}
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        These are the settings saved when the agent was created. Where an agent
-        runs can&apos;t be changed afterwards — create a new agent to run
-        somewhere else.
+        {t("agents.runOnImmutableHint")}
       </p>
     </div>
   );

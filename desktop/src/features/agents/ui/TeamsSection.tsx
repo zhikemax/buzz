@@ -118,7 +118,7 @@ export function TeamsSection({
                         onClick={() => onAddToChannel(team)}
                       >
                         <Rocket className="h-4 w-4" />
-                        Deploy to channel
+                        {t("agents.deployToChannel")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -167,10 +167,11 @@ export function TeamsSection({
               >
                 {hasMissingPersonas ? (
                   <p className="border-t border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                    {missingPersonaCount} agent
-                    {missingPersonaCount === 1 ? "" : "s"} in this team{" "}
-                    {missingPersonaCount === 1 ? "is" : "are"} no longer in your
-                    agents. Edit the team to fix it before deploying or sharing.
+                    {missingPersonaCount === 1
+                      ? t("agents.teamMissingInListOne")
+                      : t("agents.teamMissingInListMany", {
+                          count: missingPersonaCount,
+                        })}
                   </p>
                 ) : null}
               </TeamIdentityCard>

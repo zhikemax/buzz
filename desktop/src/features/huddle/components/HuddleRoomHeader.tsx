@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { useProfileQuery, useSelfProfileCache } from "@/features/profile/hooks";
 import { useIdentityQuery } from "@/shared/api/hooks";
+import { useT } from "@/shared/i18n";
 import { useHuddle } from "../HuddleContext";
 import type { HuddleAgentVoiceSettings } from "./AgentVoiceMenu";
 import { HuddleParticipantsControl } from "./ParticipantList";
@@ -28,6 +29,7 @@ function isVisible(state: HuddleRosterState | null) {
 
 /** Larger, persistent roster for the companion huddle room window. */
 export function HuddleRoomHeader() {
+  const t = useT();
   const {
     activeSpeakers,
     interruptAgentSpeech,
@@ -50,7 +52,7 @@ export function HuddleRoomHeader() {
     return levels;
   }, [currentPubkey, isMuted, micConnected, micLevel, speakerLevels]);
   const handleRemoveAgent = React.useCallback(async (pubkey: string) => {
-    if (!window.confirm("Remove this agent from the huddle?")) return;
+    if (!window.confirm(t("huddle.participants.removeAgentConfirm"))) return;
     try {
       await invoke("remove_agent_from_huddle", {
         agentPubkey: pubkey,
@@ -71,7 +73,7 @@ export function HuddleRoomHeader() {
     } catch (error) {
       console.error("Failed to remove agent from huddle:", error);
     }
-  }, []);
+  }, [t]);
 
   React.useEffect(() => {
     let disposed = false;

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/shared/lib/cn";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
+import { useT } from "@/shared/i18n";
 
 import { MaskedLinkTooltip } from "./MaskedLinkTooltip";
 import {
@@ -34,6 +35,7 @@ export function ExternalLinkAnchor({
   isLinearLink: boolean;
   label: string;
 }) {
+  const t = useT();
   const [menu, setMenu] = React.useState<MediaContextMenuPosition | null>(null);
   const closeMenu = React.useCallback(() => setMenu(null), []);
   useDismissMediaContextMenu(Boolean(menu), closeMenu);
@@ -68,19 +70,19 @@ export function ExternalLinkAnchor({
           dataAttributes={["data-link-context-menu"]}
           items={[
             {
-              label: "Open link",
+              label: t("common.openLink"),
               onSelect: () => {
                 closeMenu();
                 void openUrl(href).catch(() => {
-                  toast.error("Failed to open link");
+                  toast.error(t("common.failedOpenLink"));
                 });
               },
             },
             {
-              label: "Copy link",
+              label: t("common.copyLink"),
               onSelect: () => {
                 closeMenu();
-                copyTextToClipboard(href, "Link copied to clipboard");
+                copyTextToClipboard(href, t("common.linkCopied"));
               },
             },
           ]}

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
 import { buildHuddleChannelName } from "./huddleChannelName.ts";
+
+const t = (key, params) => translate("en", key, params);
 
 const SELF = "a".repeat(64);
 const OTHER = "b".repeat(64);
@@ -53,6 +56,7 @@ test("buildHuddleChannelName names one-on-one DMs with current user first", () =
         member({ pubkey: SELF, displayName: "Kenny Lopez" }),
         member({ pubkey: OTHER, displayName: "Tyler Durden" }),
       ],
+      t,
     }),
     "Kenny <> Tyler huddle",
   );
@@ -67,6 +71,7 @@ test("buildHuddleChannelName falls back to channel participant names", () => {
         participantPubkeys: [OTHER, SELF],
       }),
       currentPubkey: SELF,
+      t,
     }),
     "Self <> Other huddle",
   );
@@ -81,6 +86,7 @@ test("buildHuddleChannelName keeps group DM participants readable", () => {
         participantPubkeys: [OTHER, SELF, THIRD],
       }),
       currentPubkey: SELF,
+      t,
     }),
     "Self <> Other <> Third huddle",
   );
@@ -91,6 +97,7 @@ test("buildHuddleChannelName names stream huddles after the channel", () => {
     buildHuddleChannelName({
       channel: channel({ name: "engineering" }),
       currentPubkey: SELF,
+      t,
     }),
     "engineering huddle",
   );

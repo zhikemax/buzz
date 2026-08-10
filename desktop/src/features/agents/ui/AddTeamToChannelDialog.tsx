@@ -24,6 +24,7 @@ import type {
   Channel,
   ChannelRole,
 } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -51,6 +52,7 @@ export function AddTeamToChannelDialog({
   onOpenChange,
   onDeployed,
 }: AddTeamToChannelDialogProps) {
+  const t = useT();
   const { globalConfig } = useGlobalAgentConfig();
   const channelsQuery = useChannelsQuery();
   const providersQuery = useAvailableAcpRuntimes();
@@ -167,11 +169,11 @@ export function AddTeamToChannelDialog({
       <DialogContent className="max-w-xl overflow-hidden p-0">
         <div className="flex max-h-[85vh] flex-col">
           <DialogHeader className="shrink-0 border-b border-border/60 px-6 py-5 pr-14">
-            <DialogTitle>Deploy team to channel</DialogTitle>
+            <DialogTitle>{t("agents.deployTeamTitle")}</DialogTitle>
             <DialogDescription>
-              Create and attach one agent per member of{" "}
-              <strong>{team?.name ?? "this team"}</strong> to the selected
-              channel.
+              {t("agents.deployTeamDesc", {
+                name: team?.name ?? t("agents.thisTeam"),
+              })}
             </DialogDescription>
           </DialogHeader>
 
@@ -179,7 +181,7 @@ export function AddTeamToChannelDialog({
             {resolved.length > 0 ? (
               <div className="space-y-1.5">
                 <span className="text-sm font-medium">
-                  Agents ({resolved.length})
+                  {t("agents.agentsCount", { count: resolved.length })}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {resolved.map((persona) => (
@@ -203,7 +205,7 @@ export function AddTeamToChannelDialog({
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium" htmlFor="team-channel-id">
-                Channel
+                {t("agents.channelLabel")}
               </label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs"
@@ -213,7 +215,7 @@ export function AddTeamToChannelDialog({
                 value={channelId}
               >
                 {channels.length === 0 ? (
-                  <option value="">No channels available</option>
+                  <option value="">{t("agents.noChannelsAvailable")}</option>
                 ) : null}
                 {channels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
@@ -228,7 +230,7 @@ export function AddTeamToChannelDialog({
                 className="text-sm font-medium"
                 htmlFor="team-channel-role"
               >
-                Role
+                {t("agents.roleLabel")}
               </label>
               <select
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs"
@@ -240,25 +242,25 @@ export function AddTeamToChannelDialog({
                 value={role}
               >
                 <option value="bot">bot</option>
-                <option value="member">member</option>
-                <option value="guest">guest</option>
-                <option value="admin">admin</option>
+                <option value="member">{t("channel.roleMember")}</option>
+                <option value="guest">{t("channel.roleGuest")}</option>
+                <option value="admin">{t("channel.roleAdmin")}</option>
               </select>
             </div>
 
             {missingPersonaCount > 0 ? (
               <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                This team references {missingPersonaCount} agent
-                {missingPersonaCount === 1 ? "" : "s"} that{" "}
-                {missingPersonaCount === 1 ? "is" : "are"} no longer in My
-                Agents. Add them back or edit the team before deploying.
+                {missingPersonaCount === 1
+                  ? t("agents.teamMissingBeforeDeployOne")
+                  : t("agents.teamMissingBeforeDeployMany", {
+                      count: String(missingPersonaCount),
+                    })}
               </p>
             ) : null}
 
             {!defaultProvider && !providersQuery.isLoading ? (
               <p className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                No ACP runtimes found. Make sure an agent runtime (e.g. Goose)
-                is installed.
+                {t("agents.noAcpRuntimes")}
               </p>
             ) : null}
 
@@ -294,7 +296,7 @@ export function AddTeamToChannelDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={
@@ -312,8 +314,12 @@ export function AddTeamToChannelDialog({
               type="button"
             >
               {deployMutation.isPending
-                ? "Deploying..."
-                : `Deploy ${resolved.length} ${resolved.length === 1 ? "agent" : "agents"}`}
+                ? t("agents.deploying")
+                : resolved.length === 1
+                  ? t("agents.deployAgentsOne")
+                  : t("agents.deployAgentsMany", {
+                      count: String(resolved.length),
+                    })}
             </Button>
           </div>
         </div>

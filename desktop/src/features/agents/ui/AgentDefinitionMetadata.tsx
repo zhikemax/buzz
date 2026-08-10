@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 
 export function AgentDefinitionMetadata({
@@ -11,18 +12,19 @@ export function AgentDefinitionMetadata({
   model: string | null;
   runtime: string | null;
 }) {
+  const t = useT();
   const items = [
     {
-      label: "Type",
-      value: isBuiltIn ? "Built-in agent" : "Custom agent",
+      label: t("agents.metaType"),
+      value: isBuiltIn ? t("agents.builtInAgent") : t("agents.customAgent"),
     },
     {
-      label: "Preferred model",
-      value: model ?? "Use app default",
+      label: t("agents.preferredModel"),
+      value: model ?? t("agents.useAppDefault"),
     },
     {
-      label: "Preferred runtime",
-      value: runtime ?? "Use app default",
+      label: t("agents.preferredRuntime"),
+      value: runtime ?? t("agents.useAppDefault"),
     },
   ];
 

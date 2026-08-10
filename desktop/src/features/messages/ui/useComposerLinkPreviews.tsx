@@ -23,6 +23,7 @@ import {
   AttachmentTrigger,
 } from "@/shared/ui/attachment";
 import { Button } from "@/shared/ui/button";
+import { useT } from "@/shared/i18n";
 
 function previewHostname(href: string): string {
   try {
@@ -37,6 +38,7 @@ function ComposerLinkPreviewCard({
 }: {
   preview: ResolvedLinkPreview;
 }) {
+  const t = useT();
   const imageSrc = preview.imageState === "image" ? preview.imageDataUrl : null;
   const [failedImageSrc, setFailedImageSrc] = React.useState<string | null>(
     null,
@@ -71,7 +73,7 @@ function ComposerLinkPreviewCard({
           />
         ) : preview.imageState === "pending" ? (
           <LoaderCircle
-            aria-label="Loading link preview"
+            aria-label={t("msg.linkPreview.loading")}
             className="size-4 animate-spin"
           />
         ) : preview.faviconDataUrl ? (
@@ -98,12 +100,14 @@ function ComposerLinkPreviewCard({
       </AttachmentContent>
       <AttachmentTrigger asChild>
         <a
-          aria-label={`Open ${preview.title}`}
+          aria-label={t("msg.linkPreview.openAria", { title: preview.title })}
           href={preview.href}
           rel="noreferrer"
           target="_blank"
         >
-          <span className="sr-only">Open {preview.title}</span>
+          <span className="sr-only">
+            {t("msg.linkPreview.openAria", { title: preview.title })}
+          </span>
         </a>
       </AttachmentTrigger>
     </Attachment>
@@ -132,6 +136,7 @@ async function uploadDataUrl(
 }
 
 export function useComposerLinkPreviews(content: string) {
+  const t = useT();
   const [suppressed, setSuppressed] = React.useState(false);
   const candidates = React.useMemo(
     () =>
@@ -227,12 +232,12 @@ export function useComposerLinkPreviews(content: string) {
           ))}
         </AttachmentGroup>
         <Button
-          aria-label="Hide all link previews"
+          aria-label={t("msg.linkPreview.hideAllAria")}
           className="mt-1 size-5 shrink-0 rounded-full text-muted-foreground hover:text-foreground [&_svg]:size-3"
           data-testid="composer-hide-link-previews"
           onClick={hideAll}
           size="icon-xs"
-          title="Hide previews"
+          title={t("msg.linkPreview.hide")}
           type="button"
           variant="ghost"
         >

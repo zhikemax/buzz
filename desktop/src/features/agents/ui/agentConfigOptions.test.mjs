@@ -245,6 +245,7 @@ test("formatModelDiscoveryErrorStatus returns a non-null status for runtime unav
     const status = formatModelDiscoveryErrorStatus(
       new Error(`Runtime not available: ${availability}`),
       "anthropic",
+      t,
     );
     assert.ok(
       status !== null,

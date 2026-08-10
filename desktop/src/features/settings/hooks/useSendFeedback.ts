@@ -9,6 +9,7 @@ import { relayClient } from "@/shared/api/relayClient";
 import { signRelayEvent, uploadMediaBytes } from "@/shared/api/tauri";
 import { pickAndUploadImage } from "@/shared/api/tauriMedia";
 import { KIND_PRODUCT_FEEDBACK } from "@/shared/constants/kinds";
+import { detectLocale, translate } from "@/shared/i18n";
 
 async function collectDiagnostics(): Promise<string> {
   let appVersion = "unknown";
@@ -122,8 +123,8 @@ export function useSendFeedback() {
       });
       await relayClient.publishEvent(
         event,
-        "Timed out while sending feedback.",
-        "Failed to send feedback.",
+        translate(detectLocale(), "settings.feedback.sendTimeout"),
+        translate(detectLocale(), "settings.feedback.sendFailed"),
       );
     },
     onSuccess: reset,

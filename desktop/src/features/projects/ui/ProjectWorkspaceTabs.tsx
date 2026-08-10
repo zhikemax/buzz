@@ -29,6 +29,7 @@ import {
 } from "@/features/projects/lib/projectRepoAvailability";
 import { useMemberChannelIds } from "@/features/projects/useRepositoryAccess";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent } from "@/shared/ui/tabs";
 import { findReadmeFile } from "./ProjectReadmePanel";
@@ -253,6 +254,7 @@ export function WorkspaceTabs({
   );
   const isPullRequestSelected = Boolean(selectedPullRequest);
   const [selectedTab, setSelectedTab] = React.useState("overview");
+  const t = useT();
   const [pullRequestCommentTarget, setPullRequestCommentTarget] =
     React.useState<{
       anchor: ProjectPullRequestCommentAnchor;
@@ -335,11 +337,11 @@ export function WorkspaceTabs({
           <ProjectTabsList prsActive={isPullRequestSelected} />
           {onOpenTerminal ? (
             <Button
-              aria-label="Open terminal"
+              aria-label={t("projects.terminal.openAria")}
               className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
               onClick={() => onOpenTerminal()}
               size="icon"
-              title={terminalTitle ?? "Open terminal"}
+              title={terminalTitle ?? t("projects.terminal.openTitle")}
               variant="ghost"
             >
               <SquareTerminal className="h-[1.125rem] w-[1.125rem]" />
@@ -351,11 +353,13 @@ export function WorkspaceTabs({
               disabled={updatePullRequestAction.pending}
               onClick={updatePullRequestAction.onUpdate}
               size="sm"
-              title="Publish the pushed commit to this pull request"
+              title={t("projects.sync.updatePrTitle")}
               variant="outline"
             >
               <RefreshCw className="h-4 w-4" />
-              {updatePullRequestAction.pending ? "Updating…" : "Update PR"}
+              {updatePullRequestAction.pending
+                ? t("projects.sync.updating")
+                : t("projects.sync.updatePr")}
             </Button>
           ) : null}
         </div>
@@ -483,11 +487,11 @@ export function WorkspaceTabs({
             !createPullRequestAction ||
             createPullRequestAction.projects.length === 0
           }
-          actionLabel="Pull Request"
-          actionTitle="Choose a repository and branches to compare."
+          actionLabel={t("projects.pr.panel.actionLabel")}
+          actionTitle={t("projects.pr.panel.actionTitle")}
           icon={GitPullRequest}
           onAction={() => setCreatePullRequestOpen(true)}
-          title="Pull Requests"
+          title={t("projects.pr.panel.title")}
         />
         <PullRequestsPanel
           error={pullRequestsError}
@@ -509,10 +513,10 @@ export function WorkspaceTabs({
       >
         <WorkItemListHeader
           actionDisabled={createIssueAction.pending}
-          actionLabel="Issues"
+          actionLabel={t("projects.issue.panel.actionLabel")}
           icon={CircleDot}
           onAction={() => setCreateIssueOpen(true)}
-          title="Issues"
+          title={t("projects.issue.panel.title")}
         />
         <ProjectIssuesPanel
           onSelectedIssueIdChange={onSelectedIssueIdChange}
@@ -543,7 +547,7 @@ export function WorkspaceTabs({
           sourceControls={sourceControls}
           unavailableMessage={
             externalHost
-              ? `Not mirrored on Buzz. Repository files are hosted on ${externalHost}.`
+              ? t("projects.sync.notMirrored", { host: externalHost })
               : undefined
           }
         />

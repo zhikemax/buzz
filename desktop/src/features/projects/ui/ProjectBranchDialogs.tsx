@@ -6,6 +6,7 @@ import {
   projectBranchNameError,
 } from "@/features/projects/lib/projectBranches";
 import { projectBranchErrorMessage } from "@/features/projects/lib/projectBranchErrors";
+import { useT } from "@/shared/i18n";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -43,9 +44,14 @@ export function CreateProjectBranchDialog({
   sourceBranch: string;
   sourceCommit: string | null;
 }) {
+  const t = useT();
   const [branchName, setBranchName] = React.useState("");
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const validationError = projectBranchNameError(branchName, existingBranches);
+  const validationError = projectBranchNameError(
+    branchName,
+    existingBranches,
+    t,
+  );
 
   React.useEffect(() => {
     if (!open) return;
@@ -63,7 +69,11 @@ export function CreateProjectBranchDialog({
       onOpenChange(false);
     } catch (error) {
       setSubmitError(
-        projectBranchErrorMessage(error, "Failed to create branch."),
+        projectBranchErrorMessage(
+          error,
+          t("projects.branch.create.failed"),
+          t,
+        ),
       );
     }
   }
@@ -78,25 +88,30 @@ export function CreateProjectBranchDialog({
       <DialogContent data-testid="project-create-branch-dialog">
         <form className="space-y-5" onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create branch</DialogTitle>
+            <DialogTitle>{t("projects.branch.create.title")}</DialogTitle>
             <DialogDescription>
-              Create a remote branch from{" "}
-              <span className="font-mono text-foreground">{sourceBranch}</span>
-              {sourceCommit ? ` at ${sourceCommit.slice(0, 7)}` : ""}.
+              {t("projects.branch.create.description", {
+                branch: sourceBranch,
+                atCommit: sourceCommit
+                  ? t("projects.branch.create.atCommit", {
+                      commit: sourceCommit.slice(0, 7),
+                    })
+                  : "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <label
             className="block space-y-2 text-sm font-medium"
             htmlFor="project-create-branch-name"
           >
-            <span>Branch name</span>
+            <span>{t("projects.branch.create.nameLabel")}</span>
             <Input
               autoFocus
               data-testid="project-create-branch-name"
               disabled={pending}
               id="project-create-branch-name"
               onChange={(event) => setBranchName(event.target.value)}
-              placeholder="feature/my-change"
+              placeholder={t("projects.branch.create.namePlaceholder")}
               value={branchName}
             />
           </label>
@@ -105,7 +120,7 @@ export function CreateProjectBranchDialog({
           ) : null}
           {!sourceCommit ? (
             <p className="text-sm text-destructive">
-              Refresh the repository before creating a branch.
+              {t("projects.branch.create.refreshFirst")}
             </p>
           ) : null}
           {submitError ? (
@@ -118,7 +133,7 @@ export function CreateProjectBranchDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               data-testid="project-create-branch-submit"
@@ -126,7 +141,9 @@ export function CreateProjectBranchDialog({
               type="submit"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {pending ? "Creating…" : "Create branch"}
+              {pending
+                ? t("projects.branch.create.submitting")
+                : t("projects.branch.create.submit")}
             </Button>
           </DialogFooter>
         </form>
@@ -148,6 +165,7 @@ export function DeleteProjectBranchDialog({
   open: boolean;
   pending: boolean;
 }) {
+  const t = useT();
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -161,7 +179,11 @@ export function DeleteProjectBranchDialog({
       onOpenChange(false);
     } catch (error) {
       setSubmitError(
-        projectBranchErrorMessage(error, "Failed to delete branch."),
+        projectBranchErrorMessage(
+          error,
+          t("projects.branch.delete.failed"),
+          t,
+        ),
       );
     }
   }
@@ -175,11 +197,9 @@ export function DeleteProjectBranchDialog({
     >
       <AlertDialogContent data-testid="project-delete-branch-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete branch?</AlertDialogTitle>
+          <AlertDialogTitle>{t("projects.delete.branch.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Delete the remote branch{" "}
-            <span className="font-mono text-foreground">{branch}</span>. This
-            cannot be undone and may be rejected by repository protection rules.
+            {t("projects.delete.branch.description", { branch })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {submitError ? (
@@ -188,7 +208,7 @@ export function DeleteProjectBranchDialog({
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button disabled={pending} type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           </AlertDialogCancel>
           <Button
@@ -199,7 +219,9 @@ export function DeleteProjectBranchDialog({
             variant="destructive"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {pending ? "Deleting…" : "Delete branch"}
+            {pending
+              ? t("projects.delete.branch.deleting")
+              : t("projects.delete.branch.action")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

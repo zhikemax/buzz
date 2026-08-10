@@ -43,6 +43,7 @@ import { useProfilePanel } from "@/shared/context/ProfilePanelContext";
 import { sendChannelMessage } from "@/shared/api/tauri";
 import type { Channel, RelayEvent } from "@/shared/api/types";
 import { KIND_STREAM_MESSAGE } from "@/shared/constants/kinds";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 
@@ -180,6 +181,7 @@ export function UserProfilePopover({
   role,
   botIdenticonValue,
 }: UserProfilePopoverProps) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState<
     "message" | "huddle" | "wave" | null
@@ -350,7 +352,7 @@ export function UserProfilePopover({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to open direct message.",
+          : t("msg.newDm.openFailed"),
       );
     } finally {
       if (isMountedRef.current) {
@@ -364,6 +366,7 @@ export function UserProfilePopover({
     pendingAction,
     pubkey,
     showMessageAction,
+    t,
   ]);
 
   const handleHuddle = React.useCallback(async () => {
@@ -485,7 +488,7 @@ export function UserProfilePopover({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to send wave.",
+        error instanceof Error ? error.message : t("profile.waveFailed"),
       );
     } finally {
       if (isMountedRef.current) {
@@ -505,6 +508,7 @@ export function UserProfilePopover({
     selfProfileQuery.data?.displayName,
     showHumanProfileActions,
     showProfileActions,
+    t,
   ]);
 
   React.useEffect(() => {
@@ -688,7 +692,7 @@ export function UserProfilePopover({
                 <div className="flex gap-2">
                   {showHumanProfileActions ? (
                     <Button
-                      aria-label="Wave"
+                      aria-label={t("profile.wave")}
                       className="buzz-wave-hover-trigger shrink-0 px-3 transition-transform duration-100 ease-out motion-reduce:transition-none motion-safe:active:scale-[0.97]"
                       data-testid={`user-profile-popover-wave-${pubkey}`}
                       disabled={
@@ -738,7 +742,7 @@ export function UserProfilePopover({
                       ) : (
                         <MessageSquare />
                       )}
-                      Message
+                      {t("profile.message")}
                     </Button>
                   ) : null}
                   {showHuddleAction ? (
@@ -765,7 +769,7 @@ export function UserProfilePopover({
                       ) : (
                         <Headphones />
                       )}
-                      Huddle
+                      {t("huddle.title")}
                     </Button>
                   ) : null}
                 </div>

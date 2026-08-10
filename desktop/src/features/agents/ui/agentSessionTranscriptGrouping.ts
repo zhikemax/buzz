@@ -1,3 +1,4 @@
+import { detectLocale, translate, type TranslateFn } from "@/shared/i18n";
 import { buildTranscriptState } from "./agentSessionTranscript";
 import type { ObserverEvent, TranscriptItem } from "./agentSessionTypes";
 import { classifyToolItem } from "./agentSessionToolClassifier";
@@ -363,20 +364,25 @@ function sameKindKey(item: TranscriptItem): string | null {
 }
 
 function sameKindLabel(item: TranscriptItem, count: number): string {
-  if (item.type !== "tool") return `${count} items`;
-  const descriptor = item.descriptor ?? classifyToolItem(item);
+  const t: TranslateFn = (key, params) => translate(detectLocale(), key, params);
+  if (item.type !== "tool") return t("agents.nItemsGeneric", { count });
+  const descriptor = classifyToolItem(item, t);
   const renderClass = getRenderClass(item);
   const label = descriptor.label;
   if (renderClass === "file-edit") {
-    return `Edited ${count} file${count === 1 ? "" : "s"}`;
+    return count === 1
+      ? t("agents.editedOneFile")
+      : t("agents.editedNFiles", { count });
   }
-  if (renderClass === "file-read") return `Read ${count} files`;
+  if (renderClass === "file-read") return t("agents.readNFiles", { count });
   if (renderClass === "skill-read") {
-    return `Read ${count} skill${count === 1 ? "" : "s"}`;
+    return count === 1
+      ? t("agents.readOneSkill")
+      : t("agents.readNSkills", { count });
   }
-  if (renderClass === "shell") return `Ran ${count} commands`;
-  if (renderClass === "relay-op") return `Ran ${count} Buzz relay ops`;
-  return `${label} ×${count}`;
+  if (renderClass === "shell") return t("agents.ranNCommands", { count });
+  if (renderClass === "relay-op") return t("agents.ranNRelayOps", { count });
+  return t("agents.labelTimesCount", { label, count });
 }
 
 function minimumSummaryRunLength(item: TranscriptItem): number {

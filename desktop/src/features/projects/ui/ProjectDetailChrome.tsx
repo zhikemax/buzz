@@ -2,6 +2,7 @@ import { ChevronRight, FolderGit2, MessageSquare } from "lucide-react";
 import type * as React from "react";
 
 import type { Project } from "@/features/projects/hooks";
+import { useT } from "@/shared/i18n";
 import { channelChrome, topChromeInset } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
@@ -29,6 +30,7 @@ export function ProjectDetailChrome({
   onGoProjects: () => void;
   project: Project;
 }) {
+  const t = useT();
   return (
     <div
       className={cn(
@@ -43,7 +45,7 @@ export function ProjectDetailChrome({
         data-tauri-drag-region
       >
         <nav
-          aria-label="Project breadcrumb"
+          aria-label={t("projects.detail.breadcrumb")}
           className="-ml-1 flex min-w-0 items-center gap-0.5 text-xs text-muted-foreground"
         >
           <button
@@ -52,7 +54,7 @@ export function ProjectDetailChrome({
             type="button"
           >
             <FolderGit2 className="h-3.5 w-3.5" />
-            Projects
+            {t("projects.overview.projects")}
           </button>
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/60" />
           {activeWorkItemCrumb ? (
@@ -114,7 +116,7 @@ export function ProjectDetailChrome({
             variant="outline"
           >
             <MessageSquare className="h-4 w-4" />
-            Open Discussion
+            {t("projects.detail.openDiscussion")}
           </Button>
         ) : null}
       </div>

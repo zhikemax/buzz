@@ -5,6 +5,7 @@ import type {
   TeamSnapshotImportPreview,
   TeamSnapshotImportResult,
 } from "@/shared/api/tauriTeams";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -45,6 +46,7 @@ export function TeamSnapshotImportDialog({
   onConfirm,
   onOpenChange,
 }: TeamSnapshotImportDialogProps) {
+  const t = useT();
   const [keepAllowlist, setKeepAllowlist] = React.useState(false);
 
   // Reset choice whenever the dialog opens with new data.
@@ -67,7 +69,9 @@ export function TeamSnapshotImportDialog({
         <DialogHeader className="space-y-0">
           <div className="flex items-center justify-between gap-4">
             <DialogTitle>
-              {phase === "result" ? "Team imported" : "Import team snapshot"}
+              {phase === "result"
+                ? t("agents.teamImported")
+                : t("agents.importTeamSnapshot")}
             </DialogTitle>
             <div className="flex items-center gap-2">
               {phase === "preview" ? (
@@ -81,7 +85,7 @@ export function TeamSnapshotImportDialog({
                     variant="default"
                   >
                     <Upload className="h-4 w-4" />
-                    Import
+                    {t("agents.import")}
                   </Button>
                   <DialogClose asChild>
                     <Button
@@ -90,14 +94,14 @@ export function TeamSnapshotImportDialog({
                       type="button"
                       variant="ghost"
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </DialogClose>
                 </>
               ) : (
                 <DialogClose asChild>
                   <Button size="sm" type="button" variant="ghost">
-                    Close
+                    {t("common.close")}
                   </Button>
                 </DialogClose>
               )}
@@ -126,7 +130,7 @@ export function TeamSnapshotImportDialog({
           </div>
         ) : phase === "confirming" ? (
           <div className="py-4 text-center text-sm text-muted-foreground">
-            Creating team…
+            {t("agents.creatingTeam")}
           </div>
         ) : result !== null ? (
           <ResultBody result={result} />
@@ -147,6 +151,7 @@ function PreviewBody({
   keepAllowlist: boolean;
   onKeepAllowlistChange: (v: boolean) => void;
 }) {
+  const t = useT();
   return (
     <div className="space-y-4 py-1">
       {/* Team identity */}
@@ -163,15 +168,14 @@ function PreviewBody({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        A new team will be created with fresh keypairs for all members. The
-        imported team is independent of the source — identity never travels.
+        {t("agents.importTeamFreshKeypairs")}
       </p>
 
       {/* Member list */}
       {preview.members.length > 0 ? (
         <div className="space-y-1">
           <p className="text-sm font-medium">
-            Members ({preview.members.length})
+            {t("agents.membersCount", { count: preview.members.length })}
           </p>
           <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-border p-2">
             {preview.members.map((member, idx) => (
@@ -195,10 +199,11 @@ function PreviewBody({
           className="space-y-2 rounded-md border border-border p-3"
           data-testid="team-snapshot-import-allowlist-section"
         >
-          <p className="text-sm font-medium">Respond-to allowlist</p>
+          <p className="text-sm font-medium">
+            {t("agents.respondToAllowlistTitle")}
+          </p>
           <p className="text-xs text-muted-foreground">
-            This snapshot includes source-environment pubkey allowlists for one
-            or more members. Those identities are not meaningful on your relay.
+            {t("agents.teamAllowlistReview")}
           </p>
           <div className="flex flex-col gap-1.5">
             <label className="flex cursor-pointer items-center gap-2">
@@ -209,9 +214,7 @@ function PreviewBody({
                 onChange={() => onKeepAllowlistChange(false)}
                 type="radio"
               />
-              <span className="text-sm">
-                <strong>Clear</strong> — start with empty allowlists (safer)
-              </span>
+              <span className="text-sm">{t("agents.clearAllowlists")}</span>
             </label>
             <label className="flex cursor-pointer items-center gap-2">
               <input
@@ -221,9 +224,7 @@ function PreviewBody({
                 onChange={() => onKeepAllowlistChange(true)}
                 type="radio"
               />
-              <span className="text-sm">
-                <strong>Keep</strong> — copy source allowlists to new members
-              </span>
+              <span className="text-sm">{t("agents.keepAllowlists")}</span>
             </label>
           </div>
         </div>
@@ -235,6 +236,7 @@ function PreviewBody({
 // ── Result body ───────────────────────────────────────────────────────────────
 
 function ResultBody({ result }: { result: TeamSnapshotImportResult }) {
+  const t = useT();
   const totalMemoryErrors = result.members.reduce(
     (sum, m) => sum + m.memoryErrors.length,
     0,
@@ -250,24 +252,41 @@ function ResultBody({ result }: { result: TeamSnapshotImportResult }) {
   const hasPartialMemory =
     totalMemoryTotal > 0 && totalMemoryWritten < totalMemoryTotal;
   const profileSyncFailures = getProfileSyncFailures(result.members);
+  const failureCount = profileSyncFailures.length;
+  const membersWord =
+    result.members.length === 1 ? t("agents.member") : t("agents.members");
+  const failureMembersWord =
+    failureCount === 1 ? t("agents.member") : t("agents.members");
+  const profilesWord =
+    failureCount === 1 ? t("agents.aProfile") : t("agents.profiles");
+  const memoryEntries =
+    totalMemoryTotal === 1 ? t("agents.entry") : t("agents.entries");
 
   return (
     <div className="space-y-3 py-1">
       <p className="text-sm">
-        <span className="font-medium">{result.team.name}</span> was created
-        {profileSyncFailures.length > 0
-          ? `, but ${profileSyncFailures.length} member${profileSyncFailures.length === 1 ? "" : "s"} failed to publish ${profileSyncFailures.length === 1 ? "a profile" : "profiles"}.`
-          : ` successfully with ${result.members.length} member${result.members.length === 1 ? "" : "s"}.`}
+        {failureCount > 0
+          ? t("agents.teamCreatedWithProfileFailures", {
+              name: result.team.name,
+              count: failureCount,
+              members: failureMembersWord,
+              profiles: profilesWord,
+            })
+          : t("agents.teamCreatedOk", {
+              name: result.team.name,
+              count: result.members.length,
+              members: membersWord,
+            })}
       </p>
 
-      {profileSyncFailures.length > 0 ? (
+      {failureCount > 0 ? (
         <div
           className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400"
           data-testid="team-snapshot-import-profile-sync-errors"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex flex-col gap-1">
-            <p>Profile sync failed for:</p>
+            <p>{t("agents.profileSyncFailedFor")}</p>
             <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-xs">
               {profileSyncFailures.map((m) => (
                 <li key={m.pubkey} className="break-all font-mono">
@@ -288,10 +307,11 @@ function ResultBody({ result }: { result: TeamSnapshotImportResult }) {
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <div className="flex flex-col gap-1">
               <p>
-                Memory partially restored: {totalMemoryWritten} of{" "}
-                {totalMemoryTotal} entr
-                {totalMemoryTotal === 1 ? "y" : "ies"} written across all
-                members.
+                {t("agents.memoryPartialAcrossMembers", {
+                  written: totalMemoryWritten,
+                  total: totalMemoryTotal,
+                  entries: memoryEntries,
+                })}
               </p>
               {totalMemoryErrors > 0 ? (
                 <ul
@@ -318,8 +338,10 @@ function ResultBody({ result }: { result: TeamSnapshotImportResult }) {
             className="text-xs text-muted-foreground"
             data-testid="team-snapshot-import-memory-success"
           >
-            {totalMemoryTotal} memory entr
-            {totalMemoryTotal === 1 ? "y" : "ies"} restored across all members.
+            {t("agents.memoryRestoredAcrossMembers", {
+              count: totalMemoryTotal,
+              entries: memoryEntries,
+            })}
           </p>
         )
       ) : null}

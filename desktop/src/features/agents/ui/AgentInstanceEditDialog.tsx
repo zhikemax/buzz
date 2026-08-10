@@ -92,7 +92,7 @@ import { AdvancedRequiredBadge } from "./AdvancedRequiredBadge";
 import { showAgentProfileSyncWarning } from "./agentProfileSyncWarning";
 import { AddCustomHarnessDialog } from "./AddCustomHarnessDialog";
 import {
-  ADD_CUSTOM_HARNESS_OPTION,
+  addCustomHarnessOption,
   runtimeDropdownAction,
   usePendingHarnessSelection,
 } from "./addCustomHarness";
@@ -240,7 +240,7 @@ export function AgentInstanceEditDialog({
   const runtimeDropdownOptions: PersonaDropdownOption[] = React.useMemo(() => {
     const options: PersonaDropdownOption[] = [
       ...sortedRuntimes.map((candidate) => ({
-        label: formatRuntimeOptionLabel(candidate),
+        label: formatRuntimeOptionLabel(candidate, t),
         value: candidate.id,
       })),
       { label: t("agents.customCommand"), value: "custom" },
@@ -255,7 +255,7 @@ export function AgentInstanceEditDialog({
         value: selectedRuntimeId,
       });
     }
-    options.push(ADD_CUSTOM_HARNESS_OPTION);
+    options.push(addCustomHarnessOption(t));
     return options;
   }, [sortedRuntimes, selectedRuntimeId, t]);
 
@@ -738,7 +738,11 @@ export function AgentInstanceEditDialog({
           autoRestartOnConfigChange,
         );
       }
-      showAgentProfileSyncWarning(result.agent.name, result.profileSyncError);
+      showAgentProfileSyncWarning(
+        result.agent.name,
+        result.profileSyncError,
+        t,
+      );
       handleOpenChange(false);
       onUpdated?.(result.agent);
       // The auto-restart policy deliberately never fires for a stopped or
@@ -800,6 +804,7 @@ export function AgentInstanceEditDialog({
     isCustomEditing: isCustomModelEditing,
     model,
     provider: providerForDiscovery,
+    t,
   });
   const modelDropdownOptions = buildModelDropdownOptions({
     allowCustom: !isRelayMesh,
@@ -808,6 +813,7 @@ export function AgentInstanceEditDialog({
     loading: modelDiscoveryLoading && discoveredModelOptions === null,
     loadingValue: MODEL_DISCOVERY_LOADING_VALUE,
     options: effectiveModelOptions,
+    t,
   });
   const modelStatusMessage = resolveModelFieldStatusMessage({
     discoveredModelOptions,

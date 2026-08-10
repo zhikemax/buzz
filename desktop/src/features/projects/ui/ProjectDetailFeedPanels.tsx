@@ -18,6 +18,7 @@ import {
 } from "@/features/profile/lib/identity";
 import { GitBranch, GitCommitHorizontal } from "lucide-react";
 
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { CopyCommitHashButton } from "./ProjectCommitCopyButton";
 import {
@@ -144,6 +145,7 @@ export function ActivityPanel({
   repoContributors: ProjectRepoContributor[];
   viewerGitIdentity?: ViewerGitIdentity | null;
 }) {
+  const t = useT();
   const commits = snapshot?.commits ?? [];
   const commitAuthorPubkeys = commitAuthorPubkeysFromPullRequests(
     pullRequests ?? [],
@@ -155,7 +157,7 @@ export function ActivityPanel({
         className={PROJECT_DETAIL_PANEL_MESSAGE_CLASS}
         data-project-detail-panel
       >
-        Loading activity…
+        {t("projects.activity.loading")}
       </p>
     );
   }
@@ -167,8 +169,8 @@ export function ActivityPanel({
         data-project-detail-panel
       >
         {error
-          ? "Could not load repository activity from git."
-          : "No commits are available yet."}
+          ? t("projects.error.loadActivity")
+          : t("projects.empty.noCommits")}
       </p>
     );
   }
@@ -178,7 +180,7 @@ export function ActivityPanel({
       <div className="flex min-h-14 items-center gap-2 border-border/50 border-b px-4 py-3">
         <GitCommitHorizontal className="h-4 w-4 text-muted-foreground" />
         <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-          Commits
+          {t("projects.tab.commits")}
         </h3>
       </div>
       <div className="divide-y divide-border/50">

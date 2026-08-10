@@ -84,11 +84,13 @@ export function ChannelScreenHeader({
   const terminalButton = activeChannel ? (
     <Button
       aria-label={
-        terminalPanel.mode === "closed" ? "Open Buzz Term" : "Hide Buzz Term"
+        terminalPanel.mode === "closed"
+          ? t("channel.openBuzzTerm")
+          : t("channel.hideBuzzTerm")
       }
       onClick={toggleTerminalPanel}
       size="icon"
-      title="Buzz Term (⌘J)"
+      title={t("channel.buzzTermShortcut")}
       type="button"
       variant={terminalPanel.mode === "closed" ? "outline" : "secondary"}
     >

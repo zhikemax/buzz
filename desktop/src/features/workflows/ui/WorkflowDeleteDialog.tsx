@@ -1,4 +1,5 @@
 import type { Workflow } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,21 +25,23 @@ export function WorkflowDeleteDialog({
   onConfirm,
   onOpenChange,
 }: WorkflowDeleteDialogProps) {
+  const t = useT();
+
   return (
     <AlertDialog onOpenChange={onOpenChange} open={open}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete workflow?</AlertDialogTitle>
+          <AlertDialogTitle>{t("workflows.delete.title")}</AlertDialogTitle>
           <AlertDialogDescription>
             {workflow
-              ? `Delete "${workflow.name}". This will stop all future triggers and remove the workflow permanently.`
-              : "Delete this workflow."}
+              ? t("workflows.delete.named", { name: workflow.name })
+              : t("workflows.delete.generic")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
@@ -51,7 +54,7 @@ export function WorkflowDeleteDialog({
               type="button"
               variant="destructive"
             >
-              Delete
+              {t("common.delete")}
             </Button>
           </AlertDialogAction>
         </AlertDialogFooter>

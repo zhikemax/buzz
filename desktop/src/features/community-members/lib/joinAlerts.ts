@@ -24,6 +24,7 @@
  */
 
 import { setLocalStorageItemWithRecovery } from "@/shared/lib/localStorageQuota";
+import { detectLocale, translate } from "@/shared/i18n";
 
 const JOIN_ALERT_STORAGE_PREFIX = "buzz-community-join-seen.v1";
 
@@ -201,12 +202,12 @@ export function reconcileJoinAlertLedger({
 export function joinAlertTitle(communityName: string | null | undefined) {
   const trimmed = communityName?.trim();
   return trimmed && trimmed.length > 0
-    ? `New member in ${trimmed}`
-    : "New community member";
+    ? translate(detectLocale(), "invites.join.titleNamed", { name: trimmed })
+    : translate(detectLocale(), "invites.join.title");
 }
 
 export function joinAlertBody(displayName: string) {
-  return `${displayName} joined`;
+  return translate(detectLocale(), "invites.join.body", { name: displayName });
 }
 
 /**
@@ -223,5 +224,5 @@ export function joinAlertBody(displayName: string) {
 export const JOIN_ALERT_MAX_INDIVIDUAL = 3;
 
 export function joinAlertSummaryBody(count: number) {
-  return `${count} new members joined`;
+  return translate(detectLocale(), "invites.join.summary", { count });
 }

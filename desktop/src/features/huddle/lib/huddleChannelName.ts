@@ -1,10 +1,12 @@
 import type { Channel, ChannelMember } from "@/shared/api/types";
+import { detectLocale, translate, type TranslateFn } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 
 type BuildHuddleChannelNameInput = {
   channel: Channel;
   currentPubkey?: string;
   members?: readonly ChannelMember[];
+  t?: TranslateFn;
 };
 
 function firstName(label: string): string {
@@ -40,10 +42,13 @@ export function buildHuddleChannelName({
   channel,
   currentPubkey,
   members = [],
+  t = (key, params) => translate(detectLocale(), key, params),
 }: BuildHuddleChannelNameInput): string {
   if (channel.channelType !== "dm") {
     const channelName = channel.name.trim();
-    return channelName ? `${channelName} huddle` : "huddle";
+    return channelName
+      ? t("huddle.channelName.named", { name: channelName })
+      : t("huddle.channelName.generic");
   }
 
   const membersByPubkey = new Map(
@@ -70,8 +75,8 @@ export function buildHuddleChannelName({
     .filter(Boolean);
 
   if (names.length === 0) {
-    return "huddle";
+    return t("huddle.channelName.generic");
   }
 
-  return `${names.join(" <> ")} huddle`;
+  return t("huddle.channelName.named", { name: names.join(" <> ") });
 }

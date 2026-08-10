@@ -1,5 +1,6 @@
 import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useChannelsQuery } from "@/features/channels/hooks";
+import { useT } from "@/shared/i18n";
 
 export function ProjectOriginReference({
   agentName,
@@ -8,6 +9,7 @@ export function ProjectOriginReference({
   agentName?: string | null;
   channelId?: string | null;
 }) {
+  const t = useT();
   const { goChannel } = useAppNavigation();
   const channelsQuery = useChannelsQuery({ enabled: Boolean(channelId) });
   const channel = channelsQuery.data?.find(
@@ -18,12 +20,14 @@ export function ProjectOriginReference({
     return (
       <span
         className="inline-flex min-w-0 items-center gap-1"
-        title="Origin is claimed by the event author and is not relay-verified."
+        title={t("projects.origin.claimedTitle")}
       >
-        <span>started from</span>
+        <span>{t("projects.origin.startedFrom")}</span>
         {channel ? (
           <button
-            aria-label={`Open author-claimed origin channel #${channel.name}`}
+            aria-label={t("projects.origin.openChannelAria", {
+              name: channel.name,
+            })}
             className="truncate font-medium text-foreground underline-offset-2 hover:underline"
             onClick={() => void goChannel(channel.id)}
             type="button"
@@ -31,9 +35,9 @@ export function ProjectOriginReference({
             #{channel.name}
           </button>
         ) : (
-          <span>a public channel</span>
+          <span>{t("projects.origin.publicChannel")}</span>
         )}
-        <span>(author-claimed)</span>
+        <span>{t("projects.origin.authorClaimed")}</span>
       </span>
     );
   }
@@ -42,9 +46,9 @@ export function ProjectOriginReference({
     return (
       <span
         className="inline-flex min-w-0 items-center gap-1"
-        title="The private conversation identifier is intentionally omitted."
+        title={t("projects.origin.omittedTitle")}
       >
-        <span>started privately with</span>
+        <span>{t("projects.origin.startedPrivatelyWith")}</span>
         <span className="truncate font-medium text-foreground">
           {agentName}
         </span>

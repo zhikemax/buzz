@@ -26,6 +26,7 @@ import type {
   ManagedAgent,
   ManagedAgentRuntimeStatus,
 } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 
 type UseMembersSidebarActionsOptions = {
   channelId: string | null;
@@ -55,6 +56,7 @@ export function useMembersSidebarActions({
   onOpenChange,
   relayUrl,
 }: UseMembersSidebarActionsOptions) {
+  const t = useT();
   const queryClient = useQueryClient();
   const removeMemberMutation = useRemoveChannelMemberMutation(channelId);
   const startManagedAgentMutation = useStartManagedAgentMutation();
@@ -162,10 +164,10 @@ export function useMembersSidebarActions({
         });
         setActionNoticeMessage(
           action === "stop"
-            ? `Stopped ${agent.name} in this community.`
+            ? t("agents.stoppedNamedInCommunity", { name: agent.name })
             : action === "restart"
-              ? `Restarted ${agent.name} in this community.`
-              : `Started ${agent.name} in this community.`,
+              ? t("agents.restartedNamedInCommunity", { name: agent.name })
+              : t("agents.startedNamedInCommunity", { name: agent.name }),
         );
         return;
       }
@@ -176,14 +178,15 @@ export function useMembersSidebarActions({
           ...EMPTY_AGENT_CONTEXT,
           preferredChannelId: channelId,
           stopManagedAgent: stopManagedAgentMutation.mutateAsync,
+          t,
         });
         if (agent.backend.type === "local") {
           clearActiveTurnsForAgentOnStop(agent.pubkey);
         }
         setActionNoticeMessage(
           agent.backend.type === "provider"
-            ? `Shutdown command sent to ${agent.name}.`
-            : `Stopped ${agent.name}.`,
+            ? t("agents.shutdownSentToNamed", { name: agent.name })
+            : t("agents.stoppedNamed", { name: agent.name }),
         );
         return;
       }
@@ -192,10 +195,12 @@ export function useMembersSidebarActions({
         agent,
         startManagedAgent: startManagedAgentMutation.mutateAsync,
       });
-      setActionNoticeMessage(getLifecycleSuccessMessage(agent));
+      setActionNoticeMessage(getLifecycleSuccessMessage(agent, t));
     } catch (error) {
       setActionErrorMessage(
-        error instanceof Error ? error.message : "Failed to control agent.",
+        error instanceof Error
+          ? error.message
+          : t("agents.failedControlAgent"),
       );
     } finally {
       setActiveActionKey(null);
@@ -215,9 +220,11 @@ export function useMembersSidebarActions({
       },
       actionKey: "bulk-respawn",
       agents: controllableManagedBots,
-      failureMessage: "Failed to respawn agent.",
+      failureMessage: t("agents.failedRespawnAgent"),
       successMessage: (count) =>
-        `Spawned or respawned ${formatCountLabel(count, "agent", "agents")}.`,
+        count === 1
+          ? t("agents.spawnedOrRespawnedCountOne")
+          : t("agents.spawnedOrRespawnedCountMany", { count }),
     });
   }
 
@@ -229,6 +236,7 @@ export function useMembersSidebarActions({
           ...EMPTY_AGENT_CONTEXT,
           preferredChannelId: channelId,
           stopManagedAgent: stopManagedAgentMutation.mutateAsync,
+          t,
         });
         if (agent.backend.type === "local") {
           clearActiveTurnsForAgentOnStop(agent.pubkey);
@@ -237,13 +245,11 @@ export function useMembersSidebarActions({
       },
       actionKey: "bulk-stop",
       agents: stoppableManagedBots,
-      failureMessage: "Failed to stop agent.",
+      failureMessage: t("agents.failedStopAgent"),
       successMessage: (count) =>
-        `Stopped or requested shutdown for ${formatCountLabel(
-          count,
-          "agent",
-          "agents",
-        )}.`,
+        count === 1
+          ? t("agents.stoppedOrShutdownCountOne")
+          : t("agents.stoppedOrShutdownCountMany", { count }),
     });
   }
 
@@ -255,10 +261,12 @@ export function useMembersSidebarActions({
       },
       actionKey: "bulk-remove",
       agents: removableManagedBots,
-      failureMessage: "Failed to remove bot from channel.",
+      failureMessage: t("agents.failedRemoveBotFromChannel"),
       onSettled: invalidateSidebarQueries,
       successMessage: (count) =>
-        `Removed ${formatCountLabel(count, "managed bot", "managed bots")} from this channel.`,
+        count === 1
+          ? t("agents.removedManagedBotsCountOne")
+          : t("agents.removedManagedBotsCountMany", { count }),
     });
   }
 
@@ -275,14 +283,22 @@ export function useMembersSidebarActions({
         })
         .catch((error: unknown) => {
           setActionErrorMessage(
-            error instanceof Error ? error.message : "Failed to remove member.",
+            error instanceof Error
+              ? error.message
+              : t("agents.failedRemoveMember"),
           );
         })
         .finally(() => {
           setActiveActionKey(null);
         });
     },
-    [clearActionFeedback, currentPubkey, onOpenChange, removeMemberMutation],
+    [
+      clearActionFeedback,
+      currentPubkey,
+      onOpenChange,
+      removeMemberMutation,
+      t,
+    ],
   );
 
   async function removeManagedBotMembership(pubkey: string) {
@@ -319,14 +335,17 @@ export function useMembersSidebarActions({
   };
 }
 
-function getLifecycleSuccessMessage(agent: ManagedAgent) {
+function getLifecycleSuccessMessage(
+  agent: ManagedAgent,
+  t: TranslateFn,
+) {
   if (agent.backend.type === "provider") {
-    return `Deployed ${agent.name}.`;
+    return t("agents.deployedNamed", { name: agent.name });
   }
 
   return agent.status === "stopped"
-    ? `Respawned ${agent.name}.`
-    : `Spawned ${agent.name}.`;
+    ? t("agents.respawnedNamed", { name: agent.name })
+    : t("agents.spawnedNamed", { name: agent.name });
 }
 
 function formatFailureSummary(
@@ -347,8 +366,4 @@ function formatFailureSummary(
   return failures
     .map((failure) => `${failure.name}: ${failure.error}`)
     .join("; ");
-}
-
-function formatCountLabel(count: number, singular: string, plural: string) {
-  return `${count} ${count === 1 ? singular : plural}`;
 }

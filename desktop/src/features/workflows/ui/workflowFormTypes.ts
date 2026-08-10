@@ -1,5 +1,7 @@
 import { stringify as yamlStringify, parse as yamlParse } from "yaml";
 
+import type { MessageKey, TranslateFn } from "@/shared/i18n";
+
 export const TRIGGER_TYPES = [
   "message_posted",
   "reaction_added",
@@ -71,23 +73,43 @@ export const DEFAULT_FORM_STATE: WorkflowFormState = {
   steps: [],
 };
 
-export const TRIGGER_LABELS: Record<TriggerType, string> = {
-  message_posted: "Message Posted",
-  reaction_added: "Reaction Added",
-  diff_posted: "Diff Posted",
-  webhook: "Webhook",
-  schedule: "Schedule",
+export const TRIGGER_LABEL_KEYS: Record<TriggerType, MessageKey> = {
+  message_posted: "workflows.trigger.message_posted",
+  reaction_added: "workflows.trigger.reaction_added",
+  diff_posted: "workflows.trigger.diff_posted",
+  webhook: "workflows.trigger.webhook",
+  schedule: "workflows.trigger.schedule",
 };
 
-export const ACTION_LABELS: Record<ActionType, string> = {
-  delay: "Delay",
-  send_message: "Send Message",
-  send_dm: "Send DM",
-  call_webhook: "Call Webhook",
-  request_approval: "Request Approval",
-  add_reaction: "Add Reaction",
-  set_channel_topic: "Set Channel Topic",
+export const ACTION_LABEL_KEYS: Record<ActionType, MessageKey> = {
+  delay: "workflows.action.delay",
+  send_message: "workflows.action.send_message",
+  send_dm: "workflows.action.send_dm",
+  call_webhook: "workflows.action.call_webhook",
+  request_approval: "workflows.action.request_approval",
+  add_reaction: "workflows.action.add_reaction",
+  set_channel_topic: "workflows.action.set_channel_topic",
 };
+
+export function triggerLabel(t: TranslateFn, type: TriggerType): string {
+  return t(TRIGGER_LABEL_KEYS[type]);
+}
+
+export function actionLabel(t: TranslateFn, type: ActionType): string {
+  return t(ACTION_LABEL_KEYS[type]);
+}
+
+export type WorkflowParseError = {
+  key: MessageKey;
+  params?: Record<string, string>;
+};
+
+export function formatWorkflowParseError(
+  t: TranslateFn,
+  error: WorkflowParseError,
+): string {
+  return t(error.key, error.params);
+}
 
 function toHeaderRows(
   headers: unknown,
@@ -225,18 +247,23 @@ export function nextStepId(existingSteps: StepFormState[]): string {
 
 export function yamlToFormState(
   yaml: string,
-): { ok: true; state: WorkflowFormState } | { ok: false; error: string } {
+):
+  | { ok: true; state: WorkflowFormState }
+  | { ok: false; error: WorkflowParseError } {
   try {
     const parsed = yamlParse(yaml);
     if (!parsed || typeof parsed !== "object") {
-      return { ok: false, error: "YAML must be an object" };
+      return { ok: false, error: { key: "workflows.error.yamlMustBeObject" } };
     }
 
     const triggerOn = parsed.trigger?.on;
     if (triggerOn && !TRIGGER_TYPES.includes(triggerOn as TriggerType)) {
       return {
         ok: false,
-        error: `Unsupported trigger type "${triggerOn}" — use the YAML editor`,
+        error: {
+          key: "workflows.error.unsupportedTrigger",
+          params: { type: String(triggerOn) },
+        },
       };
     }
     const trigger: TriggerConfig = {
@@ -249,14 +276,17 @@ export function yamlToFormState(
 
     const rawSteps = parsed.steps ?? [];
     if (!Array.isArray(rawSteps)) {
-      return { ok: false, error: "steps must be a list" };
+      return { ok: false, error: { key: "workflows.error.stepsMustBeList" } };
     }
 
     for (const step of rawSteps) {
       if (step.action && !ACTION_TYPES.includes(step.action as ActionType)) {
         return {
           ok: false,
-          error: `Unsupported action type "${step.action}" — use the YAML editor`,
+          error: {
+            key: "workflows.error.unsupportedAction",
+            params: { action: String(step.action) },
+          },
         };
       }
     }
@@ -300,10 +330,7 @@ export function yamlToFormState(
         steps,
       },
     };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Invalid YAML",
-    };
+  } catch {
+    return { ok: false, error: { key: "workflows.error.invalidYaml" } };
   }
 }

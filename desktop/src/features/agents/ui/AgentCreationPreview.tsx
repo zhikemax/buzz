@@ -27,6 +27,7 @@ import {
 } from "@/features/profile/ui/ProfileAvatarEditor.utils";
 import { AvatarCustomColorPanel } from "@/features/profile/ui/AvatarCustomColorPanel";
 import { useAvatarUpload } from "@/features/profile/useAvatarUpload";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { useEmojiBurst } from "@/shared/ui/EmojiBurstProvider";
@@ -77,6 +78,7 @@ export function AgentCreationPreview({
   testIdPrefix?: string;
   variant?: "compact" | "default";
 }) {
+  const t = useT();
   const [isDragOverAvatar, setIsDragOverAvatar] = React.useState(false);
   const [isAvatarMenuOpen, setIsAvatarMenuOpen] = React.useState(false);
   const [avatarUrlDraft, setAvatarUrlDraft] = React.useState("");
@@ -435,7 +437,7 @@ export function AgentCreationPreview({
     >
       {/* Single drop zone covering the entire popover */}
       <fieldset
-        aria-label={`${assetLabelTitle} picker`}
+        aria-label={t("agents.avatarPickerAria", { asset: assetLabelTitle })}
         className={cn(
           "relative m-0 rounded-lg border-2 border-transparent p-0 transition-[border-color,background-color] duration-150",
           isPopoverDragOver && "border-dashed border-primary bg-primary/5",
@@ -466,13 +468,13 @@ export function AgentCreationPreview({
               className="relative z-10 h-full rounded-md bg-transparent text-xs font-medium shadow-none transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               value="image"
             >
-              Image
+              {t("agents.tabImage")}
             </TabsTrigger>
             <TabsTrigger
               className="relative z-10 h-full rounded-md bg-transparent text-xs font-medium shadow-none transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               value="emoji"
             >
-              Emoji
+              {t("agents.tabEmoji")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -498,7 +500,7 @@ export function AgentCreationPreview({
                 <UploadCloud className="h-5 w-5 text-muted-foreground" />
               )}
               <span className="text-xs font-medium text-muted-foreground">
-                {isUploading ? "Uploading..." : "Drop or browse"}
+                {isUploading ? t("common.uploading") : t("agents.dropOrBrowse")}
               </span>
             </button>
 
@@ -517,7 +519,7 @@ export function AgentCreationPreview({
                     applyAvatarUrl();
                   }
                 }}
-                placeholder="Paste a URL"
+                placeholder={t("agents.pasteUrl")}
                 spellCheck={false}
                 type="url"
                 value={avatarUrlDraft}
@@ -539,7 +541,7 @@ export function AgentCreationPreview({
                       size="xs"
                       type="button"
                     >
-                      Apply
+                      {t("agents.apply")}
                     </Button>
                   </motion.div>
                 ) : null}
@@ -562,7 +564,7 @@ export function AgentCreationPreview({
                 }}
                 type="button"
               >
-                Remove {assetLabel}
+                {t("agents.removeAsset", { asset: assetLabel })}
               </button>
             ) : null}
           </div>
@@ -627,9 +629,9 @@ export function AgentCreationPreview({
                     aria-label={
                       isCustomSwatch
                         ? selectedEmoji
-                          ? "Choose custom color"
-                          : "Choose an emoji first"
-                        : `Use ${swatch} background`
+                          ? t("agents.chooseCustomColor")
+                          : t("agents.chooseEmojiFirst")
+                        : t("agents.useColorBackground", { color: swatch })
                     }
                     aria-pressed={isSelected}
                     className={cn(

@@ -784,6 +784,7 @@ export function DiagnosticsFocusedView({
   logLoading: boolean;
   managedAgent: ManagedAgent | undefined;
 }) {
+  const t = useT();
   const hasLog = canOpenAgentLogs && managedAgent !== undefined;
   const lastErrorField = fields.find((field) => field.label === "Last error");
   const detailFields = fields.filter(
@@ -804,7 +805,7 @@ export function DiagnosticsFocusedView({
         >
           <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
           <div className="min-w-0">
-            <AlertTitle>Last error</AlertTitle>
+            <AlertTitle>{t("profile.lastError")}</AlertTitle>
             <AlertDescription className="wrap-break-word">
               {lastErrorField.displayValue}
             </AlertDescription>

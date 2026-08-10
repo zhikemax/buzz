@@ -5,6 +5,7 @@ import { formatRelativeTimeCompact as formatRelativeTime } from "@/features/mess
 import type { AgentNoteGroup } from "@/features/pulse/lib/groupAgentNotes";
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
 import type { UserProfileSummary } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { Markdown } from "@/shared/ui/markdown";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 import { truncatePubkey } from "@/shared/lib/pubkey";
@@ -30,6 +31,7 @@ export function AgentActivityCard({
   profile,
   agentStatus,
 }: AgentActivityCardProps) {
+  const t = useT();
   const [expanded, setExpanded] = React.useState(false);
   const displayName = profile?.displayName ?? truncatePubkey(group.pubkey);
   const avatarUrl = profile?.avatarUrl ?? null;
@@ -48,7 +50,7 @@ export function AgentActivityCard({
           role={"bot" as const}
         >
           <button
-            aria-label={`Open profile for ${displayName}`}
+            aria-label={t("pulse.agent.openProfileAria", { name: displayName })}
             className="relative flex shrink-0 rounded-xl pt-1 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             type="button"
           >
@@ -78,7 +80,7 @@ export function AgentActivityCard({
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-            {group.notes.length} updates
+            {t("pulse.agent.updates", { count: group.notes.length })}
           </button>
         ) : null}
       </div>

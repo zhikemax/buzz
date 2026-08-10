@@ -581,7 +581,9 @@ export function MembersSidebar({
             {
               pubkey: user.pubkey,
               error:
-                error instanceof Error ? error.message : "Failed to add agent.",
+                error instanceof Error
+                  ? error.message
+                  : t("agents.failedAddAgent"),
             },
           ]);
         }

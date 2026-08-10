@@ -1,3 +1,5 @@
+import { translate, type TranslateFn } from "@/shared/i18n";
+
 const BRANCH_CHARACTERS = /^[A-Za-z0-9/_.-]+$/;
 
 /** Normalize a branch name using the native command's conservative rules. */
@@ -27,11 +29,12 @@ export function normalizeProjectBranchName(value: string): string | null {
 export function projectBranchNameError(
   value: string,
   existingBranches: string[],
+  t: TranslateFn = translate,
 ): string | null {
   const branch = normalizeProjectBranchName(value);
-  if (!branch) return "Enter a valid Git branch name.";
+  if (!branch) return t("projects.branch.error.invalidName");
   if (existingBranches.includes(branch)) {
-    return "A branch with this name already exists.";
+    return t("projects.branch.error.duplicate");
   }
   return null;
 }
@@ -59,16 +62,19 @@ export function projectBranchOptionsFromSync(
   return projectBranchOptions(remoteBranches, localBranches);
 }
 
-export function projectBranchCreationReason(input: {
-  activeBranch: string | null;
-  activeBranchCommit: string | null;
-  localHead?: string | null;
-}): string | null {
-  if (!input.activeBranch) return "Choose a branch first.";
+export function projectBranchCreationReason(
+  input: {
+    activeBranch: string | null;
+    activeBranchCommit: string | null;
+    localHead?: string | null;
+  },
+  t: TranslateFn = translate,
+): string | null {
+  if (!input.activeBranch) return t("projects.branch.error.chooseFirst");
   if (input.activeBranchCommit) return null;
   return input.localHead
-    ? `Push the first local commit to ${input.activeBranch} before creating another branch.`
-    : "Create the repository's first commit before creating another branch.";
+    ? t("projects.branch.error.pushFirst", { branch: input.activeBranch })
+    : t("projects.branch.error.firstCommitFirst");
 }
 
 /** Resolve a usable default branch when a repository advertises a stale HEAD. */
@@ -90,15 +96,18 @@ export function resolveProjectDefaultBranch(
   return repoState.branches[0]?.name ?? announcedBranch;
 }
 
-export function projectBranchManagementState(input: {
-  activeBranch: string | null;
-  defaultBranch: string | null;
-  branches: Array<{ name: string; commit: string }>;
-  remoteBranch?: string | null;
-  remoteHead?: string | null;
-  snapshotCommit?: string | null;
-  hasOpenPullRequest: boolean;
-}) {
+export function projectBranchManagementState(
+  input: {
+    activeBranch: string | null;
+    defaultBranch: string | null;
+    branches: Array<{ name: string; commit: string }>;
+    remoteBranch?: string | null;
+    remoteHead?: string | null;
+    snapshotCommit?: string | null;
+    hasOpenPullRequest: boolean;
+  },
+  t: TranslateFn = translate,
+) {
   const activeRemoteBranch =
     input.branches.find((branch) => branch.name === input.activeBranch) ?? null;
   const activeBranchCommit =
@@ -107,13 +116,13 @@ export function projectBranchManagementState(input: {
     input.snapshotCommit ??
     null;
   const deleteBranchReason = !input.activeBranch
-    ? "Choose a branch first."
+    ? t("projects.branch.error.chooseFirst")
     : input.activeBranch === input.defaultBranch
-      ? "The repository's default branch cannot be deleted."
+      ? t("projects.branch.error.defaultNotDeletable")
       : !activeRemoteBranch
-        ? "Only a published remote branch can be deleted."
+        ? t("projects.branch.error.onlyPublishedDeletable")
         : input.hasOpenPullRequest
-          ? "Close the branch's pull request before deleting it."
+          ? t("projects.branch.error.closePrFirst")
           : null;
   return { activeBranchCommit, activeRemoteBranch, deleteBranchReason };
 }

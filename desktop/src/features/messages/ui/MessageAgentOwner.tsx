@@ -1,6 +1,7 @@
 import { Bot } from "lucide-react";
 
 import { UserProfilePopover } from "@/features/profile/ui/UserProfilePopover";
+import { useT } from "@/shared/i18n";
 
 export function MessageAgentOwner({
   ownerLabel,
@@ -9,13 +10,17 @@ export function MessageAgentOwner({
   ownerLabel?: string | null;
   ownerPubkey?: string | null;
 }) {
+  const t = useT();
+
   return (
     <span
       className="inline-flex min-w-0 max-w-56 items-baseline gap-1 text-xs leading-4 text-muted-foreground/65"
       data-testid="message-agent-owner"
     >
       <span className="sr-only">
-        {ownerLabel ? "Agent managed by" : "Agent; owner unavailable"}
+        {ownerLabel
+          ? t("msg.agentOwner.managedBySr")
+          : t("msg.agentOwner.unavailableSr")}
       </span>
       {ownerPubkey && ownerLabel ? (
         <>
@@ -24,7 +29,7 @@ export function MessageAgentOwner({
             className="inline-flex shrink-0 items-baseline gap-1 leading-4"
           >
             <Bot className="relative -top-px h-3.5 w-3.5 self-center" />
-            <span>managed by</span>
+            <span>{t("msg.agentOwner.managedBy")}</span>
           </span>
           <UserProfilePopover
             pubkey={ownerPubkey}
@@ -42,7 +47,7 @@ export function MessageAgentOwner({
           className="inline-flex min-w-0 items-center gap-1"
         >
           <Bot className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">owner unavailable</span>
+          <span className="truncate">{t("msg.agentOwner.unavailable")}</span>
         </span>
       )}
     </span>

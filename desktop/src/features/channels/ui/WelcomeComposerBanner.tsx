@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Bot, Check, X } from "lucide-react";
 
 import { ComposerDockGlassBackdrop } from "@/features/messages/ui/ComposerDockBackdrop";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 
 const WELCOME_PERSONA_NAMES = ["Fizz"] as const;
@@ -303,6 +304,7 @@ export function WelcomeComposerBanner({
   settingUp = false,
   state,
 }: WelcomeComposerBannerProps) {
+  const t = useT();
   if (state === "hidden") {
     return null;
   }
@@ -418,7 +420,7 @@ export function WelcomeComposerBanner({
           </AnimatePresence>
           {state === "prompt" && onDismiss && !settingUp ? (
             <button
-              aria-label="Dismiss hint"
+              aria-label={t("welcome.dismissHint")}
               className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               data-testid="welcome-composer-dismiss-button"
               onClick={onDismiss}

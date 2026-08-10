@@ -1,4 +1,5 @@
 import type { ManagedAgentBackend } from "@/shared/api/types";
+import type { TranslateFn } from "@/shared/i18n";
 
 /**
  * A single saved provider-config row, ready to render.
@@ -84,16 +85,17 @@ export function humanizeConfigKey(key: string): string {
     .join(" ");
 }
 
-function displayValue(value: unknown): string {
-  if (value === null || value === undefined) return "Not set";
-  if (typeof value === "string") return value.length > 0 ? value : "Not set";
+function displayValue(value: unknown, t: TranslateFn): string {
+  if (value === null || value === undefined) return t("agents.notSet");
+  if (typeof value === "string")
+    return value.length > 0 ? value : t("agents.notSet");
   if (typeof value === "number" || typeof value === "boolean")
     return String(value);
   // Arrays/objects: summarize, never serialize. A nested structure could
   // carry values its own keys would have redacted.
   return Array.isArray(value)
-    ? `List (${value.length} items)`
-    : "Structured value";
+    ? t("agents.listItems", { count: value.length })
+    : t("agents.structuredValue");
 }
 
 /**
@@ -137,7 +139,10 @@ function compareKeys(a: string, b: string): number {
  * alphabetical spillover, so rendering is deterministic regardless of the
  * JSON key order a given record happened to persist.
  */
-export function summarizeRunOn(backend: ManagedAgentBackend): RunOnSummary {
+export function summarizeRunOn(
+  backend: ManagedAgentBackend,
+  t: TranslateFn,
+): RunOnSummary {
   if (backend.type === "local") return { location: "local" };
   const rows = Object.entries(backend.config ?? {})
     .sort(([a], [b]) => compareKeys(a, b))
@@ -148,7 +153,7 @@ export function summarizeRunOn(backend: ManagedAgentBackend): RunOnSummary {
       return {
         key,
         label: humanizeConfigKey(key),
-        value: redacted ? REDACTED_PLACEHOLDER : displayValue(value),
+        value: redacted ? REDACTED_PLACEHOLDER : displayValue(value, t),
         redacted,
       };
     });

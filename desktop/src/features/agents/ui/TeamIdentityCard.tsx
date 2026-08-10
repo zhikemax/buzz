@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { Info, Link, Users } from "lucide-react";
 
+import { formatAgentModelLabel } from "@/features/agents/lib/formatAgentModelLabel";
 import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import type { AgentPersona } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { Card } from "@/shared/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
-import { formatAgentModelLabel } from "@/features/agents/lib/formatAgentModelLabel";
 import { IdentityInitialsAvatar } from "./IdentityInitialsAvatar";
 
 type TeamIdentityCardProps = {
@@ -37,7 +38,8 @@ export function TeamIdentityCard({
   teamName,
   version,
 }: TeamIdentityCardProps) {
-  const footerModelLabel = getTeamFooterModelLabel(personas);
+  const t = useT();
+  const footerModelLabel = getTeamFooterModelLabel(personas, t);
   const trimmedDescription = description?.trim();
 
   return (
@@ -201,18 +203,18 @@ function TeamAvatarItem({
   );
 }
 
-function getTeamFooterModelLabel(personas: AgentPersona[]) {
+function getTeamFooterModelLabel(personas: AgentPersona[], t: TranslateFn) {
   const modelLabels = personas
     .map((persona) => formatAgentModelLabel(persona.model))
     .filter((model): model is string => Boolean(model));
 
-  if (modelLabels.length === 0) return "Auto";
+  if (modelLabels.length === 0) return t("agents.modelAuto");
 
   const uniqueModels = new Map(
     modelLabels.map((model) => [model.toLowerCase(), model]),
   );
 
   return uniqueModels.size === 1
-    ? (uniqueModels.values().next().value ?? "Auto")
-    : "Mixed models";
+    ? (uniqueModels.values().next().value ?? t("agents.modelAuto"))
+    : t("agents.mixedModels");
 }

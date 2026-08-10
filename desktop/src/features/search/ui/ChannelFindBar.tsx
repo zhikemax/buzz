@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 
@@ -23,6 +24,7 @@ export function ChannelFindBar({
   onQueryChange,
   query,
 }: ChannelFindBarProps) {
+  const t = useT();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -50,8 +52,11 @@ export function ChannelFindBar({
   const matchLabel =
     query.length >= 2
       ? matchCount > 0
-        ? `${matchIndex + 1} of ${matchCount}`
-        : "No results"
+        ? t("channel.find.matchOf", {
+            current: matchIndex + 1,
+            total: matchCount,
+          })
+        : t("channel.find.noResults")
       : null;
 
   return (
@@ -71,7 +76,7 @@ export function ChannelFindBar({
           )}
           onChange={(event) => onQueryChange(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Find in channel"
+          placeholder={t("settings.shortcuts.findInChannel.label")}
           spellCheck={false}
           type="text"
           value={query}
@@ -84,7 +89,7 @@ export function ChannelFindBar({
       </div>
 
       <Button
-        aria-label="Previous match"
+        aria-label={t("channel.find.prevAria")}
         className="h-7 w-7"
         disabled={matchCount === 0}
         onClick={onPrevious}
@@ -95,7 +100,7 @@ export function ChannelFindBar({
       </Button>
 
       <Button
-        aria-label="Next match"
+        aria-label={t("channel.find.nextAria")}
         className="h-7 w-7"
         disabled={matchCount === 0}
         onClick={onNext}
@@ -106,7 +111,7 @@ export function ChannelFindBar({
       </Button>
 
       <Button
-        aria-label="Close find bar"
+        aria-label={t("channel.find.closeAria")}
         className="h-7 w-7"
         onClick={onClose}
         size="icon"

@@ -15,6 +15,7 @@ import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { SelectedRecipientChip } from "@/features/profile/ui/SelectedRecipientChip";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import type { UserSearchResult } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import { Popover, PopoverAnchor, PopoverContent } from "@/shared/ui/popover";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -44,6 +45,7 @@ export function PersonaShareRecipients({
   selectedUsers: UserSearchResult[];
   testIdPrefix?: string;
 }) {
+  const t = useT();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isPickerOpen, setIsPickerOpen] = React.useState(false);
   const recipientFieldRef = React.useRef<HTMLDivElement>(null);
@@ -214,9 +216,9 @@ export function PersonaShareRecipients({
                 }}
                 placeholder={
                   selectedUsers.length >= RECIPIENT_LIMIT
-                    ? "Recipient limit reached"
+                    ? t("agents.recipientLimitReached")
                     : selectedUsers.length === 0
-                      ? "Search people"
+                      ? t("agents.respond.searchPeople")
                       : ""
                 }
                 ref={searchInputRef}
@@ -256,7 +258,7 @@ export function PersonaShareRecipients({
           >
             {isSearchSettling ? (
               <div
-                aria-label="Loading people"
+                aria-label={t("agents.loadingPeople")}
                 className="space-y-3 px-3 py-3"
                 role="status"
               >
@@ -291,7 +293,7 @@ export function PersonaShareRecipients({
               ))
             ) : (
               <p className="px-3 py-3 text-sm text-muted-foreground">
-                No people found.
+                {t("agents.share.noPeopleFound")}
               </p>
             )}
           </div>

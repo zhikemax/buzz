@@ -330,7 +330,9 @@ export function getDefaultLlmProviderLabel(
 ) {
   const trimmedGlobal = (globalProvider ?? "").trim();
   return trimmedGlobal
-    ? `Use agent defaults (${providerDisplayLabel(trimmedGlobal, t)})`
+    ? t("agents.useAgentDefaultsWithValue", {
+        value: providerDisplayLabel(trimmedGlobal, t),
+      })
     : t("agents.config.selectProvider");
 }
 
@@ -346,7 +348,7 @@ export function getDefaultLlmModelLabel(
 ) {
   const trimmedGlobal = (globalModel ?? "").trim();
   return trimmedGlobal
-    ? `Use agent defaults (${trimmedGlobal})`
+    ? t("agents.useAgentDefaultsWithValue", { value: trimmedGlobal })
     : t("settings.agents.defaultModel");
 }
 
@@ -433,7 +435,10 @@ export function getPersonaProviderOptions(
 
   return [
     ...options,
-    { id: trimmedProvider, label: `${trimmedProvider} (current)` },
+    {
+      id: trimmedProvider,
+      label: t("agents.currentRuntime", { id: trimmedProvider }),
+    },
   ];
 }
 
@@ -469,9 +474,13 @@ export function getProviderApiKeyLabel(providerId: string): string | null {
  * (Agent Defaults, agent edit dialog, persona definition dialog).  Exported
  * so the constant is defined once and never duplicated across surfaces.
  */
-export const CARD_MINT_KEY_ANNOTATIONS: Readonly<Record<string, string>> = {
-  OPENAI_API_KEY: "Used for minting agent trading cards",
-};
+export function cardMintKeyAnnotations(
+  t: TranslateFn,
+): Readonly<Record<string, string>> {
+  return {
+    OPENAI_API_KEY: t("agents.cardMintKeyAnnotation"),
+  };
+}
 
 export function shouldClearKnownModelForSelectionScope({
   model,
@@ -490,16 +499,19 @@ export function shouldClearKnownModelForSelectionScope({
   );
 }
 
-export function formatRuntimeOptionLabel(runtime: AcpRuntimeCatalogEntry) {
+export function formatRuntimeOptionLabel(
+  runtime: AcpRuntimeCatalogEntry,
+  t: TranslateFn,
+) {
   const suffix =
     runtime.availability === "adapter_missing"
-      ? " (adapter missing)"
+      ? t("agents.runtimeAdapterMissing")
       : runtime.availability === "adapter_outdated"
-        ? " (adapter outdated)"
+        ? t("agents.runtimeAdapterOutdated")
         : runtime.availability === "cli_missing"
-          ? " (CLI missing)"
+          ? t("agents.runtimeCliMissing")
           : runtime.availability === "not_installed"
-            ? " (not installed)"
+            ? t("agents.runtimeNotInstalled")
             : "";
   return `${runtime.label}${suffix}`;
 }
@@ -541,8 +553,10 @@ export function buildPersonaRuntimeDropdownOptions({
         isCreateMode &&
         defaultRuntimeId !== undefined &&
         candidate.availability !== "available",
-      label: `${formatRuntimeOptionLabel(candidate)}${
-        isCreateMode && candidate.id === defaultRuntimeId ? " (default)" : ""
+      label: `${formatRuntimeOptionLabel(candidate, t)}${
+        isCreateMode && candidate.id === defaultRuntimeId
+          ? t("agents.runtimeDefaultSuffix")
+          : ""
       }`,
       value: candidate.id,
     })),
@@ -553,7 +567,7 @@ export function buildPersonaRuntimeDropdownOptions({
     !runtimeDropdownOptions.some((option) => option.value === currentRuntime)
   ) {
     runtimeDropdownOptions.push({
-      label: `${currentRuntime} (current)`,
+      label: t("agents.currentRuntime", { id: currentRuntime }),
       value: currentRuntime,
     });
   }

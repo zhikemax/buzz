@@ -11,6 +11,7 @@ import {
 
 import { useTheme } from "@/shared/theme/ThemeProvider";
 import { resolveShikiThemeName } from "@/shared/theme/theme-loader";
+import { useT } from "@/shared/i18n";
 import { copyCodeBlockToClipboard } from "@/shared/lib/codeBlockClipboard";
 import { Button } from "@/shared/ui/button";
 import { useSmoothCorners } from "@/shared/ui/smoothCorners";
@@ -71,6 +72,7 @@ export function MarkdownCodeBlock({
   children?: React.ReactNode;
   language?: string;
 }) {
+  const t = useT();
   const [isCopying, setIsCopying] = React.useState(false);
   const codeBlockRef = React.useRef<HTMLPreElement | null>(null);
   const code = React.useMemo(() => getCodeBlockText(children), [children]);
@@ -84,15 +86,15 @@ export function MarkdownCodeBlock({
 
       try {
         await copyCodeBlockToClipboard(code);
-        toast.success("Copied code to clipboard");
+        toast.success(t("common.copiedCode"));
       } catch (error) {
         console.error("Failed to copy code block", error);
-        toast.error("Failed to copy code");
+        toast.error(t("common.failedCopyCode"));
       } finally {
         setIsCopying(false);
       }
     },
-    [code],
+    [code, t],
   );
 
   return (
@@ -112,7 +114,7 @@ export function MarkdownCodeBlock({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            aria-label="Copy code block"
+            aria-label={t("common.copyCodeBlock")}
             className="absolute right-2 top-2 h-7 w-7 bg-background/80 text-muted-foreground opacity-0 shadow-xs ring-1 ring-border/60 backdrop-blur-sm transition-opacity hover:bg-background hover:text-foreground hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 disabled:opacity-60"
             disabled={isCopying}
             onClick={handleCopy}
@@ -121,10 +123,10 @@ export function MarkdownCodeBlock({
             variant="ghost"
           >
             <Copy className="h-4 w-4" />
-            <span className="sr-only">Copy code block</span>
+            <span className="sr-only">{t("common.copyCodeBlock")}</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Copy code</TooltipContent>
+        <TooltipContent>{t("common.copyCode")}</TooltipContent>
       </Tooltip>
     </div>
   );

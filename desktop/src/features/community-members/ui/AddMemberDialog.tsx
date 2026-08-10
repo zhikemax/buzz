@@ -12,6 +12,7 @@ import { useUserSearchQuery } from "@/features/profile/hooks";
 import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { SelectedRecipientChip } from "@/features/profile/ui/SelectedRecipientChip";
 import type { RelayMemberRole, UserSearchResult } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { parsePubkeyInput } from "@/shared/lib/nostrUtils";
 import { truncatePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
@@ -32,17 +33,17 @@ import {
 import { Input } from "@/shared/ui/input";
 import { Popover, PopoverAnchor, PopoverContent } from "@/shared/ui/popover";
 
-const ROLE_OPTIONS: Array<{
+const ROLE_OPTION_KEYS: Array<{
   value: RelayMemberRole;
-  label: string;
+  key: "invites.role.member" | "invites.role.admin";
 }> = [
   {
     value: "member",
-    label: "Member",
+    key: "invites.role.member",
   },
   {
     value: "admin",
-    label: "Admin",
+    key: "invites.role.admin",
   },
 ];
 
@@ -58,13 +59,15 @@ export function DirectAddMemberForm({
   isOwner,
   onAdded,
   showLabel = true,
-  submitLabel = "Add member",
+  submitLabel,
 }: {
   isOwner: boolean;
   onAdded?: () => void;
   showLabel?: boolean;
   submitLabel?: string;
 }) {
+  const t = useT();
+  const resolvedSubmitLabel = submitLabel ?? t("invites.add.submit");
   const addMutation = useAddRelayMemberMutation();
   const membersQuery = useRelayMembersQuery();
   const [query, setQuery] = React.useState("");
@@ -127,11 +130,18 @@ export function DirectAddMemberForm({
     };
   }, [isAlreadyMember, parsedPubkey, searchResults, selectedPubkeys]);
   const roleOptions = React.useMemo(
-    () => ROLE_OPTIONS.filter((option) => isOwner || option.value === "member"),
-    [isOwner],
+    () =>
+      ROLE_OPTION_KEYS.filter(
+        (option) => isOwner || option.value === "member",
+      ).map((option) => ({
+        value: option.value,
+        label: t(option.key),
+      })),
+    [isOwner, t],
   );
   const selectedRoleLabel =
-    roleOptions.find((option) => option.value === role)?.label ?? "Member";
+    roleOptions.find((option) => option.value === role)?.label ??
+    t("invites.role.member");
   const actionTransition = shouldReduceMotion
     ? { duration: 0 }
     : { duration: 0.18, ease: [0.23, 1, 0.32, 1] as const };
@@ -179,11 +189,11 @@ export function DirectAddMemberForm({
       toast.success(
         selectedUsers.length === 1
           ? role === "admin"
-            ? "Admin added"
-            : "Member added"
+            ? t("invites.add.adminAdded")
+            : t("invites.add.memberAdded")
           : role === "admin"
-            ? "Admins added"
-            : "Members added",
+            ? t("invites.add.adminsAdded")
+            : t("invites.add.membersAdded"),
       );
       reset();
       onAdded?.();
@@ -204,7 +214,7 @@ export function DirectAddMemberForm({
       <div className="space-y-1.5">
         {showLabel ? (
           <label className="text-sm font-medium" htmlFor="member-search">
-            Person
+            {t("invites.add.person")}
           </label>
         ) : null}
         <div className="flex gap-2">
@@ -272,7 +282,7 @@ export function DirectAddMemberForm({
                       }}
                       placeholder={
                         selectedUsers.length === 0
-                          ? "Search people or paste an npub"
+                          ? t("invites.add.searchPlaceholder")
                           : ""
                       }
                       ref={searchInputRef}
@@ -293,7 +303,7 @@ export function DirectAddMemberForm({
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <button
-                              aria-label="Choose member role"
+                              aria-label={t("invites.add.roleAria")}
                               className="inline-flex items-center gap-1.5 bg-transparent text-sm text-muted-foreground outline-hidden transition-colors hover:text-foreground focus-visible:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                               data-testid="member-role"
                               disabled={addMutation.isPending}
@@ -348,7 +358,7 @@ export function DirectAddMemberForm({
               >
                 {userSearchQuery.isLoading ? (
                   <p className="px-3 py-3 text-sm text-muted-foreground">
-                    Searching…
+                    {t("invites.add.searching")}
                   </p>
                 ) : searchResults.length > 0 || directResult ? (
                   <>
@@ -368,8 +378,7 @@ export function DirectAddMemberForm({
                   </>
                 ) : (
                   <p className="px-3 py-3 text-sm text-muted-foreground">
-                    No people found. Paste a full npub or hex public key to add
-                    someone directly.
+                    {t("invites.add.noResults")}
                   </p>
                 )}
               </div>
@@ -391,7 +400,9 @@ export function DirectAddMemberForm({
                   size="sm"
                   type="submit"
                 >
-                  {addMutation.isPending ? "Inviting…" : submitLabel}
+                  {addMutation.isPending
+                    ? t("invites.add.inviting")
+                    : resolvedSubmitLabel}
                 </Button>
               </motion.div>
             ) : null}
@@ -399,7 +410,7 @@ export function DirectAddMemberForm({
         </div>
         {isAlreadyMember ? (
           <p className="text-xs text-destructive">
-            This person is already a community member.
+            {t("invites.add.alreadyMember")}
           </p>
         ) : null}
         {userSearchQuery.error instanceof Error ? (
@@ -425,6 +436,7 @@ function SearchResult({
   onSelect: () => void;
   user: UserSearchResult;
 }) {
+  const t = useT();
   const name = formatSearchUserName(user);
   const isDirectPubkey = user.displayName === null && user.nip05Handle === null;
 
@@ -447,7 +459,7 @@ function SearchResult({
       </span>
       {isDirectPubkey ? (
         <span className="shrink-0 text-xs text-muted-foreground">
-          public key
+          {t("invites.add.publicKey")}
         </span>
       ) : null}
     </button>
@@ -463,6 +475,8 @@ export function AddMemberDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
@@ -471,10 +485,8 @@ export function AddMemberDialog({
       >
         <div className="flex max-h-[85vh] flex-col">
           <DialogHeader className="border-b border-border/60 px-6 py-5 pr-14">
-            <DialogTitle>Add member</DialogTitle>
-            <DialogDescription>
-              Add a person to this community by their public key.
-            </DialogDescription>
+            <DialogTitle>{t("invites.add.title")}</DialogTitle>
+            <DialogDescription>{t("invites.add.description")}</DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4">
             <DirectAddMemberForm

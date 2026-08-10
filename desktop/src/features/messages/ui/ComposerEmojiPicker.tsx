@@ -2,6 +2,7 @@ import { SmilePlus } from "lucide-react";
 import * as React from "react";
 
 import { EmojiPicker } from "@/features/custom-emoji/ui/EmojiPicker";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -25,13 +26,14 @@ export const ComposerEmojiPicker = React.memo(function ComposerEmojiPicker({
   onTriggerMouseDown,
   open,
 }: ComposerEmojiPickerProps) {
+  const t = useT();
   return (
     <Popover onOpenChange={onOpenChange} open={open}>
       <Tooltip disableHoverableContent>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              aria-label="Insert emoji"
+              aria-label={t("composer.insertEmoji")}
               data-testid="composer-emoji-button"
               disabled={disabled}
               onMouseDown={onTriggerMouseDown}
@@ -43,7 +45,7 @@ export const ComposerEmojiPicker = React.memo(function ComposerEmojiPicker({
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent>Insert emoji</TooltipContent>
+        <TooltipContent>{t("composer.insertEmoji")}</TooltipContent>
       </Tooltip>
       <PopoverContent
         align="start"

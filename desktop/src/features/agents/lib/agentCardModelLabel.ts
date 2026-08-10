@@ -1,5 +1,6 @@
 import { formatAgentModelLabel } from "./formatAgentModelLabel";
 import type { ManagedAgent } from "@/shared/api/types";
+import type { TranslateFn } from "@/shared/i18n";
 
 /**
  * Model label for the Agents-page card, shared by the definition-grouped
@@ -22,23 +23,29 @@ export function resolveAgentCardModelLabel(input: {
   agent: Pick<ManagedAgent, "modelSource" | "model"> | undefined;
   personaModel: string | null | undefined;
   defaultModel: string;
+  t: TranslateFn;
 }): string {
   if (input.agent) {
     const isInherited =
       !input.agent.modelSource || input.agent.modelSource === "global";
     if (isInherited) {
-      return formatDefaultModelLabel(input.defaultModel);
+      return formatDefaultModelLabel(input.defaultModel, input.t);
     }
     return input.agent.model?.trim()
       ? formatAgentModelLabel(input.agent.model)
-      : formatDefaultModelLabel(input.defaultModel);
+      : formatDefaultModelLabel(input.defaultModel, input.t);
   }
   return input.personaModel?.trim()
     ? formatAgentModelLabel(input.personaModel)
-    : formatDefaultModelLabel(input.defaultModel);
+    : formatDefaultModelLabel(input.defaultModel, input.t);
 }
 
-export function formatDefaultModelLabel(defaultModel: string) {
+export function formatDefaultModelLabel(
+  defaultModel: string,
+  t: TranslateFn,
+) {
   const model = defaultModel.trim();
-  return model ? `Default model (${model})` : "Default model";
+  return model
+    ? t("settings.agents.defaultModelWithId", { model })
+    : t("agents.defaultModel");
 }

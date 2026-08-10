@@ -1,6 +1,7 @@
 import { CircleAlert } from "lucide-react";
 
 import type { ManagedAgent } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { CopyButton } from "./CopyButton";
@@ -21,6 +22,7 @@ export function ManagedAgentLogPanel({
   selectedAgent: ManagedAgent | null;
   variant?: "inline" | "section";
 }) {
+  const t = useT();
   const isInline = variant === "inline";
   const isBare = chrome === "bare";
   const logFileLabel = selectedAgent
@@ -61,10 +63,10 @@ export function ManagedAgentLogPanel({
           )}
         >
           <p className="text-sm font-semibold tracking-tight">
-            No local agent selected
+            {t("agents.log.noAgentSelected")}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Pick a managed agent to view the latest ACP log output.
+            {t("agents.log.pickAgentHint")}
           </p>
         </div>
       ) : isLoading ? (
@@ -132,7 +134,7 @@ export function ManagedAgentLogPanel({
             )}
             data-testid="managed-agent-log-content"
           >
-            {logContent?.trim() ? logContent : "No log output yet."}
+            {logContent?.trim() ? logContent : t("agents.noLogOutputYet")}
           </pre>
         </div>
       )}

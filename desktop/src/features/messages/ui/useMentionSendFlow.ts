@@ -35,6 +35,7 @@ import type { UseDraftsResult } from "@/features/messages/lib/useDrafts";
 import { invokeTauri } from "@/shared/api/tauri";
 import type { CustomEmoji } from "@/shared/lib/remarkCustomEmoji";
 import type { AcpRuntime, ChannelType, ManagedAgent } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import { buildCustomEmojiTags } from "@/shared/lib/customEmojiTags";
 import {
@@ -114,6 +115,7 @@ export function useMentionSendFlow({
   onSuccessfulExplicitAgentAudience,
   resolvePostSendContent,
 }: UseMentionSendFlowOptions) {
+  const t = useT();
   const [pendingNonMemberSend, setPendingNonMemberSend] =
     React.useState<PendingNonMemberMentionSend | null>(null);
   const [nonMemberPromptError, setNonMemberPromptError] = React.useState<
@@ -223,7 +225,7 @@ export function useMentionSendFlow({
           errors.push(
             `${agent.name}: ${getErrorMessage(
               error,
-              "Could not prepare agent.",
+              t("msg.mention.agentPrepareFailed"),
             )}`,
           );
         }
@@ -238,6 +240,7 @@ export function useMentionSendFlow({
       getManagedAgentsByPubkey,
       mentions.memberPubkeys,
       startAgentMutation,
+      t,
     ],
   );
 
@@ -273,7 +276,7 @@ export function useMentionSendFlow({
           defaultRuntime,
         );
         if (!runtime) {
-          errors.push(`${displayName}: No agent runtime available.`);
+          errors.push(t("msg.mention.noRuntime", { name: displayName }));
           continue;
         }
 
@@ -304,7 +307,7 @@ export function useMentionSendFlow({
           errors.push(
             `${displayName}: ${getErrorMessage(
               error,
-              "Could not create agent.",
+              t("msg.mention.agentCreateFailed"),
             )}`,
           );
         }
@@ -324,6 +327,7 @@ export function useMentionSendFlow({
       mentions.registerMentionPubkey,
       onPrepareSendChannel,
       provisionPersonaAgentMutation,
+      t,
     ],
   );
 
@@ -455,10 +459,12 @@ export function useMentionSendFlow({
         if (agentReadiness.errors.length > 0) {
           const message =
             agentReadiness.errors.length === 1
-              ? `Could not start agent mention: ${agentReadiness.errors[0]}`
-              : `Could not start agent mentions: ${agentReadiness.errors.join(
-                  "; ",
-                )}`;
+              ? t("msg.mention.startAgentOne", {
+                  error: agentReadiness.errors[0],
+                })
+              : t("msg.mention.startAgentMany", {
+                  errors: agentReadiness.errors.join("; "),
+                });
           setNonMemberPromptError(message);
           toast.error(message);
           return;
@@ -471,10 +477,12 @@ export function useMentionSendFlow({
               agentPubkeys: preparedAgentPubkeys,
             });
           } catch (error) {
-            const message = `Could not add mentioned agent to the Huddle: ${getErrorMessage(
-              error,
-              "Huddle enrollment failed.",
-            )}`;
+            const message = t("msg.mention.huddleAddFailed", {
+              error: getErrorMessage(
+                error,
+                t("msg.mention.huddleEnrollmentFailed"),
+              ),
+            });
             setNonMemberPromptError(message);
             toast.error(message);
             return;
@@ -601,7 +609,9 @@ export function useMentionSendFlow({
             onError: (error) => {
               restoreComposerAfterFailure();
               toast.error(
-                `Upload failed: ${getErrorMessage(error, "Unknown error")}`,
+                t("msg.uploadFailed", {
+                  error: getErrorMessage(error, t("common.error")),
+                }),
               );
             },
             onCancel: () => {
@@ -658,6 +668,7 @@ export function useMentionSendFlow({
       setSpoileredAttachmentUrls,
       hasUnsavedMedia,
       mentions.restoreDraftMentionRefs,
+      t,
     ],
   );
 
@@ -683,7 +694,7 @@ export function useMentionSendFlow({
       trimmed: string,
       capturedThreadContext: SendMessageWithMentionFlowInput["capturedThreadContext"],
     ) =>
-      dmThreadAgentMentionError({
+      dmThreadAgentMentionError(t, {
         trimmed,
         isThreadReply: capturedThreadContext != null,
         channelType,
@@ -700,6 +711,7 @@ export function useMentionSendFlow({
       mentions.hasResolvedMembers,
       mentions.isAgentPubkey,
       mentions.memberPubkeys,
+      t,
     ],
   );
 
@@ -749,10 +761,12 @@ export function useMentionSendFlow({
         if (personaMentionResult.errors.length > 0) {
           const message =
             personaMentionResult.errors.length === 1
-              ? `Could not create agent mention: ${personaMentionResult.errors[0]}`
-              : `Could not create agent mentions: ${personaMentionResult.errors.join(
-                  "; ",
-                )}`;
+              ? t("msg.mention.createAgentOne", {
+                  error: personaMentionResult.errors[0],
+                })
+              : t("msg.mention.createAgentMany", {
+                  errors: personaMentionResult.errors.join("; "),
+                });
           setNonMemberPromptError(message);
           toast.error(message);
           return;
@@ -844,6 +858,7 @@ export function useMentionSendFlow({
       mentions.isManagedAgentPubkey,
       mentions.getDraftMentionRefs,
       onPrepareSendChannel,
+      t,
     ],
   );
 
@@ -951,7 +966,7 @@ export function useMentionSendFlow({
       );
     })().catch((error) => {
       setNonMemberPromptError(
-        error instanceof Error ? error.message : "Could not invite members.",
+        error instanceof Error ? error.message : t("msg.mention.inviteFailed"),
       );
     });
   }, [
@@ -961,6 +976,7 @@ export function useMentionSendFlow({
     getManagedAgentsByPubkey,
     mentions.isAgentPubkey,
     pendingNonMemberSend,
+    t,
   ]);
 
   const dismissNonMemberPrompt = React.useCallback(() => {

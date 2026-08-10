@@ -3,6 +3,7 @@ import { Bot, Download, Loader2, Users } from "lucide-react";
 
 import { invokeTauri } from "@/shared/api/tauri";
 import { fetchSnapshotBytes } from "@/shared/api/tauriMedia";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import {
   Attachment,
@@ -67,6 +68,7 @@ export function AgentSnapshotCard({
   thumb,
   onImport,
 }: AgentSnapshotCardProps) {
+  const t = useT();
   const [importState, setImportState] = React.useState<ImportState>({
     phase: "idle",
   });
@@ -92,7 +94,9 @@ export function AgentSnapshotCard({
         message:
           err instanceof Error
             ? err.message
-            : `Couldn’t load this ${snapshotKind}. Try again.`,
+            : snapshotKind === "team"
+              ? t("agents.snapshotLoadFailedTeam")
+              : t("agents.snapshotLoadFailedAgent"),
       });
     } finally {
       inFlightRef.current = false;
@@ -116,7 +120,10 @@ export function AgentSnapshotCard({
         : size < 1024 * 1024
           ? `${(size / 1024).toFixed(1)} KB`
           : `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  const metadata = [sharedBy ? `Shared by ${sharedBy}` : null, formattedSize]
+  const metadata = [
+    sharedBy ? t("agents.sharedBy", { name: sharedBy }) : null,
+    formattedSize,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -177,16 +184,16 @@ export function AgentSnapshotCard({
         ) : null}
       </AttachmentContent>
       <AttachmentActions
-        aria-label={`Actions for ${displayName}`}
+        aria-label={t("agents.snapshotActionsFor", { name: displayName })}
         className="ml-4 gap-2"
         role="group"
       >
         <AttachmentAction
-          aria-label={`Download ${displayName}`}
+          aria-label={t("agents.snapshotDownloadNamed", { name: displayName })}
           data-testid="agent-snapshot-card-download"
           onClick={handleDownload}
           size="icon"
-          title="Download"
+          title={t("common.download")}
           type="button"
           variant="ghost"
         >
@@ -203,10 +210,10 @@ export function AgentSnapshotCard({
         >
           {isFetching ? <Loader2 className="animate-spin" /> : <SnapshotIcon />}
           {isFetching
-            ? "Loading…"
+            ? t("common.loading")
             : snapshotKind === "team"
-              ? "Add team"
-              : "Add agent"}
+              ? t("agents.addTeam")
+              : t("agents.addAgent")}
         </AttachmentAction>
       </AttachmentActions>
     </Attachment>

@@ -82,8 +82,9 @@ const RESPOND_TO_OPTIONS: ReadonlyArray<{
   { labelKey: "agents.respond.selectedPeople", value: "allowlist" },
 ];
 
-export const OWNER_ONLY_ACCESS_DISABLED_REASON =
-  "This build disallows changing this setting.";
+/** Message key for builds that lock respond-to to owner-only. */
+export const OWNER_ONLY_ACCESS_DISABLED_REASON_KEY =
+  "agents.respond.accessLocked" as const satisfies MessageKey;
 
 export function CreateAgentRespondToField({
   mode,

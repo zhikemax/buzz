@@ -7,6 +7,7 @@ import type { Project, Repository } from "@/features/projects/hooks";
 import { useAddProjectRepositoryMutation } from "@/features/projects/useAddProjectRepository";
 import { useAttachProjectRepositoryMutation } from "@/features/projects/useAttachProjectRepository";
 import { useBindProjectRepositoryChannelMutation } from "@/features/projects/useBindProjectRepositoryChannel";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ export function ProjectRepositoryManagement({
   projects: Project[];
   repository: Repository;
 }) {
+  const t = useT();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [attachOpen, setAttachOpen] = React.useState(false);
   const channelsQuery = useChannelsQuery();
@@ -86,7 +88,9 @@ export function ProjectRepositoryManagement({
         onAdd={async (input) => {
           const result = await createMutation.mutateAsync(input);
           onChange(result.repository.id);
-          toast.success(`Repository "${result.repository.name}" created.`);
+          toast.success(
+            t("projects.toast.repoCreated", { name: result.repository.name }),
+          );
         }}
         onOpenChange={setCreateOpen}
         open={createOpen}
@@ -100,7 +104,9 @@ export function ProjectRepositoryManagement({
             repository: candidate,
           });
           onChange(result.repository.id);
-          toast.success(`Repository "${result.repository.name}" added.`);
+          toast.success(
+            t("projects.toast.repoAdded", { name: result.repository.name }),
+          );
         }}
         onOpenChange={setAttachOpen}
         open={attachOpen}
@@ -143,14 +149,16 @@ export function ProjectRepositoryManagement({
                     })
                     .then(() => {
                       toast.success(
-                        `Repository access set to #${channel.name}.`,
+                        t("projects.repo.management.accessSet", {
+                          channel: channel.name,
+                        }),
                       );
                     })
                     .catch((error: unknown) => {
                       toast.error(
                         error instanceof Error
                           ? error.message
-                          : "Failed to update repository access.",
+                          : t("projects.repo.management.accessFailed"),
                       );
                     });
                 }}

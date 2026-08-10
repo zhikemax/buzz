@@ -128,11 +128,13 @@ function notifyStorageFull(): void {
   if (warnedPersistentFailure) return;
   warnedPersistentFailure = true;
   // Dynamic import keeps this module usable from node unit tests.
-  import("sonner")
-    .then(({ toast }) => {
-      toast.error("Local storage is full", {
-        description:
-          "Buzz could not save some local data — read positions may not persist across restarts.",
+  Promise.all([
+    import("sonner"),
+    import("@/shared/i18n"),
+  ])
+    .then(([{ toast }, { detectLocale, translate }]) => {
+      toast.error(translate(detectLocale(), "storage.localFull"), {
+        description: translate(detectLocale(), "storage.localFullDesc"),
       });
     })
     .catch(() => {});

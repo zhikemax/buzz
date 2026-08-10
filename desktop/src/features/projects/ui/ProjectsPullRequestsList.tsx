@@ -8,6 +8,8 @@ import type {
 } from "@/features/projects/hooks";
 import { relativeTime } from "@/features/projects/lib/projectsViewHelpers";
 import type { ProjectWorkItemSection } from "@/features/projects/projectWorkItems";
+import type { TranslateFn } from "@/shared/i18n";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import {
   resolveUserLabel,
@@ -49,11 +51,14 @@ type ProjectsPullRequestsListProps = {
   viewMode: "grid" | "list";
 };
 
-function nextStepLabel(status: ProjectPullRequest["status"]) {
-  if (status === "Draft") return "View draft";
-  if (status === "Merged") return "View merge";
-  if (status === "Closed") return "View closed";
-  return "Review PR";
+function nextStepLabel(
+  status: ProjectPullRequest["status"],
+  t: TranslateFn,
+) {
+  if (status === "Draft") return t("projects.pr.list.viewDraft");
+  if (status === "Merged") return t("projects.pr.list.viewMerge");
+  if (status === "Closed") return t("projects.pr.list.viewClosed");
+  return t("projects.pr.list.review");
 }
 
 function PullRequestGridCard({
@@ -67,6 +72,7 @@ function PullRequestGridCard({
   pullRequest: ProjectPullRequest;
   onOpen: (project: Project, pullRequest: ProjectPullRequest) => void;
 }) {
+  const t = useT();
   const authorLabel = resolveUserLabel({
     profiles,
     pubkey: pullRequest.author,
@@ -82,7 +88,9 @@ function PullRequestGridCard({
         onClick={() => onOpen(project, pullRequest)}
         type="button"
       >
-        <span className="sr-only">View {pullRequest.title}</span>
+        <span className="sr-only">
+          {t("projects.pr.list.viewSr", { title: pullRequest.title })}
+        </span>
       </button>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex min-w-0 items-start gap-3">
@@ -107,7 +115,7 @@ function PullRequestGridCard({
             type="button"
             variant="outline"
           >
-            {nextStepLabel(pullRequest.status)}
+            {nextStepLabel(pullRequest.status, t)}
           </Button>
         </div>
 
@@ -125,9 +133,13 @@ function PullRequestGridCard({
             <span className="font-medium text-foreground">
               {pullRequest.status}
             </span>
-            <span>created {relativeTime(pullRequest.createdAt)}</span>
             <span>
-              by{" "}
+              {t("projects.issue.list.created", {
+                time: relativeTime(pullRequest.createdAt),
+              })}
+            </span>
+            <span>
+              {t("projects.issue.list.by")}{" "}
               <ProjectAuthorIdentity
                 label={authorLabel}
                 profiles={profiles}
@@ -158,6 +170,7 @@ function PullRequestListRow({
   pullRequest: ProjectPullRequest;
   onOpen: (project: Project, pullRequest: ProjectPullRequest) => void;
 }) {
+  const t = useT();
   const authorLabel = resolveUserLabel({
     profiles,
     pubkey: pullRequest.author,
@@ -173,7 +186,9 @@ function PullRequestListRow({
         onClick={() => onOpen(project, pullRequest)}
         type="button"
       >
-        <span className="sr-only">View {pullRequest.title}</span>
+        <span className="sr-only">
+          {t("projects.pr.list.viewSr", { title: pullRequest.title })}
+        </span>
       </button>
       <div className={PROJECT_LIST_ROW_CONTENT_CLASS}>
         <ProjectEventTypeIcon className="h-5 w-5" kind="pull-request" />
@@ -190,7 +205,7 @@ function PullRequestListRow({
               #{pullRequest.id.slice(0, 8)}
             </span>
             <span className="inline-flex items-center gap-1">
-              <span>by</span>
+              <span>{t("projects.issue.list.by")}</span>
               <ProjectAuthorIdentity
                 label={authorLabel}
                 profiles={profiles}
@@ -221,10 +236,14 @@ function PullRequestListRow({
           >
             {relativeTime(pullRequest.createdAt)}
           </span>
-          <ProjectListRowMenu label={`More options for ${pullRequest.title}`}>
+          <ProjectListRowMenu
+            label={t("projects.detail.moreOptions", {
+              name: pullRequest.title,
+            })}
+          >
             <DropdownMenuItem onSelect={() => onOpen(project, pullRequest)}>
               <GitPullRequest className="h-4 w-4" />
-              {nextStepLabel(pullRequest.status)}
+              {nextStepLabel(pullRequest.status, t)}
             </DropdownMenuItem>
           </ProjectListRowMenu>
         </div>
@@ -245,6 +264,7 @@ export function ProjectsPullRequestsList({
   pullRequests,
   viewMode,
 }: ProjectsPullRequestsListProps) {
+  const t = useT();
   if (isLoading) {
     return (
       <div
@@ -253,7 +273,7 @@ export function ProjectsPullRequestsList({
           !embedded && "border border-border/60",
         )}
       >
-        Loading pull requests...
+        {t("projects.pr.panel.loading")}
       </div>
     );
   }
@@ -282,7 +302,7 @@ export function ProjectsPullRequestsList({
             !embedded && "border border-dashed border-border/60",
           )}
         >
-          No pull requests yet.
+          {t("projects.empty.noPullRequests")}
         </div>
       </div>
     );

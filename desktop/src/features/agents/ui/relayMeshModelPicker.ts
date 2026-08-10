@@ -1,3 +1,4 @@
+import type { TranslateFn } from "@/shared/i18n";
 import {
   AUTO_MODEL_DROPDOWN_VALUE,
   buildTemplateModelDropdownOptions,
@@ -10,10 +11,11 @@ import {
 
 function withSharedComputeAutoOption(
   options: readonly PersonaModelOption[],
+  t: TranslateFn,
 ): readonly PersonaModelOption[] {
   const modelOptions = options.filter((option) => option.id.trim() !== "");
   return [
-    { id: "", label: "Auto (collective when available)" },
+    { id: "", label: t("agents.autoCollective") },
     ...modelOptions,
   ];
 }
@@ -26,6 +28,7 @@ export function relayMeshModelPickerState({
   model,
   modelFieldVisible = true,
   provider,
+  t,
 }: {
   discoveredOptions: readonly PersonaModelOption[] | null;
   fallbackOptions: readonly PersonaModelOption[];
@@ -34,11 +37,12 @@ export function relayMeshModelPickerState({
   model: string;
   modelFieldVisible?: boolean;
   provider: string;
+  t: TranslateFn;
 }) {
   const isRelayMesh = provider.trim() === "relay-mesh";
   const trimmedModel = model.trim();
   const options = isRelayMesh
-    ? withSharedComputeAutoOption(discoveredOptions ?? [])
+    ? withSharedComputeAutoOption(discoveredOptions ?? [], t)
     : (discoveredOptions ?? fallbackOptions);
   const isKnownModel = hasPersonaModelOption(knownOptions ?? options, model);
   const isCustom = !isRelayMesh && !isKnownModel;
@@ -68,6 +72,7 @@ export function modelDropdownOptions({
   allowCustom,
   globalModel,
   globalModelLabel,
+  t,
 }: {
   options: readonly PersonaModelOption[];
   loading: boolean;
@@ -75,6 +80,7 @@ export function modelDropdownOptions({
   allowCustom: boolean;
   globalModel?: string;
   globalModelLabel?: string;
+  t: TranslateFn;
 }): PersonaDropdownOption[] {
   const modelOptions =
     globalModel === undefined
@@ -90,10 +96,21 @@ export function modelDropdownOptions({
   return [
     ...modelOptions,
     ...(loading
-      ? [{ disabled: true, label: "Loading models...", value: loadingValue }]
+      ? [
+          {
+            disabled: true,
+            label: t("agents.loadingModels"),
+            value: loadingValue,
+          },
+        ]
       : []),
     ...(allowCustom
-      ? [{ label: "Custom model...", value: CUSTOM_MODEL_DROPDOWN_VALUE }]
+      ? [
+          {
+            label: t("agents.customModelEllipsis"),
+            value: CUSTOM_MODEL_DROPDOWN_VALUE,
+          },
+        ]
       : []),
   ];
 }

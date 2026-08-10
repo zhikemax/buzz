@@ -28,6 +28,7 @@ import { cancelManagedAgentTurn } from "@/shared/api/agentControl";
 import type { Channel } from "@/shared/api/types";
 import { useEscapeKey } from "@/shared/hooks/useEscapeKey";
 import { useIsThreadPanelOverlay } from "@/shared/hooks/use-mobile";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { useNow } from "@/shared/lib/useNow";
 import { AuxiliaryPanel } from "@/shared/layout/AuxiliaryPanel";
 import { AuxiliaryPanelBody } from "@/shared/layout/AuxiliaryPanel";
@@ -96,6 +97,7 @@ export function AgentSessionThreadPanel({
   widthPx,
   transparentChrome = false,
 }: AgentSessionThreadPanelProps) {
+  const t = useT();
   const isLive = isManagedAgentActive(agent);
   const isOverlay = useIsThreadPanelOverlay();
   const sessionChannelId = channelId ?? channel?.id ?? null;
@@ -132,11 +134,13 @@ export function AgentSessionThreadPanel({
     () => getLatestActivityTimestamp(combinedHeaderEvents),
     [combinedHeaderEvents],
   );
-  const lastUpdatedLabel = formatLastUpdatedLabel(latestActivityAt, now);
+  const lastUpdatedLabel = formatLastUpdatedLabel(latestActivityAt, now, t);
   const lastUpdatedTitle =
     latestActivityAt === null
       ? undefined
-      : `Last updated ${new Date(latestActivityAt).toLocaleString()}`;
+      : t("agents.session.lastUpdated", {
+          when: new Date(latestActivityAt).toLocaleString(),
+        });
 
   const { fetchOlderArchived, hasOlderArchived } =
     useLoadArchivedObserverEvents(
@@ -237,8 +241,8 @@ export function AgentSessionThreadPanel({
   const scopeLabel = sessionChannelId
     ? scopeChannelName
       ? `#${scopeChannelName}`
-      : "1 channel"
-    : "All channels";
+      : t("agents.session.oneChannel")
+    : t("agents.session.allChannels");
   const agentProfile = profiles?.[normalizePubkey(agent.pubkey)] ?? null;
   const agentLabel = resolveUserLabel({
     pubkey: agent.pubkey,
@@ -246,7 +250,9 @@ export function AgentSessionThreadPanel({
     profiles,
     preferResolvedSelfLabel: true,
   });
-  const viewLabel = showRawFeed ? "Raw ACP activity" : "Activity";
+  const viewLabel = showRawFeed
+    ? t("agents.session.rawAcpActivity")
+    : t("agents.session.activity");
   const headerScopeLabel = `${viewLabel} · ${scopeLabel}`;
   const animateActivity = useTranscriptAnimationEnabled();
   const showTimestamps = useTranscriptTimestampsEnabled();
@@ -257,14 +263,12 @@ export function AgentSessionThreadPanel({
 
     try {
       await cancelManagedAgentTurn(agent.pubkey, channel.id);
-      toast.success(
-        `Stop signal sent to ${agent.name}. It may take a moment to respond.`,
-      );
+      toast.success(t("agents.stopSignalSent", { name: agent.name }));
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : `Failed to stop ${agent.name}'s current turn.`,
+          : t("agents.stopTurnFailed", { name: agent.name }),
       );
     }
   }
@@ -275,11 +279,11 @@ export function AgentSessionThreadPanel({
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
-              aria-label="Open activity settings"
+              aria-label={t("agents.openActivitySettings")}
               className="relative"
               data-testid="agent-session-settings-menu-trigger"
               size="icon"
-              title="Activity settings"
+              title={t("agents.activitySettings")}
               type="button"
               variant="ghost"
             >
@@ -307,19 +311,19 @@ export function AgentSessionThreadPanel({
               }}
               title={
                 showRawFeed
-                  ? "Hide raw JSON-RPC payloads."
+                  ? t("agents.rawFeedHideTitle")
                   : channel
-                    ? "Show raw JSON-RPC payloads for this channel."
-                    : "Show raw JSON-RPC payloads for this agent."
+                    ? t("agents.rawFeedShowTitle")
+                    : t("agents.rawFeedShowAgentTitle")
               }
             >
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <TerminalSquare className="h-4 w-4 text-muted-foreground" />
-                  Raw
+                  {t("agents.rawFeed")}
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  Show raw JSON-RPC activity.
+                  {t("agents.rawFeedHint")}
                 </span>
               </span>
               <Switch
@@ -339,16 +343,16 @@ export function AgentSessionThreadPanel({
               }}
               title={
                 showRawFeed
-                  ? "Raw activity rows don't animate in."
+                  ? t("agents.animateRawDisabledTitle")
                   : animateActivity
-                    ? "Stop animating new activity rows."
-                    : "Animate new activity rows as they arrive."
+                    ? t("agents.animateOffTitle")
+                    : t("agents.animateOnTitle")
               }
             >
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  Show Animations
+                  {t("agents.showAnimations")}
                 </span>
               </span>
               <Switch
@@ -367,14 +371,14 @@ export function AgentSessionThreadPanel({
               }}
               title={
                 showTimestamps
-                  ? "Hide per-row activity timestamps."
-                  : "Show a timestamp under each activity row."
+                  ? t("agents.timestampsOffTitle")
+                  : t("agents.timestampsOnTitle")
               }
             >
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <Clock3 className="h-4 w-4 text-muted-foreground" />
-                  Show Timestamps
+                  {t("agents.showTimestamps")}
                 </span>
               </span>
               <Switch
@@ -394,22 +398,22 @@ export function AgentSessionThreadPanel({
               }}
               title={
                 canStopCurrentTurn
-                  ? "Interrupt the current ACP turn without stopping the agent process."
+                  ? t("agents.stopTurnTitle")
                   : isWorking
-                    ? "Only locally managed agents can be interrupted from this community."
-                    : "Available while the agent is working."
+                    ? t("agents.stopTurnTitleLocalOnly")
+                    : t("agents.stopTurnHintWorking")
               }
             >
               <Octagon className="mt-0.5 h-4 w-4 text-muted-foreground" />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">
-                  Stop current turn
+                  {t("agents.stopCurrentTurn")}
                 </span>
                 {!canStopCurrentTurn ? (
                   <span className="mt-0.5 block text-xs text-muted-foreground">
                     {isWorking
-                      ? "Only available for locally managed agents."
-                      : "Available while the agent is working."}
+                      ? t("agents.stopTurnHintLocalOnly")
+                      : t("agents.stopTurnHintWorking")}
                   </span>
                 ) : null}
               </span>
@@ -424,7 +428,7 @@ export function AgentSessionThreadPanel({
     <>
       <AuxiliaryPanelHeaderGroup
         align="start"
-        backButtonAriaLabel="Back from activity"
+        backButtonAriaLabel={t("agents.backFromActivity")}
         backButtonTestId="agent-session-back"
         onBack={onBack}
       >
@@ -535,37 +539,47 @@ function getLatestActivityTimestamp(
   return latest;
 }
 
-function formatLastUpdatedLabel(timestamp: number | null, now: number): string {
+function formatLastUpdatedLabel(
+  timestamp: number | null,
+  now: number,
+  t: TranslateFn,
+): string {
   if (timestamp === null) {
-    return "No updates yet";
+    return t("agents.session.noUpdatesYet");
   }
 
-  return `Last updated ${formatRelativeActivityTime(timestamp, now)}`;
+  return t("agents.session.lastUpdated", {
+    when: formatRelativeActivityTime(timestamp, now, t),
+  });
 }
 
-function formatRelativeActivityTime(timestamp: number, now: number): string {
+function formatRelativeActivityTime(
+  timestamp: number,
+  now: number,
+  t: TranslateFn,
+): string {
   const elapsedMs = Math.max(0, now - timestamp);
   const totalSeconds = Math.floor(elapsedMs / 1_000);
 
   if (totalSeconds < 60) {
-    return "just now";
+    return t("time.justNow");
   }
 
   const totalMinutes = Math.floor(totalSeconds / 60);
   if (totalMinutes < 60) {
-    return `${totalMinutes}m ago`;
+    return t("time.compactMinutesAgo", { count: totalMinutes });
   }
 
   const totalHours = Math.floor(totalMinutes / 60);
   if (totalHours < 24) {
-    return `${totalHours}h ago`;
+    return t("time.compactHoursAgo", { count: totalHours });
   }
 
   const totalDays = Math.floor(totalHours / 24);
   if (totalDays < 7) {
-    return `${totalDays}d ago`;
+    return t("time.compactDaysAgo", { count: totalDays });
   }
 
   const totalWeeks = Math.floor(totalDays / 7);
-  return `${totalWeeks}w ago`;
+  return t("time.compactWeeksAgo", { count: totalWeeks });
 }

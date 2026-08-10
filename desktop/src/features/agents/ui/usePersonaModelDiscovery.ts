@@ -5,6 +5,7 @@ import type {
   AcpRuntimeCatalogEntry,
   AgentModelsResponse,
 } from "@/shared/api/types";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import type { EnvVarsValue } from "./EnvVarsEditor";
 import {
   formatModelDiscoveryErrorStatus,
@@ -36,11 +37,29 @@ function isHarnessDefaultModelEntry(model: { id: string }) {
   return model.id.trim().toLowerCase() === "default";
 }
 
+function hasUsableDiscoveredModels(
+  response: AgentModelsResponse | null,
+  provider: string,
+): boolean {
+  if (!response?.supportsSwitching || response.models.length === 0) {
+    return false;
+  }
+  const explicitModels = response.models.filter(
+    (model) => !isHarnessDefaultModelEntry(model),
+  );
+  const harnessDefaultEntry = response.models.find(isHarnessDefaultModelEntry);
+  const hasDefaultRow =
+    !providerRequiresExplicitModel(provider) ||
+    harnessDefaultEntry !== undefined;
+  return explicitModels.length > 0 || hasDefaultRow;
+}
+
 export function getDiscoveredPersonaModelOptions(
   response: AgentModelsResponse | null,
   provider: string,
+  t: TranslateFn,
 ): readonly PersonaModelOption[] | null {
-  if (!response?.supportsSwitching || response.models.length === 0) {
+  if (!hasUsableDiscoveredModels(response, provider) || !response) {
     return null;
   }
 
@@ -62,10 +81,12 @@ export function getDiscoveredPersonaModelOptions(
             id: "",
             label:
               provider === "relay-mesh"
-                ? "Default (auto)"
+                ? t("agents.defaultAuto")
                 : agentDefaultModel
-                  ? `Default model (${agentDefaultModel})`
-                  : "Default model",
+                  ? t("settings.agents.defaultModelWithId", {
+                      model: agentDefaultModel,
+                    })
+                  : t("agents.defaultModel"),
           },
         ];
 
@@ -91,13 +112,15 @@ export function getDiscoveredPersonaModelOptions(
 export function synthesizeEmptyDiscoveryStatus(
   response: AgentModelsResponse,
   provider: string,
+  t: TranslateFn,
 ): PersonaModelDiscoveryStatus | null {
-  if (getDiscoveredPersonaModelOptions(response, provider) !== null) {
+  if (getDiscoveredPersonaModelOptions(response, provider, t) !== null) {
     return null;
   }
-  const agentLabel = response.agentName.trim() || "This agent";
+  const agentLabel =
+    response.agentName.trim() || t("agents.thisAgentCapitalized");
   return {
-    message: `${agentLabel} reported no models. Check that the CLI is installed and signed in, then reopen this screen.`,
+    message: t("agents.reportedNoModels", { name: agentLabel }),
     tone: "warning",
   };
 }
@@ -112,7 +135,7 @@ export function isCacheableDiscoveryResponse(
   response: AgentModelsResponse,
   provider: string,
 ): boolean {
-  return getDiscoveredPersonaModelOptions(response, provider) !== null;
+  return hasUsableDiscoveredModels(response, provider);
 }
 
 /**
@@ -176,6 +199,7 @@ export function usePersonaModelDiscovery({
   provider: string;
   selectedRuntime: AcpRuntimeCatalogEntry | undefined;
 }) {
+  const t = useT();
   const [modelDiscoveryData, setModelDiscoveryData] =
     React.useState<AgentModelsResponse | null>(null);
   const [modelDiscoveryDataKey, setModelDiscoveryDataKey] = React.useState<
@@ -253,6 +277,7 @@ export function usePersonaModelDiscovery({
           formatModelDiscoveryErrorStatus(
             new Error(`Runtime not available: ${selectedRuntimeAvailability}`),
             trimmedProvider,
+            t,
             selectedRuntimeLabel,
           ),
         );
@@ -274,7 +299,7 @@ export function usePersonaModelDiscovery({
       setModelDiscoveryData(cached);
       setModelDiscoveryDataKey(activeModelDiscoveryKey);
       setModelDiscoveryStatus(
-        synthesizeEmptyDiscoveryStatus(cached, trimmedProvider),
+        synthesizeEmptyDiscoveryStatus(cached, trimmedProvider, t),
       );
       setModelDiscoveryStatusKey(activeModelDiscoveryKey);
       setModelDiscoveryLoading(false);
@@ -311,7 +336,7 @@ export function usePersonaModelDiscovery({
           setModelDiscoveryData(response);
           setModelDiscoveryDataKey(activeModelDiscoveryKey);
           setModelDiscoveryStatus(
-            synthesizeEmptyDiscoveryStatus(response, trimmedProvider),
+            synthesizeEmptyDiscoveryStatus(response, trimmedProvider, t),
           );
           setModelDiscoveryStatusKey(activeModelDiscoveryKey);
         })
@@ -325,6 +350,7 @@ export function usePersonaModelDiscovery({
             formatModelDiscoveryErrorStatus(
               error,
               trimmedProvider,
+              t,
               selectedRuntimeLabel,
             ),
           );
@@ -363,6 +389,7 @@ export function usePersonaModelDiscovery({
     selectedRuntimeDefinitionEnv,
     selectedRuntimeLabel,
     shouldDebounceModelDiscovery,
+    t,
     trimmedProvider,
   ]);
 
@@ -381,8 +408,9 @@ export function usePersonaModelDiscovery({
       getDiscoveredPersonaModelOptions(
         activeModelDiscoveryData,
         trimmedProvider,
+        t,
       ),
-    [activeModelDiscoveryData, trimmedProvider],
+    [activeModelDiscoveryData, t, trimmedProvider],
   );
   const modelDiscoveryPending = deriveModelDiscoveryPending({
     modelDiscoveryLoading,

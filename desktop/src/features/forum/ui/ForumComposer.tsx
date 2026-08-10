@@ -21,6 +21,7 @@ import type { MentionSuggestion } from "@/features/messages/ui/MentionAutocomple
 import { MessageComposerToolbar } from "@/features/messages/ui/MessageComposerToolbar";
 import { Button } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +52,7 @@ export function ForumComposer({
   autocompleteBelow = false,
   profiles,
 }: ForumComposerProps) {
+  const t = useT();
   const [content, setContent] = React.useState("");
   const contentRef = React.useRef(content);
   contentRef.current = content;
@@ -519,7 +521,7 @@ export function ForumComposer({
                         type="button"
                         variant="ghost"
                       >
-                        Cancel
+                        {t("common.cancel")}
                       </Button>
                     ) : null}
                     {onSecondarySubmit && secondarySubmitLabel ? (
@@ -537,7 +539,7 @@ export function ForumComposer({
                           >
                             {submitMode === "secondary"
                               ? secondarySubmitLabel
-                              : "Comment"}
+                              : t("forum.comment")}
                             <ChevronDown className="h-3.5 w-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -549,7 +551,7 @@ export function ForumComposer({
                             value={submitMode}
                           >
                             <DropdownMenuRadioItem value="primary">
-                              Comment
+                              {t("forum.comment")}
                             </DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="secondary">
                               {secondarySubmitLabel}

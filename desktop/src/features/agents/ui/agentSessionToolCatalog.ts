@@ -11,7 +11,95 @@ import {
   XCircle,
 } from "lucide-react";
 
+import {
+  detectLocale,
+  translate,
+  type MessageKey,
+  type TranslateFn,
+} from "@/shared/i18n";
 import type { BuzzToolInfo, ToolStatus } from "./agentSessionTypes";
+
+function defaultTranslate(
+  key: MessageKey,
+  params?: Record<string, string | number>,
+) {
+  return translate(detectLocale(), key, params);
+}
+
+const CLI_PART_KEYS: Record<string, MessageKey> = {
+  messages: "agents.cliPart.messages",
+  channels: "agents.cliPart.channels",
+  dms: "agents.cliPart.dms",
+  reactions: "agents.cliPart.reactions",
+  canvas: "agents.cliPart.canvas",
+  feed: "agents.cliPart.feed",
+  users: "agents.cliPart.users",
+  workflows: "agents.cliPart.workflows",
+  social: "agents.cliPart.social",
+  repos: "agents.cliPart.repos",
+  upload: "agents.cliPart.upload",
+  mem: "agents.cliPart.mem",
+  notes: "agents.cliPart.notes",
+  patches: "agents.cliPart.patches",
+  pr: "agents.cliPart.pr",
+  issues: "agents.cliPart.issues",
+  emoji: "agents.cliPart.emoji",
+  pack: "agents.cliPart.pack",
+  get: "agents.cliPart.get",
+  list: "agents.cliPart.list",
+  send: "agents.cliPart.send",
+  search: "agents.cliPart.search",
+  create: "agents.cliPart.create",
+  delete: "agents.cliPart.delete",
+  add: "agents.cliPart.add",
+  remove: "agents.cliPart.remove",
+  archive: "agents.cliPart.archive",
+  unarchive: "agents.cliPart.unarchive",
+  thread: "agents.cliPart.thread",
+  members: "agents.cliPart.members",
+  runs: "agents.cliPart.runs",
+  update: "agents.cliPart.update",
+  set: "agents.cliPart.set",
+  join: "agents.cliPart.join",
+  leave: "agents.cliPart.leave",
+  open: "agents.cliPart.open",
+  hide: "agents.cliPart.hide",
+  approve: "agents.cliPart.approve",
+  trigger: "agents.cliPart.trigger",
+  vote: "agents.cliPart.vote",
+  publish: "agents.cliPart.publish",
+  edit: "agents.cliPart.edit",
+  message: "agents.cliPart.message",
+  channel: "agents.cliPart.channel",
+  reaction: "agents.cliPart.reaction",
+  workflow: "agents.cliPart.workflow",
+  user: "agents.cliPart.user",
+  note: "agents.cliPart.note",
+  contact: "agents.cliPart.contact",
+  event: "agents.cliPart.event",
+  member: "agents.cliPart.member",
+  profile: "agents.cliPart.profile",
+  presence: "agents.cliPart.presence",
+  history: "agents.cliPart.history",
+  topic: "agents.cliPart.topic",
+  purpose: "agents.cliPart.purpose",
+  policy: "agents.cliPart.policy",
+  step: "agents.cliPart.step",
+  post: "agents.cliPart.post",
+  diff: "agents.cliPart.diff",
+  dm: "agents.cliPart.dm",
+};
+
+/** Translate a Buzz CLI/MCP title fragment; unknown parts stay Title Case. */
+export function formatBuzzPartLabel(part: string, t: TranslateFn): string {
+  const key = CLI_PART_KEYS[part.trim().toLowerCase()];
+  if (key) return t(key);
+  return part
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
 export function normalizeToolStatus(status: string): ToolStatus {
   const normalized = status.toLowerCase();
@@ -31,10 +119,14 @@ export function normalizeToolStatus(status: string): ToolStatus {
   return "executing";
 }
 
-export function getToolStatusDisplay(status: ToolStatus, isError: boolean) {
+export function getToolStatusDisplay(
+  status: ToolStatus,
+  isError: boolean,
+  t: TranslateFn,
+) {
   if (isError || status === "failed") {
     return {
-      label: "Error",
+      label: t("agents.toolStatusError"),
       Icon: XCircle,
       state: "output-error" as const,
       variant: "destructive" as const,
@@ -42,7 +134,7 @@ export function getToolStatusDisplay(status: ToolStatus, isError: boolean) {
   }
   if (status === "completed") {
     return {
-      label: "Done",
+      label: t("agents.toolStatusDone"),
       Icon: CheckCircle2,
       state: "output-available" as const,
       variant: "secondary" as const,
@@ -50,14 +142,14 @@ export function getToolStatusDisplay(status: ToolStatus, isError: boolean) {
   }
   if (status === "pending") {
     return {
-      label: "Pending",
+      label: t("agents.toolStatusPending"),
       Icon: CircleDot,
       state: "input-streaming" as const,
       variant: "secondary" as const,
     };
   }
   return {
-    label: "Running",
+    label: t("agents.toolStatusRunning"),
     Icon: Clock3,
     state: "input-available" as const,
     variant: "secondary" as const,
@@ -136,7 +228,10 @@ const BUZZ_TOOL_TITLE_ALIASES: Array<[RegExp, string]> = [
   [/\bremoving reaction\b/, "remove_reaction"],
 ];
 
-export function getBuzzToolInfo(title: string): BuzzToolInfo | null {
+export function getBuzzToolInfo(
+  title: string,
+  t: TranslateFn = defaultTranslate,
+): BuzzToolInfo | null {
   const name = normalizeToolName(title);
   const isRead = BUZZ_READ_TOOLS.has(name);
   const isWrite = BUZZ_WRITE_TOOLS.has(name);
@@ -148,8 +243,8 @@ export function getBuzzToolInfo(title: string): BuzzToolInfo | null {
     return {
       icon: Workflow,
       label: isRead
-        ? "Reads workflow state from Buzz."
-        : "Updates workflow state in Buzz.",
+        ? t("agents.toolDesc.workflowRead")
+        : t("agents.toolDesc.workflowWrite"),
       tone: isWrite ? "write" : "read",
     };
   }
@@ -161,8 +256,8 @@ export function getBuzzToolInfo(title: string): BuzzToolInfo | null {
     return {
       icon: Hash,
       label: isRead
-        ? "Reads channel context from the Buzz relay."
-        : "Changes channel state in the Buzz relay.",
+        ? t("agents.toolDesc.channelRead")
+        : t("agents.toolDesc.channelWrite"),
       tone: isWrite ? "write" : "read",
     };
   }
@@ -174,15 +269,15 @@ export function getBuzzToolInfo(title: string): BuzzToolInfo | null {
     return {
       icon: Users,
       label: isRead
-        ? "Reads Buzz identity or presence data."
-        : "Updates Buzz identity or membership data.",
+        ? t("agents.toolDesc.identityRead")
+        : t("agents.toolDesc.identityWrite"),
       tone: isWrite ? "write" : "admin",
     };
   }
   if (name.includes("search") || name === "get_feed") {
     return {
       icon: Search,
-      label: "Searches relay-visible Buzz history.",
+      label: t("agents.toolDesc.search"),
       tone: "read",
     };
   }
@@ -193,14 +288,16 @@ export function getBuzzToolInfo(title: string): BuzzToolInfo | null {
   ) {
     return {
       icon: Send,
-      label: "Publishes relay-visible Buzz activity.",
+      label: t("agents.toolDesc.publish"),
       tone: "write",
     };
   }
 
   return {
     icon: MessageSquare,
-    label: isRead ? "Reads from Buzz." : "Writes to Buzz.",
+    label: isRead
+      ? t("agents.toolDesc.genericRead")
+      : t("agents.toolDesc.genericWrite"),
     tone: isWrite ? "write" : "read",
   };
 }
@@ -266,12 +363,17 @@ export function isGenericToolTitle(value: string): boolean {
 export function formatToolTitle(
   toolName: string,
   fallbackTitle?: string,
+  t: TranslateFn = defaultTranslate,
 ): string {
   const name = normalizeToolName(toolName);
   if (BUZZ_READ_TOOLS.has(name) || BUZZ_WRITE_TOOLS.has(name)) {
+    if (name === "send_message") {
+      return t("agents.sendMessage");
+    }
     return name
       .split("_")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .filter(Boolean)
+      .map((part) => formatBuzzPartLabel(part, t))
       .join(" ");
   }
   if (fallbackTitle && !isGenericToolTitle(fallbackTitle)) {

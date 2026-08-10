@@ -1,3 +1,5 @@
+import { translate, type TranslateFn } from "@/shared/i18n";
+
 /**
  * Relay push-policy denial token for a repository with no `buzz-channel`
  * binding. Declared in Rust as `buzz-core::git_perms::
@@ -8,11 +10,6 @@
  */
 const NO_CHANNEL_BINDING_TOKEN = "no_channel_binding";
 const NO_CHANNEL_BINDING_LEGACY_PHRASE = "no channel binding";
-
-const NO_CHANNEL_BINDING_COPY =
-  "This repository is not linked to a project channel, so the relay cannot " +
-  "authorize access. The repository owner can link it with: " +
-  "buzz repos bind --id <repo> --channel <channel-uuid>";
 
 /** True when a git/relay error text is the unbound-repository denial. */
 export function isNoChannelBindingError(message: string): boolean {
@@ -26,10 +23,11 @@ export function isNoChannelBindingError(message: string): boolean {
 export function projectBranchErrorMessage(
   error: unknown,
   fallback: string,
+  t: TranslateFn = translate,
 ): string {
   if (!(error instanceof Error)) return fallback;
   if (isNoChannelBindingError(error.message)) {
-    return NO_CHANNEL_BINDING_COPY;
+    return t("projects.branch.error.noChannelBinding");
   }
   return error.message;
 }

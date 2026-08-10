@@ -23,6 +23,7 @@ import {
   type CardMintKeyLayer,
   type SnapshotMemoryLevel,
 } from "@/shared/api/tauriPersonas";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -47,11 +48,16 @@ import {
 const OPENAI_KEYS_URL = "https://platform.openai.com/api-keys";
 
 /** Same three levels as snapshot export; "Agent only" is the safe default. */
-const MEMORY_LEVELS: { value: SnapshotMemoryLevel; label: string }[] = [
-  { value: "none", label: "Agent only" },
-  { value: "core", label: "Agent + core memory" },
-  { value: "everything", label: "Agent + all memories" },
-];
+function memoryLevelOptions(t: TranslateFn): {
+  value: SnapshotMemoryLevel;
+  label: string;
+}[] {
+  return [
+    { value: "none", label: t("agents.agentOnly") },
+    { value: "core", label: t("agents.agentPlusCore") },
+    { value: "everything", label: t("agents.agentPlusAll") },
+  ];
+}
 
 /**
  * The free alternative, as an action: ordinary snapshot export shares the
@@ -66,14 +72,14 @@ function FreeSharePathRow({
   disabled: boolean;
   onExportInstead?: () => void;
 }) {
+  const t = useT();
   return (
     <div
       className="flex items-center justify-between gap-3"
       data-testid="agent-card-free-path"
     >
       <p className="text-xs text-muted-foreground">
-        Don’t want to spend money? Ordinary export shares the same importable
-        agent — free, just without the card art.
+        {t("agents.mintFreePathHint")}
       </p>
       {onExportInstead ? (
         <Button
@@ -84,7 +90,7 @@ function FreeSharePathRow({
           size="sm"
           variant="outline"
         >
-          Share without card art
+          {t("agents.shareWithoutCardArt")}
         </Button>
       ) : null}
     </div>
@@ -125,6 +131,7 @@ export function AgentCardMintDialog({
   onExportInstead?: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const [styleNotes, setStyleNotes] = React.useState("");
   const [lockCard, setLockCard] = React.useState(false);
   const [memoryLevel, setMemoryLevel] =
@@ -133,6 +140,7 @@ export function AgentCardMintDialog({
   const [editingKey, setEditingKey] = React.useState(false);
 
   const queryClient = useQueryClient();
+  const memoryLevels = memoryLevelOptions(t);
 
   const effectiveLock = canLock && lockCard;
   // Embedded memory is plaintext in an unlocked card — and unlocked cards
@@ -171,12 +179,12 @@ export function AgentCardMintDialog({
       });
       setKeyDraft("");
       setEditingKey(false);
-      toast.success(
-        "API key saved to your agent defaults. Running agents pick it up on their next restart.",
-      );
+      toast.success(t("agents.apiKeySavedDefaults"));
     },
     onError: (error) =>
-      toast.error(typeof error === "string" ? error : "Couldn't save the key."),
+      toast.error(
+        typeof error === "string" ? error : t("agents.couldntSaveKey"),
+      ),
   });
 
   function beginMint() {
@@ -198,12 +206,9 @@ export function AgentCardMintDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            {`Create ${agentName}'s card`}
+            {t("agents.createCardTitle", { name: agentName })}
           </DialogTitle>
-          <DialogDescription>
-            Mint a collectible trading card that doubles as a shareable,
-            importable copy of this agent.
-          </DialogDescription>
+          <DialogDescription>{t("agents.createCardDesc")}</DialogDescription>
         </DialogHeader>
 
         {showKeyPanel(keyLayer, editingKey) ? (
@@ -214,7 +219,7 @@ export function AgentCardMintDialog({
             <div className="flex flex-col gap-2 rounded-md border border-border p-3">
               <span className="flex items-center gap-1.5 text-sm font-medium">
                 <KeyRound className="h-3.5 w-3.5" />
-                {keyPanelTitle(keyLayer, editingKey)}
+                {keyPanelTitle(keyLayer, editingKey, t)}
               </span>
               {keyIsReadOnly ? (
                 // Key resolves from a layer the dialog cannot write to — show
@@ -225,34 +230,31 @@ export function AgentCardMintDialog({
                   data-testid="agent-card-key-readonly"
                 >
                   {keyLayer === "agent"
-                    ? "This agent's OpenAI key is set in its own agent settings — update it there."
+                    ? t("agents.keyFromAgentSettings")
                     : keyLayer === "persona"
-                      ? "This agent's OpenAI key comes from its linked persona settings — update it there."
-                      : "This agent's OpenAI key is set in the process environment — update it in your shell or launch config."}
+                      ? t("agents.keyFromPersonaSettings")
+                      : t("agents.keyFromProcessEnv")}
                 </p>
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground">
-                    Minting a card costs money — it generates the art and card
-                    text through the OpenAI API with your key (typically well
-                    under a dollar per mint, billed by OpenAI). The key is saved
-                    as <code className="font-mono">OPENAI_API_KEY</code> in your
-                    agent defaults env — that's the row to update in Settings if
-                    you ever need to change it there.
+                    {t("agents.mintCostKeySetupBefore")}{" "}
+                    <code className="font-mono">OPENAI_API_KEY</code>{" "}
+                    {t("agents.mintCostKeySetupAfter")}
                   </p>
                   <Button
                     className="w-fit px-0 text-xs"
                     data-testid="agent-card-key-link"
                     onClick={() =>
                       void openUrl(OPENAI_KEYS_URL).catch(() => {
-                        toast.error("Failed to open link");
+                        toast.error(t("agents.failedOpenLink"));
                       })
                     }
                     size="sm"
                     variant="link"
                   >
                     <ExternalLink className="mr-1 h-3 w-3" />
-                    Get a key at platform.openai.com
+                    {t("agents.getOpenaiKey")}
                   </Button>
                   <Input
                     autoFocus
@@ -281,7 +283,7 @@ export function AgentCardMintDialog({
                   }}
                   variant="outline"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               ) : null}
               {!keyIsReadOnly ? (
@@ -294,8 +296,8 @@ export function AgentCardMintDialog({
                 >
                   <KeyRound className="mr-2 h-4 w-4" />
                   {saveKeyMutation.isPending
-                    ? "Saving…"
-                    : "Save key & continue"}
+                    ? t("common.saving")
+                    : t("agents.saveKeyContinue")}
                 </Button>
               ) : null}
             </div>
@@ -305,36 +307,34 @@ export function AgentCardMintDialog({
             <div className="flex flex-col gap-1.5">
               <Textarea
                 onChange={(e) => setStyleNotes(e.target.value)}
-                placeholder="Optional style notes for the art and card text"
+                placeholder={t("agents.styleNotesPlaceholder")}
                 rows={3}
                 value={styleNotes}
               />
               <p className="text-xs text-muted-foreground">
-                E.g. art “stormy night, lightning motif” or ability “Verify —
-                scry 2”. Your directions take priority; anything you leave open
-                is designed for you.
+                {t("agents.styleNotesHint")}
               </p>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
               <div className="flex flex-col gap-0.5">
                 <span className="flex items-center gap-1.5 text-sm font-medium">
                   <Brain className="h-3.5 w-3.5" />
-                  Memories
+                  {t("agents.memories")}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {canLock
-                    ? "Choose how much memory the embedded agent carries."
-                    : "Including memory needs a linked agent instance — start this agent once to enable it."}
+                    ? t("agents.memoryChooseLevel")
+                    : t("agents.memoryNeedsInstance")}
                 </span>
               </div>
               {canLock ? (
                 <SnapshotOptionMenu
-                  ariaLabel="Memories"
+                  ariaLabel={t("agents.memories")}
                   className="font-medium text-foreground"
                   onValueChange={(value) =>
                     setMemoryLevel(value as SnapshotMemoryLevel)
                   }
-                  options={MEMORY_LEVELS}
+                  options={memoryLevels}
                   testId="agent-card-memory-trigger"
                   value={memoryLevel}
                 />
@@ -343,7 +343,7 @@ export function AgentCardMintDialog({
                   className="inline-flex h-8 w-auto shrink-0 items-center justify-end px-2 text-sm font-medium"
                   data-testid="agent-card-memory-value"
                 >
-                  Agent only
+                  {t("agents.agentOnly")}
                 </span>
               )}
             </div>
@@ -354,9 +354,9 @@ export function AgentCardMintDialog({
               >
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
-                  Memory is stored as <strong>plaintext</strong> in the card,
-                  readable by anyone who has the PNG — and cards are made for
-                  sharing. Lock the card or only share it with people you trust.
+                  {t("agents.memoryPlaintextCardWarningBefore")}{" "}
+                  <strong>{t("agents.plaintext")}</strong>{" "}
+                  {t("agents.memoryPlaintextCardWarningAfter")}
                 </p>
               </div>
             ) : null}
@@ -364,12 +364,12 @@ export function AgentCardMintDialog({
               <div className="flex flex-col gap-0.5">
                 <span className="flex items-center gap-1.5 text-sm font-medium">
                   <Lock className="h-3.5 w-3.5" />
-                  Lock card
+                  {t("agents.lockCard")}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {canLock
-                    ? "Encrypt the embedded agent so only you and this agent can import it. Anyone else sees just the image."
-                    : "Locking needs a linked agent instance — start this agent once to enable it."}
+                    ? t("agents.lockCardDesc")
+                    : t("agents.lockNeedsInstance")}
                 </span>
               </div>
               <Switch
@@ -385,7 +385,7 @@ export function AgentCardMintDialog({
                 data-testid="agent-card-key-status"
               >
                 <KeyRound className="h-3 w-3 shrink-0" />
-                <span>Using your saved OpenAI key</span>
+                <span>{t("agents.usingSavedOpenaiKey")}</span>
                 <span aria-hidden>·</span>
                 <Button
                   className="h-auto p-0 text-xs"
@@ -394,7 +394,7 @@ export function AgentCardMintDialog({
                   size="sm"
                   variant="link"
                 >
-                  Update
+                  {t("common.update")}
                 </Button>
               </div>
             ) : null}
@@ -406,10 +406,10 @@ export function AgentCardMintDialog({
                 <KeyRound className="h-3 w-3 shrink-0" />
                 <span>
                   {keyLayer === "agent"
-                    ? "OpenAI key from agent settings"
+                    ? t("agents.openaiKeyFromAgent")
                     : keyLayer === "persona"
-                      ? "OpenAI key from persona settings"
-                      : "OpenAI key from environment"}
+                      ? t("agents.openaiKeyFromPersona")
+                      : t("agents.openaiKeyFromEnv")}
                 </span>
                 <span aria-hidden>·</span>
                 <Button
@@ -419,7 +419,7 @@ export function AgentCardMintDialog({
                   size="sm"
                   variant="link"
                 >
-                  Why?
+                  {t("agents.why")}
                 </Button>
               </div>
             ) : null}
@@ -427,10 +427,7 @@ export function AgentCardMintDialog({
               className="text-xs text-muted-foreground"
               data-testid="agent-card-cost-note"
             >
-              Minting calls the OpenAI API with your key and costs money —
-              typically well under a dollar per mint, billed by OpenAI. It runs
-              in the background (takes a few minutes); you can keep using Buzz
-              while it works.
+              {t("agents.mintCostNote")}
             </p>
             <FreeSharePathRow
               disabled={false}
@@ -448,11 +445,11 @@ export function AgentCardMintDialog({
                 variant="link"
               >
                 <GalleryVerticalEnd className="mr-1 h-3 w-3" />
-                View minted cards
+                {t("agents.viewMintedCards")}
               </Button>
               <Button onClick={beginMint} data-testid="agent-card-mint">
                 <Sparkles className="mr-2 h-4 w-4" />
-                Mint card
+                {t("agents.mintCard")}
               </Button>
             </div>
           </div>

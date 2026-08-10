@@ -20,6 +20,7 @@ import { relayClient } from "@/shared/api/relayClient";
 import { signRelayEvent } from "@/shared/api/tauri";
 import type { RelayEvent } from "@/shared/api/types";
 import { KIND_HUDDLE_REACTION } from "@/shared/constants/kinds";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { rewriteRelayUrl } from "@/shared/lib/mediaUrl";
 import { Button } from "@/shared/ui/button";
@@ -95,11 +96,18 @@ function clampReactionName(name: string): string {
   return `${trimmed.slice(0, HUDDLE_REACTION_NAME_MAX - 1).trimEnd()}…`;
 }
 
-function fallbackNameForPubkey(pubkey?: string | null): string {
-  return pubkey ? `Participant ${truncatePubkey(pubkey)}` : "Someone";
+function fallbackNameForPubkey(
+  t: TranslateFn,
+  pubkey?: string | null,
+): string {
+  return pubkey
+    ? t("huddle.participants.fallbackParticipant", {
+        short: truncatePubkey(pubkey),
+      })
+    : t("huddle.participants.someone");
 }
 
-function parseHuddleReactionEvent(event: RelayEvent) {
+function parseHuddleReactionEvent(event: RelayEvent, t: TranslateFn) {
   if (event.kind !== KIND_HUDDLE_REACTION) return null;
 
   const emoji = (firstTagValue(event, "reaction") ?? event.content).trim();
@@ -116,7 +124,8 @@ function parseHuddleReactionEvent(event: RelayEvent) {
         )?.[2]
       : null;
   const senderName = clampReactionName(
-    firstTagValue(event, "sender_name") ?? fallbackNameForPubkey(event.pubkey),
+    firstTagValue(event, "sender_name") ??
+      fallbackNameForPubkey(t, event.pubkey),
   );
 
   return {
@@ -150,6 +159,7 @@ export function HuddleBar({
   onOpenHuddleWindow,
   onVisibilityChange,
 }: HuddleBarProps) {
+  const t = useT();
   const {
     leaveHuddle,
     micConnected,
@@ -379,12 +389,13 @@ export function HuddleBar({
       clampReactionName(
         profileQuery.data?.displayName?.trim() ||
           identityQuery.data?.displayName?.trim() ||
-          fallbackNameForPubkey(currentPubkey),
+          fallbackNameForPubkey(t, currentPubkey),
       ),
     [
       currentPubkey,
       identityQuery.data?.displayName,
       profileQuery.data?.displayName,
+      t,
     ],
   );
 
@@ -413,7 +424,7 @@ export function HuddleBar({
           seenEventIds.add(event.id);
           if (event.pubkey === currentPubkey) return;
 
-          const reaction = parseHuddleReactionEvent(event);
+          const reaction = parseHuddleReactionEvent(event, t);
           if (!reaction) return;
           burstHuddleReaction(reaction);
         },
@@ -433,7 +444,7 @@ export function HuddleBar({
       disposed = true;
       cleanup?.();
     };
-  }, [burstHuddleReaction, currentPubkey, reactionChannelId]);
+  }, [burstHuddleReaction, currentPubkey, reactionChannelId, t]);
 
   const handleHuddleReactionSelect = React.useCallback(
     (emoji: string) => {
@@ -465,15 +476,15 @@ export function HuddleBar({
         });
         await relayClient.publishEvent(
           event,
-          "Timed out while sending huddle reaction.",
-          "Failed to send huddle reaction.",
+          t("huddle.error.reactionTimeout"),
+          t("huddle.error.reactionSendFailed"),
         );
       })().catch((error) => {
-        setReactionError("Reaction failed");
+        setReactionError(t("huddle.error.reactionFailed"));
         console.error("[huddle] Failed to send reaction:", error);
       });
     },
-    [burstHuddleReaction, customEmoji, reactionChannelId, reactionSenderName],
+    [burstHuddleReaction, customEmoji, reactionChannelId, reactionSenderName, t],
   );
 
   if (!barState) {
@@ -530,7 +541,9 @@ export function HuddleBar({
       setState(s);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      setTranscriptError(`Transcript failed: ${message}`);
+      setTranscriptError(
+        t("huddle.error.transcriptFailed", { message }),
+      );
       console.error("Failed to toggle huddle transcript:", e);
     }
   }
@@ -572,7 +585,7 @@ export function HuddleBar({
           >
             <span className="max-w-[220px] truncate">{huddleError}</span>
             <button
-              aria-label="Dismiss error"
+              aria-label={t("huddle.error.dismissAria")}
               className="ml-1 opacity-60 hover:opacity-100"
               onClick={clearHuddleError}
               type="button"
@@ -591,10 +604,13 @@ export function HuddleBar({
                 {transcriptionEnabled &&
                 modelStatus.stt !== "ready" &&
                 modelStatus.tts !== "ready"
-                  ? `Voice models: STT ${modelStatus.stt}, TTS ${modelStatus.tts}`
+                  ? t("huddle.model.voiceModels", {
+                      stt: modelStatus.stt,
+                      tts: modelStatus.tts,
+                    })
                   : transcriptionEnabled && modelStatus.stt !== "ready"
-                    ? `STT model: ${modelStatus.stt}`
-                    : `TTS model: ${modelStatus.tts}`}
+                    ? t("huddle.model.stt", { stt: modelStatus.stt })
+                    : t("huddle.model.tts", { tts: modelStatus.tts })}
               </span>
             </output>
           )}
@@ -633,7 +649,9 @@ export function HuddleBar({
               return result;
             } catch (e: unknown) {
               const msg = e instanceof Error ? e.message : String(e);
-              setAgentAddError(`Failed to add agent: ${msg}`);
+              setAgentAddError(
+                t("huddle.error.addAgentFailed", { message: msg }),
+              );
               throw e; // Re-throw so AddAgentDialog shows its inline error.
             }
           }}
@@ -698,7 +716,7 @@ export function HuddleBar({
               }}
               onRemoveAgent={async (pubkey) => {
                 const confirmed = window.confirm(
-                  "Remove this agent from the huddle?",
+                  t("huddle.participants.removeAgentConfirm"),
                 );
                 if (!confirmed) return;
                 try {
@@ -736,7 +754,7 @@ export function HuddleBar({
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
                   <Button
-                    aria-label="Emoji reactions"
+                    aria-label={t("huddle.bar.emojiReactionsAria")}
                     aria-pressed={isReactionPickerOpen}
                     className={cn(
                       "buzz-huddle-control-button h-12 w-12 shrink-0 rounded-md",
@@ -751,7 +769,7 @@ export function HuddleBar({
                 </PopoverTrigger>
               </TooltipTrigger>
               <TooltipContent className="buzz-huddle-tooltip" side="top">
-                Emoji reactions
+                {t("huddle.bar.emojiReactions")}
               </TooltipContent>
             </Tooltip>
             <PopoverContent
@@ -768,7 +786,9 @@ export function HuddleBar({
             <TooltipTrigger asChild>
               <Button
                 aria-label={
-                  transcriptionEnabled ? "Stop transcript" : "Start transcript"
+                  transcriptionEnabled
+                    ? t("huddle.bar.stopTranscript")
+                    : t("huddle.bar.startTranscript")
                 }
                 aria-pressed={transcriptionEnabled}
                 className="buzz-huddle-control-button h-12 w-12 shrink-0 rounded-md"
@@ -781,14 +801,16 @@ export function HuddleBar({
               </Button>
             </TooltipTrigger>
             <TooltipContent className="buzz-huddle-tooltip" side="top">
-              {transcriptionEnabled ? "Stop transcript" : "Start transcript"}
+              {transcriptionEnabled
+                ? t("huddle.bar.stopTranscript")
+                : t("huddle.bar.startTranscript")}
             </TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Add agent to huddle"
+                aria-label={t("huddle.bar.addAgentAria")}
                 className="buzz-huddle-control-button h-12 w-12 shrink-0 rounded-md"
                 onClick={() => setShowAddAgent(true)}
                 size="icon"
@@ -799,7 +821,7 @@ export function HuddleBar({
               </Button>
             </TooltipTrigger>
             <TooltipContent className="buzz-huddle-tooltip" side="top">
-              Add agent
+              {t("huddle.bar.addAgent")}
             </TooltipContent>
           </Tooltip>
         </div>
@@ -810,7 +832,7 @@ export function HuddleBar({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Open huddle in a new window"
+                aria-label={t("huddle.openWindowAria")}
                 className="buzz-huddle-control-button h-12 w-12 shrink-0 rounded-md"
                 onClick={() => void handleOpenHuddleWindow()}
                 size="icon"
@@ -821,14 +843,14 @@ export function HuddleBar({
               </Button>
             </TooltipTrigger>
             <TooltipContent className="buzz-huddle-tooltip" side="top">
-              Open huddle window
+              {t("huddle.openWindow")}
             </TooltipContent>
           </Tooltip>
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                aria-label="Return huddle to drawer"
+                aria-label={t("huddle.returnToDrawerAria")}
                 className="buzz-huddle-control-button h-12 w-12 shrink-0 rounded-md"
                 onClick={() => void handleReturnToDrawer()}
                 size="icon"
@@ -839,13 +861,13 @@ export function HuddleBar({
               </Button>
             </TooltipTrigger>
             <TooltipContent className="buzz-huddle-tooltip" side="top">
-              Return huddle to drawer
+              {t("huddle.returnToDrawer")}
             </TooltipContent>
           </Tooltip>
         )}
 
         <Button
-          aria-label="Leave huddle"
+          aria-label={t("huddle.leaveAria")}
           className="h-12 gap-2 px-4"
           disabled={isLeaving}
           aria-busy={isLeaving}
@@ -854,23 +876,23 @@ export function HuddleBar({
           variant="destructive"
         >
           <PhoneOff className="h-4 w-4" />
-          Leave
+          {t("huddle.leave")}
         </Button>
       </div>
 
       {/* Screen reader announcements for huddle state changes */}
       <output aria-live="polite" className="sr-only">
         {hasAvailableMic
-          ? "In huddle, microphone connected"
-          : "In huddle, no microphone"}
-        {`, voice input: ${isPttMode ? "push to talk, press Ctrl+Space to transmit" : "voice activity detection"}`}
+          ? t("huddle.sr.micConnected")
+          : t("huddle.sr.noMic")}
+        {`, ${isPttMode ? t("huddle.sr.voiceInputPtt") : t("huddle.sr.voiceInputVad")}`}
         {modelStatus &&
           transcriptionEnabled &&
           modelStatus.stt !== "ready" &&
-          `, STT model ${modelStatus.stt}`}
+          `, ${t("huddle.sr.sttModel", { status: modelStatus.stt })}`}
         {modelStatus &&
           modelStatus.tts !== "ready" &&
-          `, TTS model ${modelStatus.tts}`}
+          `, ${t("huddle.sr.ttsModel", { status: modelStatus.tts })}`}
       </output>
     </div>
   );

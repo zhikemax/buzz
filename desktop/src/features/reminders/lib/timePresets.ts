@@ -1,9 +1,19 @@
+import type { TranslateFn } from "@/shared/i18n";
+
 /**
  * Shared reminder time presets — the single source of truth for both the
  * create dialog and the snooze dropdown. Each preset returns a Unix timestamp
  * (seconds) strictly in the future.
  */
+export type TimePresetId =
+  | "in30Minutes"
+  | "in1Hour"
+  | "in3Hours"
+  | "tomorrow9am"
+  | "nextMonday9am";
+
 export type TimePreset = {
+  id: TimePresetId;
   label: string;
   getTimestamp: () => number;
 };
@@ -28,19 +38,38 @@ function nextDayAt9am(dayOffset: number): number {
   return Math.floor(target.getTime() / 1_000);
 }
 
-export const TIME_PRESETS: TimePreset[] = [
-  { label: "In 30 minutes", getTimestamp: () => nowSeconds() + 30 * 60 },
-  { label: "In 1 hour", getTimestamp: () => nowSeconds() + 60 * 60 },
-  { label: "In 3 hours", getTimestamp: () => nowSeconds() + 3 * 60 * 60 },
-  { label: "Tomorrow at 9am", getTimestamp: () => nextDayAt9am(1) },
-  {
-    label: "Next Monday at 9am",
-    getTimestamp: () => {
-      const daysUntilMonday = (8 - new Date().getDay()) % 7 || 7;
-      return nextDayAt9am(daysUntilMonday);
+export function getTimePresets(t: TranslateFn): TimePreset[] {
+  return [
+    {
+      id: "in30Minutes",
+      label: t("reminders.preset.in30Minutes"),
+      getTimestamp: () => nowSeconds() + 30 * 60,
     },
-  },
-];
+    {
+      id: "in1Hour",
+      label: t("reminders.preset.in1Hour"),
+      getTimestamp: () => nowSeconds() + 60 * 60,
+    },
+    {
+      id: "in3Hours",
+      label: t("reminders.preset.in3Hours"),
+      getTimestamp: () => nowSeconds() + 3 * 60 * 60,
+    },
+    {
+      id: "tomorrow9am",
+      label: t("reminders.preset.tomorrow9am"),
+      getTimestamp: () => nextDayAt9am(1),
+    },
+    {
+      id: "nextMonday9am",
+      label: t("reminders.preset.nextMonday9am"),
+      getTimestamp: () => {
+        const daysUntilMonday = (8 - new Date().getDay()) % 7 || 7;
+        return nextDayAt9am(daysUntilMonday);
+      },
+    },
+  ];
+}
 
 /** Today as `YYYY-MM-DD` in local time, for the custom date input `min`. */
 export function todayDateString(): string {

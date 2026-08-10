@@ -17,6 +17,7 @@ import {
   resolveNotificationChannelLabel,
   truncateNotificationBody,
 } from "@/features/notifications/lib/notificationFormat";
+import { useT } from "@/shared/i18n";
 import {
   playNotificationSound,
   resolveSlotSound,
@@ -60,6 +61,7 @@ export function useReminderNotifications(
   settings: NotificationSettings,
   channels: ReadonlyArray<{ id: string; name?: string | null }>,
 ): void {
+  const t = useT();
   const reminders = useRemindersQuery(pubkey).data;
   const queryClient = useQueryClient();
   const remindersRef = React.useRef<Reminder[]>([]);
@@ -101,12 +103,15 @@ export function useReminderNotifications(
       due.length === 1
         ? truncateNotificationBody(
             due[0].content.target?.preview ?? due[0].content.note ?? "",
-            "A reminder is waiting",
+            t("reminders.notification.waitingFallback"),
           )
-        : `${due.length} reminders are due`;
+        : t("reminders.notification.dueMany", { count: due.length });
 
     void sendDesktopNotification({
-      title: formatNotificationTitle({ prefix: "Reminder due", channelLabel }),
+      title: formatNotificationTitle({
+        prefix: t("inbox.reminder.due"),
+        channelLabel,
+      }),
       body,
     }).then((didSend) => {
       if (!didSend) return;

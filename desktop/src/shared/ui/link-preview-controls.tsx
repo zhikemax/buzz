@@ -7,6 +7,7 @@ import {
   type LinkPreviewStyle,
   useLinkPreviewStyle,
 } from "@/shared/lib/linkPreviewStylePreference";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
@@ -25,14 +26,6 @@ import {
 const CONTROL_BUTTON_CLASS =
   "h-5 w-5 rounded-full text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/message:opacity-100 data-[state=open]:opacity-100";
 
-const LINK_PREVIEW_STYLE_OPTIONS: {
-  value: LinkPreviewStyle;
-  label: string;
-}[] = [
-  { value: "rich", label: "Rich" },
-  { value: "compact", label: "Compact" },
-];
-
 export function LinkPreviewControls({
   onRemove,
   placement = "right",
@@ -40,8 +33,14 @@ export function LinkPreviewControls({
   onRemove?: () => void;
   placement?: "left" | "right";
 }) {
+  const t = useT();
   const style = useLinkPreviewStyle();
   const { onOpenSettings } = useAppShell();
+
+  const styleOptions: { value: LinkPreviewStyle; label: string }[] = [
+    { value: "rich", label: t("settings.appearance.linkPreviewRich") },
+    { value: "compact", label: t("settings.appearance.linkPreviewCompact") },
+  ];
 
   const handleStyleChange = (nextStyle: string) => {
     if (
@@ -52,19 +51,19 @@ export function LinkPreviewControls({
     }
 
     setLinkPreviewStyle(nextStyle);
-    toast.success(
-      `Link previews set to ${nextStyle === "rich" ? "Rich" : "Compact"}.`,
-      {
-        action: onOpenSettings
-          ? {
-              label: "Appearance",
-              onClick: () => onOpenSettings("appearance"),
-            }
-          : undefined,
-        description:
-          "You can always modify this and other settings in Appearance.",
-      },
-    );
+    const styleLabel =
+      nextStyle === "rich"
+        ? t("settings.appearance.linkPreviewRich")
+        : t("settings.appearance.linkPreviewCompact");
+    toast.success(t("msg.linkPreview.styleToast", { style: styleLabel }), {
+      action: onOpenSettings
+        ? {
+            label: t("settings.appearance.title"),
+            onClick: () => onOpenSettings("appearance"),
+          }
+        : undefined,
+      description: t("msg.linkPreview.styleToastDesc"),
+    });
   };
 
   return (
@@ -77,10 +76,10 @@ export function LinkPreviewControls({
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button
-            aria-label="Link display settings"
+            aria-label={t("msg.linkPreview.displaySettings")}
             className={CONTROL_BUTTON_CLASS}
             size="icon-xs"
-            title="Link display settings"
+            title={t("msg.linkPreview.displaySettings")}
             type="button"
             variant="ghost"
           >
@@ -89,13 +88,15 @@ export function LinkPreviewControls({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" side="right">
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Display</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger>
+              {t("msg.linkPreview.display")}
+            </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuRadioGroup
                 onValueChange={handleStyleChange}
                 value={style}
               >
-                {LINK_PREVIEW_STYLE_OPTIONS.map((option) => (
+                {styleOptions.map((option) => (
                   <DropdownMenuRadioItem
                     key={option.value}
                     value={option.value}
@@ -114,7 +115,7 @@ export function LinkPreviewControls({
                 onClick={onRemove}
               >
                 <EyeOff aria-hidden="true" />
-                Remove preview
+                {t("msg.linkPreview.remove")}
               </DropdownMenuItem>
             </>
           ) : null}

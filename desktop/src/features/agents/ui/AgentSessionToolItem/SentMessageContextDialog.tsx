@@ -1,6 +1,7 @@
 import * as React from "react";
 import { CheckCheck, ChevronDown } from "lucide-react";
 
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import {
   Dialog,
@@ -36,6 +37,7 @@ export function SentMessageContextDialog({
   preview: string | null;
   result: string;
 }) {
+  const t = useT();
   const sections = buildSentMessageContextSections({
     args,
     description,
@@ -44,6 +46,7 @@ export function SentMessageContextDialog({
     isError,
     preview,
     result,
+    t,
   });
 
   return (
@@ -51,7 +54,7 @@ export function SentMessageContextDialog({
       <DialogContent className="max-w-xl overflow-hidden p-0">
         <div className="flex max-h-[85vh] flex-col">
           <DialogHeader className="px-6 pb-3 pt-5 pr-14">
-            <DialogTitle>Sent message context</DialogTitle>
+            <DialogTitle>{t("agents.sentMessageContext")}</DialogTitle>
             <DialogDescription className="flex items-center gap-1.5">
               <CheckCheck className="h-3.5 w-3.5 shrink-0" />
               <span>{label}</span>
@@ -80,6 +83,7 @@ function buildSentMessageContextSections({
   isError,
   preview,
   result,
+  t,
 }: {
   args: Record<string, unknown>;
   description?: string;
@@ -88,30 +92,31 @@ function buildSentMessageContextSections({
   isError: boolean;
   preview: string | null;
   result: string;
+  t: TranslateFn;
 }): SentMessageContextSection[] {
   const sections: SentMessageContextSection[] = [];
   if (preview) {
-    sections.push({ title: "Message", body: preview });
+    sections.push({ title: t("agents.messageSection"), body: preview });
   }
   if (description) {
-    sections.push({ title: "Tool", body: description });
+    sections.push({ title: t("agents.toolSection"), body: description });
   }
   if (hasArgs) {
     sections.push({
-      title: "Parameters",
+      title: t("agents.parameters"),
       body: JSON.stringify(args, null, 2),
     });
   }
   if (hasResult) {
     sections.push({
-      title: isError ? "Error" : "Result",
+      title: isError ? t("common.error") : t("agents.result"),
       body: formatCodeValue(result),
     });
   }
   if (sections.length === 0) {
     sections.push({
-      title: "Status",
-      body: "Waiting for tool details.",
+      title: t("agents.statusSection"),
+      body: t("agents.waitingForToolDetails"),
     });
   }
   return sections;
@@ -139,6 +144,7 @@ function SentMessageContextSectionAccordion({
 }: {
   section: SentMessageContextSection;
 }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
   const body = section.body.trim();
 
@@ -169,7 +175,9 @@ function SentMessageContextSectionAccordion({
               {body.length > 0 ? (
                 body
               ) : (
-                <span className="italic text-foreground/50">No metadata.</span>
+                <span className="italic text-foreground/50">
+                  {t("agents.noMetadata")}
+                </span>
               )}
             </div>
           </div>

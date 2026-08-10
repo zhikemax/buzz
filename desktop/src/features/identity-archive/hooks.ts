@@ -13,6 +13,7 @@ import {
   type IdentityArchiveRequest,
   type IdentityUnarchiveRequest,
 } from "@/shared/api/tauriIdentityArchive";
+import { useT } from "@/shared/i18n";
 
 export const archivedIdentitiesQueryKey = ["archivedIdentities"] as const;
 
@@ -119,6 +120,7 @@ export type IdentityArchiveActions = {
 export function useIdentityArchive(
   pubkey: string | null,
 ): IdentityArchiveActions {
+  const t = useT();
   const identityQuery = useIdentityQuery();
   const currentPubkey = identityQuery.data?.pubkey;
 
@@ -153,28 +155,34 @@ export function useIdentityArchive(
     archiveMutation.mutate(
       { targetPubkey },
       {
-        onSuccess: () => toast.success("Archived on this relay"),
+        onSuccess: () => toast.success(t("archive.toast.archived")),
         onError: (error) =>
           toast.error(
-            `Archive failed: ${error instanceof Error ? error.message : String(error)}`,
+            t("archive.toast.archiveFailed", {
+              error:
+                error instanceof Error ? error.message : String(error),
+            }),
           ),
       },
     );
-  }, [archiveMutation, hasTargetPubkey, targetPubkey]);
+  }, [archiveMutation, hasTargetPubkey, t, targetPubkey]);
 
   const unarchive = React.useCallback(() => {
     if (!hasTargetPubkey) return;
     unarchiveMutation.mutate(
       { targetPubkey },
       {
-        onSuccess: () => toast.success("Unarchived on this relay"),
+        onSuccess: () => toast.success(t("archive.toast.unarchived")),
         onError: (error) =>
           toast.error(
-            `Unarchive failed: ${error instanceof Error ? error.message : String(error)}`,
+            t("archive.toast.unarchiveFailed", {
+              error:
+                error instanceof Error ? error.message : String(error),
+            }),
           ),
       },
     );
-  }, [hasTargetPubkey, targetPubkey, unarchiveMutation]);
+  }, [hasTargetPubkey, t, targetPubkey, unarchiveMutation]);
 
   return {
     canArchive,

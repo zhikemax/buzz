@@ -4,6 +4,7 @@ import { EditorContent, type Editor } from "@tiptap/react";
 import { Plus } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 
@@ -22,6 +23,8 @@ export function ForumComposerCompactLayout({
   onEditorKeyDown,
   sendDisabled,
 }: ForumComposerCompactLayoutProps) {
+  const t = useT();
+
   return (
     <div className="flex min-h-10 items-center gap-3">
       {header ? (
@@ -35,7 +38,9 @@ export function ForumComposerCompactLayout({
         <EditorContent editor={editor} />
       </div>
       <Button
-        aria-label={isSending ? "Sending" : "Send message"}
+        aria-label={
+          isSending ? t("forum.composer.sending") : t("forum.composer.sendMessage")
+        }
         className={cn(
           "h-7 w-7 shrink-0 rounded-full border border-border/70 bg-transparent p-0 text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground",
         )}

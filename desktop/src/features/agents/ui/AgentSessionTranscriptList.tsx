@@ -13,6 +13,7 @@ import {
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { useAnchoredScroll } from "@/features/messages/ui/useAnchoredScroll";
 import { useStableArrayShallow } from "@/shared/hooks/useStableReference";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import {
   Dialog,
@@ -56,7 +57,10 @@ import {
   type TranscriptTurnSegment,
 } from "./agentSessionTranscriptGrouping";
 import { buildCompactToolSummary } from "./agentSessionToolSummary";
-import { shouldShowTranscriptRowTimestamp } from "./agentSessionTranscriptPresentation";
+import {
+  localizeTranscriptActivityTitle,
+  shouldShowTranscriptRowTimestamp,
+} from "./agentSessionTranscriptPresentation";
 import { formatTranscriptTimestampTitle } from "./agentSessionUtils";
 import { hasFileEditLineDiff } from "./FileEditDiffView";
 import { UserMessageBubble } from "./activityRenderClasses/UserMessageBubble";
@@ -111,6 +115,42 @@ function shouldShowTranscriptAcpSource() {
   }
 }
 
+function TranscriptEmptyState({
+  emptyDescription,
+  isLoading,
+  scrollContainerClassNames,
+}: {
+  emptyDescription: string;
+  isLoading: boolean;
+  scrollContainerClassNames: string;
+}) {
+  const t = useT();
+  return (
+    <div className={scrollContainerClassNames}>
+      <div className="flex h-full min-h-40 flex-col items-center justify-center px-6 py-10 text-center">
+        {isLoading ? (
+          <FuzzyLogo
+            ariaLabel={t("agents.waitingForAcpActivity")}
+            className="mx-auto text-muted-foreground"
+            fuzz={false}
+            loop
+          />
+        ) : (
+          <>
+            <Radio className="mx-auto h-4 w-4 text-muted-foreground" />
+            <p className="mt-3 text-sm font-medium">
+              {t("agents.noAcpActivityYet")}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {emptyDescription}
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AgentSessionTranscriptList({
   agentAvatarUrl,
   agentName,
@@ -135,6 +175,7 @@ export function AgentSessionTranscriptList({
   scrollScopeKey?: string | null;
   variant?: AgentSessionTranscriptVariant;
 }) {
+  const t = useT();
   const activeTurns = useActiveAgentTurns(agentPubkey);
   const isTurnLive = React.useMemo(
     () => isAgentTurnLive(activeTurns, channelId),
@@ -205,26 +246,11 @@ export function AgentSessionTranscriptList({
     const isLoading = emptyState === "loading" || isTurnLive;
 
     return (
-      <div className={scrollContainerClassNames}>
-        <div className="flex h-full min-h-40 flex-col items-center justify-center px-6 py-10 text-center">
-          {isLoading ? (
-            <FuzzyLogo
-              ariaLabel="Waiting for ACP activity"
-              className="mx-auto text-muted-foreground"
-              fuzz={false}
-              loop
-            />
-          ) : (
-            <>
-              <Radio className="mx-auto h-4 w-4 text-muted-foreground" />
-              <p className="mt-3 text-sm font-medium">No ACP activity yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {emptyDescription}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+      <TranscriptEmptyState
+        emptyDescription={emptyDescription}
+        isLoading={isLoading}
+        scrollContainerClassNames={scrollContainerClassNames}
+      />
     );
   }
 
@@ -236,7 +262,7 @@ export function AgentSessionTranscriptList({
       ref={autoTail ? scrollContainerRef : undefined}
     >
       <div
-        aria-label="Live ACP transcript"
+        aria-label={t("agents.liveAcpSession")}
         aria-live="polite"
         className={cn(
           "flex w-full flex-col",
@@ -495,12 +521,13 @@ function SameKindSummaryItem({
   profiles?: UserProfileLookup;
   summary: Extract<TranscriptTurnSegment, { kind: "summary" }>["summary"];
 }) {
+  const t = useT();
   const groupedFileEditDiffs = React.useMemo(
     () =>
       summary.renderClass === "file-edit" || summary.variant === "mixed"
-        ? getGroupedFileEditDiffs(summary.items)
+        ? getGroupedFileEditDiffs(summary.items, t)
         : [],
-    [summary.items, summary.renderClass, summary.variant],
+    [summary.items, summary.renderClass, summary.variant, t],
   );
   const groupedFileEditStats = summarizeFileEditDiffs(groupedFileEditDiffs);
   const expandsToToolItems = summary.items.every(
@@ -572,7 +599,7 @@ function SameKindSummaryItem({
                   >
                     {item.type === "tool"
                       ? item.descriptor.preview || item.descriptor.label
-                      : item.title}
+                      : localizeTranscriptActivityTitle(item.title, t)}
                   </p>
                 ))}
         </ActivityRowContent>
@@ -584,13 +611,16 @@ function SameKindSummaryItem({
   );
 }
 
-function getGroupedFileEditDiffs(items: TranscriptItem[]): FileEditDiff[] {
+function getGroupedFileEditDiffs(
+  items: TranscriptItem[],
+  t: ReturnType<typeof useT>,
+): FileEditDiff[] {
   return items.flatMap((item) => {
     if (item.type !== "tool" || item.isError) {
       return [];
     }
 
-    const diff = buildCompactToolSummary(item).fileEditDiff;
+    const diff = buildCompactToolSummary(item, t).fileEditDiff;
     return diff && hasFileEditLineDiff(diff) ? [diff] : [];
   });
 }
@@ -738,6 +768,7 @@ function PromptContextDialog({
   sections: PromptSection[];
   setup: Extract<TranscriptItem, { type: "lifecycle" }>[];
 }) {
+  const t = useT();
   if (!open || sections.length === 0) {
     return null;
   }
@@ -749,7 +780,7 @@ function PromptContextDialog({
       <DialogContent className="max-w-xl overflow-hidden p-0">
         <div className="flex min-w-0 max-h-[85vh] flex-col">
           <DialogHeader className="px-6 pb-3 pt-5 pr-14">
-            <DialogTitle>Prompt context</DialogTitle>
+            <DialogTitle>{t("agents.promptContext")}</DialogTitle>
             {setupText ? (
               <div className="flex items-center gap-1.5">
                 <CheckCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -791,11 +822,15 @@ function TurnSetupFooter({
   showTimestamp?: boolean;
   timestamp: string;
 }) {
+  const t = useT();
   const label = formatTurnSetupLabel(items);
   const detail = turnSetupDetail(items);
   const tooltipText = [label, detail].filter(Boolean).join(" · ");
   const showSetup = items.length > 0;
   const showContext = hasContext && onContextOpenChange != null;
+  const promptContextLabel = contextOpen
+    ? t("agents.hidePromptContext")
+    : t("agents.showPromptContext");
 
   if (!showSetup && !showContext) {
     return showTimestamp ? (
@@ -810,13 +845,13 @@ function TurnSetupFooter({
     >
       {showContext ? (
         <Toggle
-          aria-label={`${contextOpen ? "Hide" : "Show"} prompt context`}
+          aria-label={promptContextLabel}
           className="data-[state=on]:bg-primary/10 data-[state=on]:text-primary dark:data-[state=on]:bg-primary/15"
           data-testid="transcript-prompt-context-toggle"
           onPressedChange={onContextOpenChange}
           pressed={contextOpen}
           size="xs"
-          title={tooltipText || "Show prompt context"}
+          title={tooltipText || promptContextLabel}
           variant="ghost"
         >
           <CheckCheck aria-hidden="true" />
@@ -946,12 +981,13 @@ function SessionBoundaryDivider({
   labelState: "current" | "most-recent" | "earlier";
   sessionStartTimestamp: string;
 }) {
+  const t = useT();
   const label =
     labelState === "current"
-      ? "Latest live-observed session"
+      ? t("agents.sessionLatestLive")
       : labelState === "most-recent"
-        ? "Most recent observed session"
-        : "Earlier observed session";
+        ? t("agents.sessionMostRecent")
+        : t("agents.sessionEarlier");
   const formattedDate = new Date(sessionStartTimestamp).toLocaleString();
   return (
     <div

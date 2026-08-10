@@ -14,7 +14,7 @@ import {
   Server,
 } from "lucide-react";
 import { useAgentConfigSurface } from "../hooks";
-import { useT } from "@/shared/i18n";
+import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import { Spinner } from "@/shared/ui/spinner";
@@ -58,10 +58,14 @@ function ProvenanceHint({
   locked: boolean;
   provenance: string;
 }) {
+  const t = useT();
   return (
     <span className="mt-0.5 flex items-center gap-1 text-2xs text-muted-foreground/70">
       {locked ? (
-        <PenOff aria-label="Read-only" className="h-3 w-3 shrink-0" />
+        <PenOff
+          aria-label={t("agents.readOnly")}
+          className="h-3 w-3 shrink-0"
+        />
       ) : null}
       <span className="min-w-0 truncate">{provenance}</span>
     </span>
@@ -113,46 +117,56 @@ function provenanceSentence(
   origin: ConfigOrigin,
   writeVia: ConfigWriteMechanism,
   configFilePath: string | null,
+  t: TranslateFn,
 ): string {
   switch (origin) {
     case "buzzExplicit":
-      return "Set in Buzz";
+      return t("agents.configSetInBuzz");
     case "personaDefault":
-      return "Inherited from template";
+      return t("agents.configInheritedTemplate");
     case "runtimeOverride":
-      return "Live override (this session only)";
+      return t("agents.configLiveOverride");
     case "harnessConstraint":
-      return "Locked by harness";
+      return t("agents.configLockedHarness");
     case "envVar": {
       if (writeVia.type === "respawnWithEnvVar") {
-        return `From environment variable (${writeVia.envKey})`;
+        return t("agents.configFromEnvKey", { key: writeVia.envKey });
       }
-      return "From environment variable";
+      return t("agents.configFromEnv");
     }
     case "configFile":
       return configFilePath
-        ? `From config file (${configFilePath})`
-        : "From config file";
+        ? t("agents.configFromFilePath", { path: configFilePath })
+        : t("agents.configFromFile");
     case "acpConfigOption":
     case "acpNativeRead":
-      return "From ACP session";
+      return t("agents.configFromAcp");
     case "globalDefault":
-      return "Inherited from global defaults";
+      return t("agents.configInheritedGlobal");
     case "harnessDefault":
-      return "Inherited from harness definition";
+      return t("agents.configInheritedHarness");
   }
 }
 
 // ── Normalized row ────────────────────────────────────────────────────────────
 
-const NORMALIZED_LABELS: Record<keyof NormalizedConfig, string> = {
-  model: "Model",
-  provider: "Provider",
-  mode: "Mode",
-  thinkingEffort: "Thinking / Effort",
-  maxOutputTokens: "Max Output Tokens",
-  contextLimit: "Context Limit",
-  systemPrompt: "System Prompt",
+const NORMALIZED_LABEL_KEYS: Record<
+  keyof NormalizedConfig,
+  | "agents.model"
+  | "agents.provider"
+  | "agents.configMode"
+  | "agents.configThinkingEffort"
+  | "agents.configMaxOutputTokens"
+  | "agents.configContextLimit"
+  | "agents.configSystemPrompt"
+> = {
+  model: "agents.model",
+  provider: "agents.provider",
+  mode: "agents.configMode",
+  thinkingEffort: "agents.configThinkingEffort",
+  maxOutputTokens: "agents.configMaxOutputTokens",
+  contextLimit: "agents.configContextLimit",
+  systemPrompt: "agents.configSystemPrompt",
 };
 
 const NORMALIZED_ICONS: Record<keyof NormalizedConfig, LucideIcon> = {
@@ -187,14 +201,14 @@ function NormalizedRow({
     field.origin === "acpNativeRead" || field.origin === "acpConfigOption";
   const rawDisplayValue =
     isPreSpawn && isAcpOnly
-      ? "Available after agent starts"
+      ? t("agents.configAvailableAfterStart")
       : (field.value ?? "—");
   const displayValue =
     fieldKey === "provider"
       ? providerDisplayLabel(rawDisplayValue, t)
       : rawDisplayValue;
   const provenance = field.value
-    ? provenanceSentence(field.origin, field.writeVia, configFilePath)
+    ? provenanceSentence(field.origin, field.writeVia, configFilePath, t)
     : null;
   const locked = isReadOnlyField(field);
   const isCopyable =
@@ -248,12 +262,15 @@ function NormalizedRow({
   if (isCopyable && field.value) {
     return (
       <button
-        aria-label={`Copy ${label}`}
+        aria-label={t("channel.copyField", { label })}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
         onClick={() =>
-          copyTextToClipboard(field.value ?? "", `Copied ${label}`)
+          copyTextToClipboard(
+            field.value ?? "",
+            t("channel.copiedField", { label }),
+          )
         }
-        title={`Copy ${label}`}
+        title={t("channel.copyField", { label })}
         type="button"
       >
         {content}
@@ -275,8 +292,9 @@ function AdvancedRow({
   configFilePath: string | null;
   variant?: RowVariant;
 }) {
+  const t = useT();
   const provenance = field.value
-    ? provenanceSentence(field.origin, field.writeVia, configFilePath)
+    ? provenanceSentence(field.origin, field.writeVia, configFilePath, t)
     : null;
   const locked = isReadOnlyField(field);
 
@@ -331,12 +349,15 @@ function AdvancedRow({
   if (isCopyable && field.value) {
     return (
       <button
-        aria-label={`Copy ${field.label}`}
+        aria-label={t("channel.copyField", { label: field.label })}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
         onClick={() =>
-          copyTextToClipboard(field.value ?? "", `Copied ${field.label}`)
+          copyTextToClipboard(
+            field.value ?? "",
+            t("channel.copiedField", { label: field.label }),
+          )
         }
-        title={`Copy ${field.label}`}
+        title={t("channel.copyField", { label: field.label })}
         type="button"
       >
         {content}
@@ -353,6 +374,7 @@ export function AgentConfigPanel({
   advancedMode = "collapsed",
   pubkey,
 }: Props) {
+  const t = useT();
   const [advancedOpen, setAdvancedOpen] = React.useState(false);
   const { data, isLoading, error } = useAgentConfigSurface(pubkey);
 
@@ -360,7 +382,7 @@ export function AgentConfigPanel({
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
         <Spinner className="h-3.5 w-3.5" />
-        Loading config…
+        {t("agents.loadingConfig")}
       </div>
     );
   }
@@ -370,7 +392,7 @@ export function AgentConfigPanel({
       <p className="py-3 text-sm text-destructive">
         {error instanceof Error
           ? error.message
-          : "Failed to load agent config."}
+          : t("agents.failedLoadConfig")}
       </p>
     );
   }
@@ -410,14 +432,14 @@ export function AgentConfigPanel({
       >
         {normalizedEntries.length === 0 ? (
           <p className="py-2 text-xs text-muted-foreground">
-            No config fields available.
+            {t("agents.noConfigFields")}
           </p>
         ) : (
           normalizedEntries.map(([key, field]) => (
             <NormalizedRow
               key={key}
               fieldKey={key}
-              label={NORMALIZED_LABELS[key]}
+              label={t(NORMALIZED_LABEL_KEYS[key])}
               field={field}
               isPreSpawn={isPreSpawn}
               configFilePath={configFilePath}
@@ -436,7 +458,7 @@ export function AgentConfigPanel({
       {advanced.length > 0 && advancedMode === "flat" ? (
         <div className="divide-y divide-border/50 border-t border-border/50">
           <p className="px-4 py-3 text-xs font-medium text-foreground">
-            Advanced
+            {t("agents.advanced")}
           </p>
           {advanced.map((field) => (
             <AdvancedRow
@@ -461,7 +483,7 @@ export function AgentConfigPanel({
             ) : (
               <ChevronRight className="h-3 w-3" />
             )}
-            Advanced ({advanced.length})
+            {t("agents.advancedCount", { count: advanced.length })}
           </button>
 
           {advancedOpen ? (

@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
 import { formatHuddleActionError } from "./huddleError.ts";
 
-const AUDIO_UNAVAILABLE_MESSAGE =
-  "Huddle audio isn’t available on this server. Ask an administrator to turn it on.";
+const AUDIO_UNAVAILABLE_MESSAGE = translate(
+  "en",
+  "huddle.error.audioUnavailable",
+);
 
 test("maps the relay deployment rejection to actionable copy", () => {
   assert.equal(
@@ -37,10 +40,10 @@ test("preserves other string and Error messages", () => {
 test("uses action-specific fallback copy for unknown errors", () => {
   assert.equal(
     formatHuddleActionError({ reason: "unknown" }, "join"),
-    "Couldn’t join the huddle.",
+    translate("en", "huddle.error.couldNotJoin"),
   );
   assert.equal(
     formatHuddleActionError(null, "start"),
-    "Couldn’t start the huddle.",
+    translate("en", "huddle.error.couldNotStart"),
   );
 });

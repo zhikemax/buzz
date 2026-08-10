@@ -1,4 +1,5 @@
 import type { CardMintKeyLayer } from "@/shared/api/tauriPersonas";
+import type { TranslateFn } from "@/shared/i18n";
 
 /**
  * Pure derivations for the key-setup panel visibility in `AgentCardMintDialog`.
@@ -66,10 +67,11 @@ export function showReadOnlyRow(
 export function keyPanelTitle(
   keyLayer: CardMintKeyLayer | undefined,
   editingKey: boolean,
+  t: TranslateFn,
 ): string {
-  if (isReadOnlyLayer(keyLayer)) return "OpenAI API key";
-  if (keyLayer === "none") return "One-time setup: OpenAI API key";
+  if (isReadOnlyLayer(keyLayer)) return t("agents.openaiApiKey");
+  if (keyLayer === "none") return t("agents.openaiKeyOnetimeSetup");
   return editingKey
-    ? "Update OpenAI API key"
-    : "One-time setup: OpenAI API key";
+    ? t("agents.updateOpenaiKey")
+    : t("agents.openaiKeyOnetimeSetup");
 }

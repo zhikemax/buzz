@@ -3,32 +3,53 @@ import test from "node:test";
 
 import { humanizeConfigKey, summarizeRunOn } from "./runOnSummary.ts";
 
+const t = (key, params = {}) => {
+  switch (key) {
+    case "agents.notSet":
+      return "Not set";
+    case "agents.listItems":
+      return `List (${params.count} items)`;
+    case "agents.structuredValue":
+      return "Structured value";
+    default:
+      return key;
+  }
+};
+
 test("local backend summarizes to the local location with no rows", () => {
-  assert.deepEqual(summarizeRunOn({ type: "local" }), { location: "local" });
+  assert.deepEqual(summarizeRunOn({ type: "local" }, t), {
+    location: "local",
+  });
 });
 
 test("provider backend carries the provider id", () => {
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "kubernetes",
-    config: {},
-  });
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "kubernetes",
+      config: {},
+    },
+    t,
+  );
   assert.equal(summary.location, "provider");
   assert.equal(summary.providerId, "kubernetes");
   assert.deepEqual(summary.rows, []);
 });
 
 test("a saved kubernetes config renders labeled scalar rows", () => {
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "kubernetes",
-    config: {
-      namespace: "buzz-agents-x7k2mp",
-      image: "ghcr.io/block/buzz-sprig@sha256:17facfc7",
-      cpu_request: "1",
-      inactivity_seconds: 7200,
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "kubernetes",
+      config: {
+        namespace: "buzz-agents-x7k2mp",
+        image: "ghcr.io/block/buzz-sprig@sha256:17facfc7",
+        cpu_request: "1",
+        inactivity_seconds: 7200,
+      },
     },
-  });
+    t,
+  );
   assert.equal(summary.location, "provider");
   const byKey = Object.fromEntries(summary.rows.map((r) => [r.key, r]));
   assert.equal(byKey.namespace.label, "Namespace");
@@ -42,23 +63,26 @@ test("a saved kubernetes config renders labeled scalar rows", () => {
 });
 
 test("rows follow the provider-schema preferred order, spillover alphabetical", () => {
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "kubernetes",
-    config: {
-      // Deliberately shuffled persisted order.
-      memory_limit: "1Gi",
-      zeta_extra: "z",
-      namespace: "n",
-      cpu_limit: "1",
-      alpha_extra: "a",
-      image: "i",
-      inactivity_seconds: 7200,
-      cpu_request: "1",
-      context: "c",
-      memory_request: "1Gi",
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "kubernetes",
+      config: {
+        // Deliberately shuffled persisted order.
+        memory_limit: "1Gi",
+        zeta_extra: "z",
+        namespace: "n",
+        cpu_limit: "1",
+        alpha_extra: "a",
+        image: "i",
+        inactivity_seconds: 7200,
+        cpu_request: "1",
+        context: "c",
+        memory_request: "1Gi",
+      },
     },
-  });
+    t,
+  );
   assert.deepEqual(
     summary.rows.map((r) => r.key),
     [
@@ -77,11 +101,20 @@ test("rows follow the provider-schema preferred order, spillover alphabetical", 
 });
 
 test("null, empty-string, boolean, and number values all display honestly", () => {
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "p",
-    config: { a_null: null, b_empty: "", c_flag: true, d_num: 0, e_off: false },
-  });
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "p",
+      config: {
+        a_null: null,
+        b_empty: "",
+        c_flag: true,
+        d_num: 0,
+        e_off: false,
+      },
+    },
+    t,
+  );
   const values = Object.fromEntries(summary.rows.map((r) => [r.key, r.value]));
   assert.equal(values.a_null, "Not set");
   assert.equal(values.b_empty, "Not set");
@@ -96,31 +129,37 @@ test("every row value is a string — objects must never reach React children", 
   // React throws on an object child, taking down the whole edit dialog.
   // A hand-edited managed-agents.json with nested config is exactly the
   // record the create-time scalar gate never saw.
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "p",
-    config: {
-      resources: { limits: { cpu: "2" } },
-      flag: true,
-      count: 3,
-      name: "x",
-      missing: null,
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "p",
+      config: {
+        resources: { limits: { cpu: "2" } },
+        flag: true,
+        count: 3,
+        name: "x",
+        missing: null,
+      },
     },
-  });
+    t,
+  );
   for (const row of summary.rows) {
     assert.equal(typeof row.value, "string", `${row.key} is not a string`);
   }
 });
 
 test("arrays and objects are summarized, never serialized", () => {
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "p",
-    config: {
-      tolerations: [{ key: "gpu" }, { key: "spot" }],
-      node_selector: { disktype: "ssd" },
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "p",
+      config: {
+        tolerations: [{ key: "gpu" }, { key: "spot" }],
+        node_selector: { disktype: "ssd" },
+      },
     },
-  });
+    t,
+  );
   const values = Object.fromEntries(summary.rows.map((r) => [r.key, r.value]));
   assert.equal(values.tolerations, "List (2 items)");
   assert.equal(values.node_selector, "Structured value");
@@ -129,18 +168,21 @@ test("arrays and objects are summarized, never serialized", () => {
 });
 
 test("secret-shaped keys are redacted, fail-safe for unknown providers", () => {
-  const summary = summarizeRunOn({
-    type: "provider",
-    id: "future-provider",
-    config: {
-      api_token: "abc123",
-      registry_password: "hunter2",
-      clientSecret: "s3cr3t",
-      authHeader: "Bearer xyz",
-      privateKey: "nsec1...",
-      namespace: "safe-to-show",
+  const summary = summarizeRunOn(
+    {
+      type: "provider",
+      id: "future-provider",
+      config: {
+        api_token: "abc123",
+        registry_password: "hunter2",
+        clientSecret: "s3cr3t",
+        authHeader: "Bearer xyz",
+        privateKey: "nsec1...",
+        namespace: "safe-to-show",
+      },
     },
-  });
+    t,
+  );
   const byKey = Object.fromEntries(summary.rows.map((r) => [r.key, r]));
   for (const key of [
     "api_token",

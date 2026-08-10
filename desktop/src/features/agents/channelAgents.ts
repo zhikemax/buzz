@@ -22,6 +22,7 @@ import type {
   ManagedAgentBackend,
   RespondToMode,
 } from "@/shared/api/types";
+import { detectLocale, translate } from "@/shared/i18n";
 
 type ChannelAgentRuntime = Pick<
   AcpRuntime,
@@ -262,7 +263,7 @@ export async function provisionChannelManagedAgent(
   const trimmedName = input.name.trim();
 
   if (trimmedName.length === 0) {
-    throw new Error("Agent name is required.");
+    throw new Error(translate(detectLocale(), "agents.agentNameRequired"));
   }
 
   // Smart reuse: if a managed agent with the same personaId already exists
@@ -436,7 +437,10 @@ export async function createChannelManagedAgents(
         kind: input.personaId ? "persona" : "generic",
         name: input.name.trim() || "agent",
         personaId: input.personaId ?? null,
-        error: error instanceof Error ? error.message : "Failed to add agent.",
+        error:
+          error instanceof Error
+            ? error.message
+            : translate(detectLocale(), "agents.failedAddAgent"),
       });
     }
   }

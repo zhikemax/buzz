@@ -176,22 +176,21 @@ export function CommunitySwitcher({
       const result = await onRemoveCommunity(activeCommunity.id);
       setDropdownOpen(false);
       if (result?.status === "already-absent") {
-        toast("Community removed", {
-          description:
-            "You were no longer a member, so Buzz removed the community from this device.",
+        toast(t("community.removed"), {
+          description: t("community.removedDescription"),
         });
       }
     } catch (error) {
       setLeaveError(
         error instanceof Error
           ? error.message
-          : "Couldn't leave the community. Try again.",
+          : t("community.leaveFailed"),
       );
       setDropdownOpen(true);
     } finally {
       setIsLeaving(false);
     }
-  }, [activeCommunity, isLeaving, onRemoveCommunity]);
+  }, [activeCommunity, isLeaving, onRemoveCommunity, t]);
 
   const triggerContent = (
     <>
@@ -332,7 +331,9 @@ export function CommunitySwitcher({
                   type="button"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>{isLeaving ? "Leaving…" : "Leave community"}</span>
+                  <span>
+                    {isLeaving ? t("community.leaving") : t("community.leave")}
+                  </span>
                 </button>
                 {leaveError ? (
                   <p

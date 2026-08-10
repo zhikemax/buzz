@@ -15,6 +15,7 @@ import { relayClient } from "@/shared/api/relayClient";
 import { getCachedRelayOrigin } from "@/shared/lib/mediaUrl";
 import { signRelayEvent } from "@/shared/api/tauri";
 import { getIdentity } from "@/shared/api/tauriIdentity";
+import { detectLocale, translate } from "@/shared/i18n";
 
 export type CreateProjectInput = {
   accessChannelId: string;
@@ -49,7 +50,11 @@ async function createProject(
   const projectId = `${ownerPubkey}:${templates.dtag}`;
   const canResume = resumableProjectIds.has(projectId);
   if (existingProject && !canResume) {
-    throw new Error(`You already have a project named "${templates.dtag}".`);
+    throw new Error(
+      translate(detectLocale(), "projects.create.alreadyNamed", {
+        name: templates.dtag,
+      }),
+    );
   }
   if (existingProject && !existingProject.legacy) {
     if (
@@ -60,7 +65,11 @@ async function createProject(
       resumableProjectIds.delete(projectId);
       return { project: existingProject };
     }
-    throw new Error(`You already have a project named "${templates.dtag}".`);
+    throw new Error(
+      translate(detectLocale(), "projects.create.alreadyNamed", {
+        name: templates.dtag,
+      }),
+    );
   }
 
   resumableProjectIds.add(projectId);
@@ -71,16 +80,16 @@ async function createProject(
     repositoryEvent = await signRelayEvent(templates.repository);
     await relayClient.publishEvent(
       repositoryEvent,
-      "Timed out creating the initial repository.",
-      "Failed to create the initial repository.",
+      translate(detectLocale(), "projects.create.repoTimeout"),
+      translate(detectLocale(), "projects.create.repoFailed"),
     );
   }
 
   try {
     await relayClient.publishEvent(
       projectEvent,
-      "Timed out creating project.",
-      "Failed to create project.",
+      translate(detectLocale(), "projects.create.timeout"),
+      translate(detectLocale(), "projects.create.failed"),
     );
   } catch (error) {
     if (!isUnsupportedProjectKindError(error)) throw error;
@@ -97,8 +106,10 @@ async function createProject(
     resumableProjectIds.delete(projectId);
     return {
       project: legacyProject,
-      compatibilityWarning:
-        "The repository was created, but this relay does not support multi-repository projects yet. It will appear as a standalone project.",
+      compatibilityWarning: translate(
+        detectLocale(),
+        "projects.create.compatWarning",
+      ),
     };
   }
 
@@ -115,7 +126,7 @@ async function createProject(
           !candidate.legacy,
       );
   if (!project) {
-    throw new Error("The project was created but could not be read.");
+    throw new Error(translate(detectLocale(), "projects.create.readFailed"));
   }
   resumableProjectIds.delete(projectId);
   return { project };

@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, ImageOff } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { useState } from "react";
 
+import { useT } from "@/shared/i18n";
 import type { ResolvedLinkPreview } from "@/shared/lib/useResolvedLinkPreviews";
 import { cn } from "@/shared/lib/cn";
 import { LinkPreviewControls } from "@/shared/ui/link-preview-controls";
@@ -62,12 +63,15 @@ function LinkPreviewImage({
   ImageLightbox: LinkPreviewImageLightboxComponent;
   preview: ResolvedLinkPreview;
 }) {
+  const t = useT();
   const imageSrc =
     preview.imageState === "image" ? preview.imageDataUrl : undefined;
   const [failedImageSrc, setFailedImageSrc] = useState<string | null>(null);
   const imageFailed = Boolean(imageSrc && failedImageSrc === imageSrc);
   const showFallback = preview.imageState === "fallback" || imageFailed;
-  const alt = `Preview from ${preview.imageDomain}`;
+  const alt = t("msg.linkPreview.fromDomain", {
+    domain: preview.imageDomain ?? "",
+  });
 
   if (!imageSrc || imageFailed) {
     return (
@@ -162,6 +166,7 @@ function TweetPreview({
   preview: ResolvedLinkPreview;
   showControls: boolean;
 }) {
+  const t = useT();
   const [contentExpanded, setContentExpanded] = useState(true);
   const reserveImage = preview.imageState !== "none";
   const hasExpandableContent = Boolean(preview.description) || reserveImage;
@@ -220,7 +225,7 @@ function TweetPreview({
           ) : (
             <ChevronDown aria-hidden="true" className="size-3" />
           )}
-          {contentExpanded ? "Show less" : "Show more"}
+          {contentExpanded ? t("notify.showLess") : t("common.showMore")}
         </button>
       ) : null}
       {showControls ? (
@@ -245,6 +250,7 @@ export function RichLinkPreviewAttachment({
   preview: ResolvedLinkPreview;
   showControls?: boolean;
 }) {
+  const t = useT();
   const [contentExpanded, setContentExpanded] = useState(true);
 
   if (isTweetPreview(preview)) {
@@ -296,7 +302,11 @@ export function RichLinkPreviewAttachment({
           <span className="truncate">{hostname}</span>
         </a>
         <a
-          aria-label={`Open ${preview.provider} ${preview.typeLabel}: ${preview.title}`}
+          aria-label={t("msg.linkPreview.openEntity", {
+            provider: preview.provider,
+            type: preview.typeLabel,
+            title: preview.title,
+          })}
           className="mt-0.5 block text-sm font-semibold leading-5 text-foreground hover:underline"
           href={preview.href}
           onClick={
@@ -339,7 +349,7 @@ export function RichLinkPreviewAttachment({
           ) : (
             <ChevronDown aria-hidden="true" className="size-3" />
           )}
-          {contentExpanded ? "Show less" : "Show more"}
+          {contentExpanded ? t("notify.showLess") : t("common.showMore")}
         </button>
       ) : null}
       {showControls ? (

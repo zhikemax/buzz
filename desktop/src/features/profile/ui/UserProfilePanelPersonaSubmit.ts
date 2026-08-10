@@ -10,6 +10,7 @@ import type {
   UpdateManagedAgentInput,
   UpdatePersonaInput,
 } from "@/shared/api/types";
+import type { TranslateFn } from "@/shared/i18n";
 
 type SubmitProfilePersonaDialogOptions = {
   createManagedAgentForPersona: (
@@ -21,6 +22,7 @@ type SubmitProfilePersonaDialogOptions = {
   onDone: () => void;
   previousPersona?: AgentPersona;
   runtimes?: readonly AcpRuntimeCatalogEntry[];
+  t: TranslateFn;
   updateManagedAgent: (
     input: UpdateManagedAgentInput,
   ) => Promise<{ agent: ManagedAgent; profileSyncError: string | null }>;
@@ -38,12 +40,17 @@ function normalizeRuntimePreference(value: string | null | undefined): string {
   return value?.trim() ?? "";
 }
 
+export type LinkedAgentRuntimeEditError = {
+  kind: "runtimeUnavailable";
+  runtimeLabel: string | null;
+};
+
 export function validateLinkedAgentRuntimeEdit({
   input,
   managedAgent,
   previousPersona,
   runtimes,
-}: ValidateLinkedAgentRuntimeEditOptions): string | null {
+}: ValidateLinkedAgentRuntimeEditOptions): LinkedAgentRuntimeEditError | null {
   if (!managedAgent || !previousPersona) {
     return null;
   }
@@ -59,8 +66,10 @@ export function validateLinkedAgentRuntimeEdit({
     return null;
   }
 
-  const runtimeLabel = runtime?.label ?? "This provider";
-  return `${runtimeLabel} is not available. Install it before saving this linked agent.`;
+  return {
+    kind: "runtimeUnavailable",
+    runtimeLabel: runtime?.label ?? null,
+  };
 }
 
 export async function submitProfilePersonaDialog({
@@ -71,6 +80,7 @@ export async function submitProfilePersonaDialog({
   onDone,
   previousPersona,
   runtimes,
+  t,
   updateManagedAgent,
   updatePersona,
 }: SubmitProfilePersonaDialogOptions) {
@@ -83,7 +93,13 @@ export async function submitProfilePersonaDialog({
         runtimes,
       });
       if (runtimeEditError) {
-        toast.error(runtimeEditError);
+        toast.error(
+          t("agents.runtimeUnavailableInstall", {
+            name:
+              runtimeEditError.runtimeLabel ??
+              t("agents.thisProviderCapitalized"),
+          }),
+        );
         return;
       }
 
@@ -97,31 +113,47 @@ export async function submitProfilePersonaDialog({
       const result = agentUpdate ? await updateManagedAgent(agentUpdate) : null;
       if (result?.profileSyncError) {
         toast.warning(
-          `${result.agent.name} was updated, but profile sync failed: ${result.profileSyncError}`,
+          t("agents.updatedButProfileSyncFailed", {
+            name: result.agent.name,
+            error: result.profileSyncError,
+          }),
         );
       }
-      toast.success(`Updated ${input.displayName}.`);
+      toast.success(t("agents.updatedNamed", { name: input.displayName }));
     } else {
       const persona = await createPersona(input);
       try {
         const created = await createManagedAgentForPersona(persona);
         if (created.spawnError) {
           toast.error(
-            `${persona.displayName} was created, but it did not start: ${created.spawnError}`,
+            t("agents.createdButDidNotStart", {
+              name: persona.displayName,
+              message: created.spawnError,
+            }),
           );
         } else {
-          toast.success(`Created and started ${created.agent.name}.`);
+          toast.success(
+            t("agents.createdAndStartedNamed", { name: created.agent.name }),
+          );
         }
         if (created.profileSyncError) {
           toast.warning(
-            `${created.agent.name} was created, but profile sync failed: ${created.profileSyncError}`,
+            t("agents.createdButProfileSyncFailed", {
+              name: created.agent.name,
+              message: created.profileSyncError,
+            }),
           );
         }
       } catch (error) {
         toast.error(
           error instanceof Error
-            ? `${persona.displayName} was created, but the agent instance could not be created: ${error.message}`
-            : `${persona.displayName} was created, but the agent instance could not be created.`,
+            ? t("agents.createdButInstanceFailed", {
+                name: persona.displayName,
+                message: error.message,
+              })
+            : t("agents.createdButInstanceFailedGeneric", {
+                name: persona.displayName,
+              }),
         );
       }
     }
@@ -129,7 +161,7 @@ export async function submitProfilePersonaDialog({
     onDone();
   } catch (error) {
     toast.error(
-      error instanceof Error ? error.message : "Failed to save agent.",
+      error instanceof Error ? error.message : t("agents.failedSaveAgent"),
     );
   }
 }

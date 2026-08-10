@@ -1,6 +1,7 @@
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import * as React from "react";
 
+import { useT } from "@/shared/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,14 +12,20 @@ import {
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
 type DeleteActionMenuProps = {
-  label: string;
+  labelKey: "post" | "reply";
   onConfirm: () => void;
   iconSize?: "sm" | "md";
 };
 
-export function DeleteActionMenu({ label, onConfirm }: DeleteActionMenuProps) {
+export function DeleteActionMenu({
+  labelKey,
+  onConfirm,
+}: DeleteActionMenuProps) {
+  const t = useT();
   const [isOpen, setIsOpen] = React.useState(false);
   const iconClass = "h-4 w-4";
+  const label =
+    labelKey === "post" ? t("forum.deletePost") : t("forum.deleteReply");
 
   return (
     <div className="ml-auto opacity-0 transition-opacity group-hover:opacity-100">
@@ -38,7 +45,7 @@ export function DeleteActionMenu({ label, onConfirm }: DeleteActionMenuProps) {
             onClick={() => setIsOpen(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete {label}
+            {t("forum.deleteConfirmAction", { label })}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

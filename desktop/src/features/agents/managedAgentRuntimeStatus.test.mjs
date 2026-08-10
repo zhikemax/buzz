@@ -43,13 +43,21 @@ test("backend-authoritative local setup takes precedence", () => {
 });
 
 test("unavailable detail distinguishes stopped and failed", () => {
+  const t = (key) =>
+    ({
+      "agents.availabilityStoppedByYou": "Stopped by you",
+      "agents.availabilityCouldNotConnect": "Could not connect",
+      "agents.availabilityNeedsSetupDetail":
+        "Set up this agent on this device to start it.",
+    })[key] ?? key;
   assert.equal(
-    agentCommunityStatusDetail(runtime({ lifecycle: "stopped" })),
+    agentCommunityStatusDetail(runtime({ lifecycle: "stopped" }), t),
     "Stopped by you",
   );
   assert.equal(
     agentCommunityStatusDetail(
       runtime({ lifecycle: "failed", error: "Relay timed out" }),
+      t,
     ),
     "Relay timed out",
   );

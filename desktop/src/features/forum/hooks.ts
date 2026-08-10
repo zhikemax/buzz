@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getForumPosts, getForumThread } from "@/shared/api/forum";
 import { useRelaySelfQuery } from "@/features/moderation/hooks";
 import { deleteMessage, sendChannelMessage } from "@/shared/api/tauri";
+import { detectLocale, translate } from "@/shared/i18n";
 import type {
   Channel,
   ForumPostsResponse,
@@ -72,7 +73,7 @@ export function useCreateForumPostMutation(channel: Channel | null) {
       mediaTags?: string[][];
     }) => {
       if (!channel) {
-        throw new Error("No channel selected.");
+        throw new Error(translate(detectLocale(), "forum.error.noChannel"));
       }
 
       return sendChannelMessage(
@@ -100,7 +101,7 @@ export function useDeleteForumPostMutation(channel: Channel | null) {
   return useMutation({
     mutationFn: async ({ eventId }: { eventId: string }) => {
       if (!channel) {
-        throw new Error("No channel selected.");
+        throw new Error(translate(detectLocale(), "forum.error.noChannel"));
       }
       await deleteMessage(channel.id, eventId);
     },
@@ -123,7 +124,7 @@ export function useDeleteForumReplyMutation(
   return useMutation({
     mutationFn: async ({ eventId }: { eventId: string }) => {
       if (!channel) {
-        throw new Error("No channel selected.");
+        throw new Error(translate(detectLocale(), "forum.error.noChannel"));
       }
       await deleteMessage(channel.id, eventId);
     },
@@ -158,7 +159,7 @@ export function useCreateForumReplyMutation(channel: Channel | null) {
       mediaTags?: string[][];
     }) => {
       if (!channel) {
-        throw new Error("No channel selected.");
+        throw new Error(translate(detectLocale(), "forum.error.noChannel"));
       }
 
       return sendChannelMessage(

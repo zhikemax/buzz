@@ -1,9 +1,11 @@
+import type { TranslateFn } from "@/shared/i18n";
+
 export type PersonaModelDiscoveryStatus = {
   message: string;
   tone: "muted" | "warning";
 };
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, t: TranslateFn): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -13,20 +15,22 @@ function errorMessage(error: unknown): string {
   try {
     return JSON.stringify(error);
   } catch {
-    return "Unknown model discovery error";
+    return t("agents.unknownModelDiscoveryError");
   }
 }
 
-function providerObjectLabel(provider: string): string {
+function providerObjectLabel(provider: string, t: TranslateFn): string {
   switch (provider.trim()) {
     case "anthropic":
       return "Anthropic";
     case "openai":
       return "OpenAI";
     case "openai-compat":
-      return "OpenAI-compatible";
+      return t("settings.agents.provider.openaiCompat");
+    case "relay-mesh":
+      return t("settings.agents.provider.relayMesh");
     default:
-      return provider.trim() || "this provider";
+      return provider.trim() || t("agents.thisProvider");
   }
 }
 
@@ -44,46 +48,42 @@ function isEmptySharedComputeError(message: string): boolean {
 export function formatModelDiscoveryErrorStatus(
   error: unknown,
   provider: string,
+  t: TranslateFn,
   agentLabel?: string,
 ): PersonaModelDiscoveryStatus | null {
-  const message = errorMessage(error);
+  const message = errorMessage(error, t);
 
   if (provider.trim() === "relay-mesh") {
     if (message.includes("waiting for the current member roster")) {
       return {
-        message:
-          "Buzz is waiting for the relay's member roster. Try again shortly; if this persists, check the relay's membership configuration.",
+        message: t("agents.discoveryWaitingRoster"),
         tone: "warning",
       };
     }
 
     if (isEmptySharedComputeError(message)) {
       return {
-        message:
-          "No members are sharing compute right now. On a member machine, open Settings > Compute, choose a model, and turn on Share this machine.",
+        message: t("agents.discoveryNoSharingMembers"),
         tone: "warning",
       };
     }
 
     if (message.includes("shared compute is not available in this build")) {
       return {
-        message:
-          "This version of Buzz cannot use shared compute. Update Buzz or choose another provider.",
+        message: t("agents.discoverySharedComputeUnavailable"),
         tone: "warning",
       };
     }
 
     if (message.includes("shared compute status is malformed")) {
       return {
-        message:
-          "Buzz received an invalid shared compute status. Check the member machine, then try again.",
+        message: t("agents.discoverySharedComputeMalformed"),
         tone: "warning",
       };
     }
 
     return {
-      message:
-        "Buzz couldn't check shared compute through the relay. Check your relay connection and try again.",
+      message: t("agents.discoverySharedComputeCheckFailed"),
       tone: "warning",
     };
   }
@@ -95,23 +95,24 @@ export function formatModelDiscoveryErrorStatus(
   // errors, so matching it would swallow unrelated failures into "sign in".
   if (message.toLowerCase().includes("authentication required")) {
     const label = agentLabel?.trim();
+    const name = label || t("agents.thisAgentCapitalized");
+    const namePossessive = label || t("agents.agentPossessive");
     return {
-      message: `${label || "This agent"} requires sign-in before models can load. Sign in with the ${label || "agent's"} CLI in a terminal, then try again.`,
+      message: t("agents.discoveryAuthRequired", { name, namePossessive }),
       tone: "warning",
     };
   }
 
   if (message.includes("ANTHROPIC_API_KEY required")) {
     return {
-      message: "Enter an Anthropic API key to load Anthropic models.",
+      message: t("agents.discoveryAnthropicKeyRequired"),
       tone: "warning",
     };
   }
 
   if (message.includes("OPENAI_COMPAT_API_KEY required")) {
     return {
-      message:
-        "Enter an OpenAI runtime API key (OPENAI_COMPAT_API_KEY) to load OpenAI models.",
+      message: t("agents.discoveryOpenaiCompatKeyRequired"),
       tone: "warning",
     };
   }
@@ -125,9 +126,9 @@ export function formatModelDiscoveryErrorStatus(
   }
 
   return {
-    message: `Using built-in model options. Could not load live models for ${providerObjectLabel(
-      provider,
-    )}.`,
+    message: t("agents.discoveryUsingBuiltIn", {
+      provider: providerObjectLabel(provider, t),
+    }),
     tone: "warning",
   };
 }

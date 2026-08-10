@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
 import {
   EMPTY_JOIN_ALERT_LEDGER,
   JOIN_ALERT_DEPARTED_MAX_ITEMS,
@@ -10,6 +11,8 @@ import {
   reconcileJoinAlertLedger,
   writeJoinAlertLedger,
 } from "./joinAlerts.ts";
+
+const t = (key, params) => translate("en", key, params);
 
 const COMMUNITY = "community-1";
 const OWNER = "a".repeat(64);
@@ -258,8 +261,14 @@ test("a write that cannot land is reported, not thrown", () => {
 });
 
 test("notification copy names the community when known", () => {
-  assert.equal(joinAlertTitle("Buzz HQ"), "New member in Buzz HQ");
-  assert.equal(joinAlertTitle("  "), "New community member");
-  assert.equal(joinAlertTitle(null), "New community member");
-  assert.equal(joinAlertBody("Alice"), "Alice joined");
+  assert.equal(
+    joinAlertTitle("Buzz HQ"),
+    t("invites.join.titleNamed", { name: "Buzz HQ" }),
+  );
+  assert.equal(joinAlertTitle("  "), t("invites.join.title"));
+  assert.equal(joinAlertTitle(null), t("invites.join.title"));
+  assert.equal(
+    joinAlertBody("Alice"),
+    t("invites.join.body", { name: "Alice" }),
+  );
 });

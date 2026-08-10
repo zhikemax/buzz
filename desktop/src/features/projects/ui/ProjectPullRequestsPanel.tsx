@@ -34,6 +34,7 @@ import { canReviewProjectPullRequest } from "@/features/projects/pullRequestRevi
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import type { ChannelMember } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import {
@@ -489,6 +490,7 @@ export function ProjectPullRequestDetail({
   project: Project;
   pullRequest: ProjectPullRequest;
 }) {
+  const t = useT();
   const identityQuery = useIdentityQuery();
   const commentMutation = useCreateProjectPullRequestCommentMutation(project);
   const [
@@ -520,17 +522,19 @@ export function ProjectPullRequestDetail({
         });
         toast.success(
           decision === "request-changes"
-            ? "Changes requested."
-            : "Comment posted.",
+            ? t("projects.toast.changesRequested")
+            : t("projects.toast.commentPosted"),
         );
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Failed to post comment.",
+          error instanceof Error
+            ? error.message
+            : t("projects.toast.commentFailed"),
         );
         throw error;
       }
     },
-    [commentMutation, pullRequest],
+    [commentMutation, pullRequest, t],
   );
   const handleCommentSubmit = React.useCallback(
     (content: string, mentionPubkeys: string[], mediaTags?: string[][]) =>
@@ -696,10 +700,13 @@ export function ProjectPullRequestDetail({
               </span>
               <span className="flex min-h-5 min-w-0 flex-1 items-center text-left">
                 {reviewHistoryCollapsed
-                  ? `Show ${reviewHistory.length} earlier ${
-                      reviewHistory.length === 1 ? "activity" : "activities"
-                    }`
-                  : "Collapse review history"}
+                  ? t(
+                      reviewHistory.length === 1
+                        ? "projects.pr.panel.showEarlierActivityOne"
+                        : "projects.pr.panel.showEarlierActivityMany",
+                      { count: reviewHistory.length },
+                    )
+                  : t("projects.pr.panel.collapseReviewHistory")}
               </span>
               {reviewHistoryCollapsed ? (
                 <ChevronDown className="mt-0.5 h-3.5 w-3.5" />
@@ -730,8 +737,12 @@ export function ProjectPullRequestDetail({
                 </span>
               </span>
               <span className="min-w-0 flex-1 text-left">
-                Show {earlierReviewHistoryCount} earlier{" "}
-                {earlierReviewHistoryCount === 1 ? "activity" : "activities"}
+                {t(
+                  earlierReviewHistoryCount === 1
+                    ? "projects.pr.panel.showEarlierActivityOne"
+                    : "projects.pr.panel.showEarlierActivityMany",
+                  { count: earlierReviewHistoryCount },
+                )}
               </span>
             </button>
           ) : null}
@@ -856,7 +867,7 @@ export function ProjectPullRequestDetail({
         </div>
         <h4 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
           <MessageSquare className="h-3.5 w-3.5" />
-          Add Your Comment
+          {t("projects.pr.panel.addYourComment")}
         </h4>
         <div data-testid="project-pull-request-comment-composer">
           <ForumComposer
@@ -868,9 +879,9 @@ export function ProjectPullRequestDetail({
               canRequestChanges ? handleChangeRequestSubmit : undefined
             }
             onSubmit={handleCommentSubmit}
-            placeholder="Add a comment…"
+            placeholder={t("projects.pr.panel.addComment")}
             profiles={profiles}
-            secondarySubmitLabel="Request changes"
+            secondarySubmitLabel={t("projects.pr.files.requestChanges")}
           />
         </div>
       </section>
@@ -903,6 +914,7 @@ export function PullRequestsPanel({
   pullRequests: ProjectPullRequest[];
   selectedPullRequestId: string | null;
 }) {
+  const t = useT();
   const selectedPullRequest =
     pullRequests.find((item) => item.id === selectedPullRequestId) ?? null;
 
@@ -918,7 +930,7 @@ export function PullRequestsPanel({
   if (isLoading) {
     return (
       <p className="p-4 text-sm text-muted-foreground">
-        Loading pull requests…
+        {t("projects.pr.panel.loading")}
       </p>
     );
   }
@@ -927,8 +939,8 @@ export function PullRequestsPanel({
     return (
       <p className="p-4 text-sm text-muted-foreground">
         {error
-          ? "Could not load pull requests for this repository."
-          : "No pull requests yet."}
+          ? t("projects.error.loadPullRequests")
+          : t("projects.empty.noPullRequests")}
       </p>
     );
   }

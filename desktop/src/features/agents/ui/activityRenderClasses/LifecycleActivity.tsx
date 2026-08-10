@@ -1,6 +1,8 @@
 import { AlertCircle, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 
+import { useT } from "@/shared/i18n";
 import { formatTranscriptTimestampTitle } from "../agentSessionUtils";
+import { localizeTranscriptActivityTitle } from "../agentSessionTranscriptPresentation";
 import { ActivityRow, ActivityRowLabel } from "./ActivityRow";
 import { ToolActivity } from "./ToolActivity";
 import type { ActivityRenderClassItemProps } from "./types";
@@ -26,6 +28,35 @@ function splitPermissionText(text: string): {
   };
 }
 
+function localizePermissionRequestLines(
+  requestLines: string,
+  t: ReturnType<typeof useT>,
+): string {
+  return requestLines
+    .split("\n")
+    .map((line) => {
+      if (line.startsWith("Tool call: ")) {
+        return t("agents.permissionToolCall", {
+          id: line.slice("Tool call: ".length),
+        });
+      }
+      return line;
+    })
+    .join("\n");
+}
+
+function localizePermissionOptionsLine(
+  optionsLine: string,
+  t: ReturnType<typeof useT>,
+): string {
+  if (optionsLine.startsWith("Options: ")) {
+    return t("agents.permissionOptions", {
+      options: optionsLine.slice("Options: ".length),
+    });
+  }
+  return optionsLine;
+}
+
 /**
  * Derive the visual tone and icon for a resolved permission outcome string.
  * Outcome strings come from describePermissionOutcome:
@@ -37,7 +68,26 @@ function permissionOutcomeTone(outcome: string): "approve" | "deny" | "cancel" {
   return "cancel";
 }
 
+function localizePermissionOutcome(
+  outcome: string,
+  t: ReturnType<typeof useT>,
+): string {
+  if (outcome === "Cancelled") {
+    return t("agents.permissionCancelled");
+  }
+  const approved = /^Approved \((.+)\)$/.exec(outcome);
+  if (approved) {
+    return t("agents.permissionApproved", { kind: approved[1] });
+  }
+  const denied = /^Denied \((.+)\)$/.exec(outcome);
+  if (denied) {
+    return t("agents.permissionDenied", { kind: denied[1] });
+  }
+  return outcome;
+}
+
 export function LifecycleActivity(props: ActivityRenderClassItemProps) {
+  const t = useT();
   if (props.item.type === "tool") {
     return <ToolActivity {...props} />;
   }
@@ -45,6 +95,7 @@ export function LifecycleActivity(props: ActivityRenderClassItemProps) {
     return null;
   }
 
+  const localizedTitle = localizeTranscriptActivityTitle(props.item.title, t);
   const isError =
     props.item.renderClass === "error" ||
     props.item.title.toLowerCase().includes("error");
@@ -53,8 +104,18 @@ export function LifecycleActivity(props: ActivityRenderClassItemProps) {
 
   if (isPermission) {
     const { requestLines, optionsLine } = splitPermissionText(props.item.text);
+    const localizedRequestLines = localizePermissionRequestLines(
+      requestLines,
+      t,
+    );
+    const localizedOptionsLine = optionsLine
+      ? localizePermissionOptionsLine(optionsLine, t)
+      : null;
     const outcome = props.item.outcome;
     const tone = outcome ? permissionOutcomeTone(outcome) : null;
+    const localizedOutcome = outcome
+      ? localizePermissionOutcome(outcome, t)
+      : null;
     return (
       <div
         className="rounded-md border border-amber-500/20 bg-amber-500/5 px-2 py-1.5 text-left text-xs text-amber-700 dark:text-amber-400"
@@ -64,17 +125,17 @@ export function LifecycleActivity(props: ActivityRenderClassItemProps) {
         {/* Row 1: request */}
         <div>
           <ShieldCheck className="mr-1.5 inline h-3.5 w-3.5 align-text-bottom" />
-          <span className="font-medium">{props.item.title}</span>
-          {requestLines ? (
-            <span className="opacity-80"> · {requestLines}</span>
+          <span className="font-medium">{localizedTitle}</span>
+          {localizedRequestLines ? (
+            <span className="opacity-80"> · {localizedRequestLines}</span>
           ) : null}
         </div>
         {/* Row 2: options (muted sub-line) */}
-        {optionsLine ? (
-          <div className="mt-0.5 pl-5 opacity-60">{optionsLine}</div>
+        {localizedOptionsLine ? (
+          <div className="mt-0.5 pl-5 opacity-60">{localizedOptionsLine}</div>
         ) : null}
         {/* Row 3: decision — only when outcome is resolved */}
-        {outcome && tone ? (
+        {localizedOutcome && tone ? (
           <>
             <div className="my-1 border-t border-amber-500/20" />
             <div
@@ -94,7 +155,7 @@ export function LifecycleActivity(props: ActivityRenderClassItemProps) {
               ) : (
                 <XCircle className="h-3.5 w-3.5 shrink-0 opacity-50" />
               )}
-              {outcome}
+              {localizedOutcome}
             </div>
           </>
         ) : null}
@@ -110,7 +171,7 @@ export function LifecycleActivity(props: ActivityRenderClassItemProps) {
         title={timestampTitle}
       >
         <AlertCircle className="mr-1.5 inline h-3.5 w-3.5 align-text-bottom" />
-        <span className="font-medium">{props.item.title}</span>
+        <span className="font-medium">{localizedTitle}</span>
         {props.item.text ? (
           <span className="opacity-80"> · {props.item.text}</span>
         ) : null}
@@ -123,7 +184,7 @@ export function LifecycleActivity(props: ActivityRenderClassItemProps) {
       <ActivityRowLabel
         object={props.item.text || undefined}
         openToneScope="none"
-        verb={props.item.title}
+        verb={localizedTitle}
       />
     </ActivityRow>
   );

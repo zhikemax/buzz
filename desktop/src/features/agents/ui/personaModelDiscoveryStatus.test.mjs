@@ -3,10 +3,54 @@ import test from "node:test";
 
 import { formatModelDiscoveryErrorStatus } from "./personaModelDiscoveryStatus.ts";
 
+
+function t(key, params = {}) {
+  const catalog = {
+    "agents.editFailed": "Edit failed",
+    "agents.editingFile": "Editing file",
+    "agents.editedFile": "Edited file",
+    "agents.labelFailed": `${params.label} failed`,
+    "agents.activityResponding": "Responding",
+    "agents.activityUserPrompt": "User prompt",
+    "agents.activityPlanning": "Planning",
+    "agents.defaultModel": "Default model",
+    "agents.defaultAuto": "Default (auto)",
+    "agents.thisAgentCapitalized": "This agent",
+    "agents.thisProvider": "this provider",
+    "agents.reportedNoModels":
+      `${params.name} reported no models. Check that the CLI is installed and signed in, then reopen this screen.`,
+    "agents.unknownModelDiscoveryError": "Unknown model discovery error",
+    "agents.discoveryWaitingRoster":
+      "Buzz is waiting for the relay's member roster. Try again shortly; if this persists, check the relay's membership configuration.",
+    "agents.discoveryNoSharingMembers":
+      "No members are sharing compute right now. On a member machine, open Settings > Compute, choose a model, and turn on Share this machine.",
+    "agents.discoverySharedComputeUnavailable":
+      "This version of Buzz cannot use shared compute. Update Buzz or choose another provider.",
+    "agents.discoverySharedComputeMalformed":
+      "Buzz received an invalid shared compute status. Check the member machine, then try again.",
+    "agents.discoverySharedComputeCheckFailed":
+      "Buzz couldn't check shared compute through the relay. Check your relay connection and try again.",
+    "agents.discoveryAuthRequired":
+      `${params.name} requires sign-in before models can load. Sign in with the ${params.namePossessive} CLI in a terminal, then try again.`,
+    "agents.agentPossessive": "agent's",
+    "agents.discoveryAnthropicKeyRequired":
+      "Enter an Anthropic API key to load Anthropic models.",
+    "agents.discoveryOpenaiCompatKeyRequired":
+      "Enter an OpenAI runtime API key (OPENAI_COMPAT_API_KEY) to load OpenAI models.",
+    "agents.discoveryUsingBuiltIn":
+      `Using built-in model options. Could not load live models for ${params.provider}.`,
+    "settings.agents.defaultModel": "Default model",
+    "settings.agents.defaultModelWithId": `Default model (${params.model})`,
+    "settings.agents.provider.openaiCompat": "OpenAI-compatible",
+    "settings.agents.provider.relayMesh": "Buzz shared compute",
+  };
+  return catalog[key] ?? key;
+}
 test("model discovery status names missing Anthropic credentials", () => {
   const status = formatModelDiscoveryErrorStatus(
     new Error("config: ANTHROPIC_API_KEY required"),
     "anthropic",
+    t,
   );
 
   assert.equal(status?.tone, "warning");
@@ -18,6 +62,7 @@ test("model discovery status names missing OpenAI-compatible credentials", () =>
   const status = formatModelDiscoveryErrorStatus(
     new Error("config: OPENAI_COMPAT_API_KEY required"),
     "openai-compat",
+    t,
   );
 
   assert.equal(status?.tone, "warning");
@@ -30,6 +75,7 @@ test("Buzz shared compute names the empty state and next action", () => {
   const status = formatModelDiscoveryErrorStatus(
     new Error("no Buzz shared compute serving members are available"),
     "relay-mesh",
+    t,
   );
 
   assert.equal(status?.tone, "warning");
@@ -41,6 +87,7 @@ test("Buzz shared compute distinguishes relay lookup failures", () => {
   const status = formatModelDiscoveryErrorStatus(
     new Error("Buzz shared compute model discovery failed: relay offline"),
     "relay-mesh",
+    t,
   );
 
   assert.equal(status?.tone, "warning");
@@ -52,6 +99,7 @@ test("Buzz shared compute names a missing relay member roster", () => {
   const status = formatModelDiscoveryErrorStatus(
     new Error("Buzz shared compute is waiting for the current member roster"),
     "relay-mesh",
+    t,
   );
 
   assert.equal(status?.tone, "warning");
@@ -64,6 +112,7 @@ test("model discovery status stays quiet for missing Databricks defaults", () =>
   const status = formatModelDiscoveryErrorStatus(
     new Error("config: DATABRICKS_HOST required"),
     "databricks",
+    t,
   );
 
   assert.equal(status, null);
@@ -77,6 +126,7 @@ test("auth-required errors name the agent and ask for sign-in", () => {
       "buzz-acp models failed (exit 1): agent communication failed: Agent reported error (code -32000): Authentication required",
     ),
     "",
+    t,
     "Cursor",
   );
 
@@ -89,6 +139,7 @@ test("auth-required copy degrades gracefully without an agent label", () => {
   const status = formatModelDiscoveryErrorStatus(
     new Error("Agent reported error (code -32000): Authentication required"),
     "",
+    t,
   );
 
   assert.equal(status?.tone, "warning");
@@ -104,6 +155,7 @@ test("non-auth -32000 errors do NOT get the sign-in copy", () => {
       "buzz-acp models failed (exit 1): Agent reported error (code -32000): model catalog fetch timed out",
     ),
     "anthropic",
+    t,
     "Cursor",
   );
 

@@ -2,6 +2,7 @@ import * as React from "react";
 import { FileDiff, Maximize2 } from "lucide-react";
 
 import { getDiffTitleBadge } from "@/features/messages/lib/parseDiff";
+import { useT } from "@/shared/i18n";
 import { isSafeUrl } from "@/shared/lib/url";
 import { Button } from "@/shared/ui/button";
 import { useSmoothCorners } from "@/shared/ui/smoothCorners";
@@ -35,6 +36,7 @@ export default function DiffMessage({
   truncated,
   onExpand,
 }: DiffMessageProps) {
+  const t = useT();
   const diffCardRef = React.useRef<HTMLDivElement | null>(null);
   useSmoothCorners(diffCardRef);
 
@@ -98,7 +100,7 @@ export default function DiffMessage({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  aria-label="Expand diff"
+                  aria-label={t("msg.diff.expand")}
                   className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                   onClick={onExpand}
                   size="sm"
@@ -108,7 +110,7 @@ export default function DiffMessage({
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Expand diff</TooltipContent>
+              <TooltipContent>{t("msg.diff.expand")}</TooltipContent>
             </Tooltip>
           )}
         </div>

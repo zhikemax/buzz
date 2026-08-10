@@ -30,6 +30,7 @@ import { relativeTime } from "@/features/projects/lib/projectsViewHelpers";
 import { useUserSearchQuery } from "@/features/profile/hooks";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { UserSearchResult } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { SyntaxHighlightedCode } from "@/shared/ui/markdown";
@@ -630,6 +631,7 @@ export function RepositoryFilesPanel({
   sourceControls?: RepoSourceHeaderControls;
   unavailableMessage?: string;
 }) {
+  const t = useT();
   const [currentPath, setCurrentPath] = React.useState("");
   const [selectedFile, setSelectedFile] =
     React.useState<ProjectRepoFile | null>(null);
@@ -684,13 +686,13 @@ export function RepositoryFilesPanel({
   // Loading/error/empty states keep the header controls visible — the
   // remote/local toggle must stay reachable when one source fails to load.
   const stateMessage = isLoading
-    ? "Loading repository files…"
+    ? t("projects.repo.panel.loadingFiles")
     : unavailableMessage
       ? unavailableMessage
       : error
-        ? "Could not load the repository file tree."
+        ? t("projects.repo.panel.loadTreeFailed")
         : files.length === 0
-          ? "No files have been pushed yet."
+          ? t("projects.repo.panel.noFilesYet")
           : null;
   if (stateMessage) {
     if (!sourceControls) {

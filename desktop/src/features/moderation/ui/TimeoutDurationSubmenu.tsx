@@ -4,12 +4,26 @@ import {
   TIMEOUT_PRESETS,
   timeoutExpiresAt,
 } from "@/features/moderation/lib/timeout";
+import { useT, type MessageKey } from "@/shared/i18n";
 import {
   DropdownMenuItem,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/shared/ui/dropdown-menu";
+
+function timeoutPresetLabelKey(seconds: number): MessageKey {
+  switch (seconds) {
+    case 3600:
+      return "moderation.timeout.1h";
+    case 86400:
+      return "moderation.timeout.24h";
+    case 604800:
+      return "moderation.timeout.7d";
+    default:
+      return "moderation.timeout.1h";
+  }
+}
 
 /**
  * A dropdown submenu of community-timeout durations. Each item resolves the
@@ -20,12 +34,12 @@ import {
  * timeout resolution can share it and stay on one preset list.
  */
 export function TimeoutDurationSubmenu({
-  label = "Time out",
+  label,
   disabled = false,
   testIdPrefix,
   onSelect,
 }: {
-  /** Sub-trigger label; defaults to "Time out". */
+  /** Sub-trigger label; defaults to `moderation.timeout.label`. */
   label?: string;
   disabled?: boolean;
   /** Prefix for each preset item's `data-testid` (e.g. `moderation-timeout`). */
@@ -33,11 +47,14 @@ export function TimeoutDurationSubmenu({
   /** Called with the absolute expiry in epoch seconds for the chosen preset. */
   onSelect: (expiresAt: number) => void;
 }) {
+  const t = useT();
+  const subTriggerLabel = label ?? t("moderation.timeout.label");
+
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger disabled={disabled}>
         <Clock className="h-4 w-4" />
-        {label}
+        {subTriggerLabel}
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent>
         {TIMEOUT_PRESETS.map((preset) => (
@@ -49,7 +66,7 @@ export function TimeoutDurationSubmenu({
             key={preset.seconds}
             onClick={() => onSelect(timeoutExpiresAt(preset.seconds))}
           >
-            {preset.label}
+            {t(timeoutPresetLabelKey(preset.seconds))}
           </DropdownMenuItem>
         ))}
       </DropdownMenuSubContent>

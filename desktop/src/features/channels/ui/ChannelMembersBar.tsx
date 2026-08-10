@@ -165,6 +165,7 @@ export function ChannelMembersBar({
               channel,
               currentPubkey,
               members,
+              t,
             }),
           );
           // Keep the channel cache current so the ephemeral transcript is

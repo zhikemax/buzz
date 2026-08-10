@@ -12,6 +12,7 @@ import { channelChrome } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
 import { useChannelNavigation } from "@/shared/context/ChannelNavigationContext";
 import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { parseImetaTags } from "@/shared/ui/markdown/parseImeta";
 import { Markdown } from "@/shared/ui/markdown";
@@ -106,7 +107,7 @@ function ReplyRow({
         {showDelete ? (
           <DeleteActionMenu
             iconSize="sm"
-            label="reply"
+            labelKey="reply"
             onConfirm={() => onDelete(reply.eventId)}
           />
         ) : null}
@@ -144,6 +145,7 @@ export function ForumThreadPanel({
   isDeletingPost,
   targetEventId,
 }: ForumThreadPanelProps) {
+  const t = useT();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { channels } = useChannelNavigation();
   const channelNames = React.useMemo(
@@ -179,7 +181,7 @@ export function ForumThreadPanel({
             variant="ghost"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to posts
+            {t("forum.backToPosts")}
           </Button>
         </div>
         <div className="flex-1 space-y-4 p-4">
@@ -215,7 +217,7 @@ export function ForumThreadPanel({
           variant="ghost"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to posts
+          {t("forum.backToPosts")}
         </Button>
       </div>
 
@@ -252,7 +254,7 @@ export function ForumThreadPanel({
 
             {canDeletePost && onDeletePost ? (
               <DeleteActionMenu
-                label="post"
+                labelKey="post"
                 onConfirm={() => onDeletePost(post.eventId)}
               />
             ) : null}
@@ -274,7 +276,12 @@ export function ForumThreadPanel({
 
         <div className="flex items-center gap-1.5 border-b border-border/60 px-4 py-2.5 text-sm font-medium text-muted-foreground">
           <MessageSquare className="h-4 w-4" />
-          {replies.length} {replies.length === 1 ? "reply" : "replies"}
+          {t("msg.nReplies", {
+            count: replies.length,
+            replies: t(
+              replies.length === 1 ? "forum.replyOne" : "forum.replyMany",
+            ),
+          })}
         </div>
 
         <div className="divide-y divide-border/40">
@@ -291,7 +298,7 @@ export function ForumThreadPanel({
 
           {replies.length === 0 ? (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-              No replies yet. Be the first to respond.
+              {t("forum.noReplies")}
             </div>
           ) : null}
         </div>
@@ -303,7 +310,7 @@ export function ForumThreadPanel({
           channelType="forum"
           isSending={isSendingReply}
           onSubmit={onReply}
-          placeholder="Reply to this post..."
+          placeholder={t("forum.replyToPost")}
           profiles={profiles}
         />
       </div>

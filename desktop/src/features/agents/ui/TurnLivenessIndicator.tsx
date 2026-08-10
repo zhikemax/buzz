@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
 
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { FuzzyLogo } from "@/shared/ui/buzz-logo/FuzzyLogo";
 import { useTranscriptAnimationEnabled } from "./transcriptAnimationPreference";
@@ -16,20 +17,22 @@ export function TurnLivenessIndicator({
   /** Defaults to false — the indicator stays mounted for whole turns. */
   fuzz?: boolean;
 }) {
+  const t = useT();
   const animationsEnabled = useTranscriptAnimationEnabled();
   const shouldReduceMotion = useReducedMotion();
   const showStaggeredRow = animationsEnabled && !shouldReduceMotion;
+  const turnLabel = t("agents.turnInProgress");
 
   if (!showStaggeredRow) {
     return (
       <div
-        aria-label="Agent turn in progress"
+        aria-label={turnLabel}
         className={cn("opacity-25", className)}
         data-testid="turn-liveness-indicator"
         role="status"
       >
         <FuzzyLogo
-          ariaLabel="Agent turn in progress"
+          ariaLabel={turnLabel}
           className="text-foreground"
           fuzz={fuzz}
           loop
@@ -41,7 +44,7 @@ export function TurnLivenessIndicator({
 
   return (
     <div
-      aria-label="Agent turn in progress"
+      aria-label={turnLabel}
       className={cn("flex items-center gap-1.5 opacity-25", className)}
       data-testid="turn-liveness-indicator"
       role="status"

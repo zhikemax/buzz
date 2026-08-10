@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { translate } from "../../../shared/i18n/locale.ts";
 import { buildCompactToolSummary } from "./agentSessionToolSummary.ts";
 
 const baseTimestamp = "2026-06-14T19:00:00.000Z";
+const t = (key, params) => translate("en", key, params);
 
 function makeTool(overrides = {}) {
   return {
@@ -31,7 +33,7 @@ test("buildCompactToolSummary formats Buzz send_message preview", () => {
       title: "Send Message",
       args: { content: "Hello team" },
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "message");
   assert.equal(summary.label, "Send Message");
@@ -48,7 +50,7 @@ test("buildCompactToolSummary treats buzz messages send commands as messages", (
           'buzz --format compact messages send --channel channel-1 --content "@Ned are you working"',
       },
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "message");
   assert.equal(summary.label, "Send Message");
@@ -65,7 +67,7 @@ test("buildCompactToolSummary returns null preview for piped stdin sends", () =>
           'echo "hello from stdin" | ./target/release/buzz messages send --channel channel-1 --content -',
       },
     }),
-  );
+  t);
 
   assert.equal(summary.label, "Send Message");
   assert.equal(summary.preview, null);
@@ -78,7 +80,7 @@ test("buildCompactToolSummary formats shell command preview", () => {
       toolName: "buzz-dev-mcp__shell",
       args: { command: "git status" },
     }),
-  );
+  t);
 
   assert.equal(summary.label, "Ran command");
   assert.equal(summary.preview, "git status");
@@ -94,7 +96,7 @@ test("buildCompactToolSummary formats view_image thumbnail source", () => {
       toolName: "buzz-dev-mcp__view_image",
       args: { source },
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "image");
   assert.equal(summary.label, "Viewed image");
@@ -109,7 +111,7 @@ test("buildCompactToolSummary uses basename for local view_image paths", () => {
       toolName: "view_image",
       args: { source: "desktop/assets/screenshot.png" },
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "image");
   assert.equal(summary.thumbnailSrc, null);
@@ -125,7 +127,7 @@ test("buildCompactToolSummary formats read_file path preview", () => {
       args: { path },
       result: `${path} (lines 1-2 of 2)\n1:export {}\n2: `,
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "file-read");
   assert.equal(summary.label, "Read file");
@@ -144,7 +146,7 @@ test("buildCompactToolSummary formats load_skill into skill-read file panel", ()
       args: { name: "block-safe-github" },
       result: "# Safe GitHub usage at Block\n",
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "skill-read");
   assert.equal(summary.label, "Read skill");
@@ -171,7 +173,7 @@ test("buildCompactToolSummary formats todo list preview", () => {
         ],
       },
     }),
-  );
+  t);
 
   assert.equal(summary.label, "Updated todos");
   assert.equal(summary.preview, "Ship compact summaries (+1)");
@@ -181,13 +183,13 @@ test("buildCompactToolSummary uses running and failed labels", () => {
   assert.equal(
     buildCompactToolSummary(
       makeTool({ toolName: "str_replace", status: "executing" }),
-    ).label,
+  t).label,
     "Editing file",
   );
   assert.equal(
     buildCompactToolSummary(
       makeTool({ toolName: "str_replace", status: "failed", isError: true }),
-    ).label,
+  t).label,
     "Edit failed",
   );
 });
@@ -200,7 +202,7 @@ test("buildCompactToolSummary promotes non-send buzz CLI commands to relay ops",
         command: "buzz channels get --channel channel-1",
       },
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "relay-op");
   assert.equal(summary.label, "Channels Get");
@@ -222,7 +224,7 @@ test("buildCompactToolSummary exposes shellContent for shell-sourced buzz CLI re
         exit_code: 0,
       }),
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "relay-op");
   assert.equal(summary.shellContent, command);
@@ -241,7 +243,7 @@ test("buildCompactToolSummary derives structured actions for native Buzz MCP too
         channel_id: "channel-1",
       },
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "relay-op");
   assert.deepEqual(summary.action, { verb: "Read", object: "channel-1" });
@@ -251,11 +253,11 @@ test("buildCompactToolSummary promotes file edits and todos to first-class class
   assert.equal(
     buildCompactToolSummary(
       makeTool({ toolName: "str_replace", args: { path: "src/app.ts" } }),
-    ).kind,
+  t).kind,
     "file-edit",
   );
   assert.equal(
-    buildCompactToolSummary(makeTool({ toolName: "todo", args: { todos: [] } }))
+    buildCompactToolSummary(makeTool({ toolName: "todo", args: { todos: [] } }), t)
       .kind,
     "plan",
   );
@@ -277,7 +279,7 @@ test("buildCompactToolSummary formats file edits as filename plus diff stats", (
         "+<DropdownMenuSeparator />",
       ].join("\n"),
     }),
-  );
+  t);
 
   assert.equal(summary.kind, "file-edit");
   assert.equal(summary.preview, "App.tsx");
@@ -308,7 +310,7 @@ test("buildCompactToolSummary counts Shiki diff markers for file edit stats", ()
         "const old = true; // [!code --]",
       ].join("\n"),
     }),
-  );
+  t);
 
   assert.deepEqual(summary.fileEditSummary, {
     path: "desktop/src/app/App.tsx",
@@ -339,7 +341,7 @@ test("buildCompactToolSummary parses file edit stats from shell JSON stdout", ()
         ].join("\n"),
       }),
     }),
-  );
+  t);
 
   assert.deepEqual(summary.fileEditSummary, {
     path: "desktop/src/app/App.tsx",
@@ -375,7 +377,7 @@ test("buildCompactToolSummary trims only trailing blank diff lines", () => {
         "",
       ].join("\n"),
     }),
-  );
+  t);
 
   assert.deepEqual(summary.fileEditDiff?.lines, [
     { kind: "meta", text: "--- a/desktop/src/app/App.tsx" },

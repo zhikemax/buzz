@@ -6,6 +6,7 @@ import {
   useRemindersQuery,
 } from "@/features/reminders/hooks";
 import { groupReminders } from "@/features/reminders/lib/reminderFilters";
+import { useT } from "@/shared/i18n";
 
 type UseHomePersonalInboxOptions = {
   allowMixedSelection: boolean;
@@ -24,14 +25,15 @@ export function useHomePersonalInbox({
   isReminders,
   viewportWidthPx,
 }: UseHomePersonalInboxOptions) {
+  const t = useT();
   const remindersQuery = useRemindersQuery(currentPubkey);
   const dueReminderCount = countDueReminders(remindersQuery.data ?? []);
   const pendingReminders = React.useMemo(
     () =>
-      groupReminders(remindersQuery.data ?? []).flatMap(
+      groupReminders(remindersQuery.data ?? [], false, t).flatMap(
         (group) => group.reminders,
       ),
-    [remindersQuery.data],
+    [remindersQuery.data, t],
   );
   const [selectedReminderId, selectReminder] = React.useState<string | null>(
     null,

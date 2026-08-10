@@ -4,6 +4,7 @@ import { truncatePubkey } from "@/shared/lib/pubkey";
 import { PubKey } from "@/shared/ui/PubKey";
 import { useRemoveRelayMemberMutation } from "@/features/community-members/hooks";
 import type { RelayMember } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -24,6 +25,7 @@ export function ConfirmRemoveDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useT();
   const removeMutation = useRemoveRelayMemberMutation();
   const label = displayName || (member ? truncatePubkey(member.pubkey) : "");
 
@@ -41,10 +43,8 @@ export function ConfirmRemoveDialog({
         data-testid="confirm-remove-member-dialog"
       >
         <DialogHeader>
-          <DialogTitle>Remove {label}?</DialogTitle>
-          <DialogDescription>
-            This will immediately revoke their access to the relay.
-          </DialogDescription>
+          <DialogTitle>{t("invites.remove.title", { name: label })}</DialogTitle>
+          <DialogDescription>{t("invites.remove.description")}</DialogDescription>
           {member ? (
             <PubKey
               pubkey={member.pubkey}
@@ -59,7 +59,7 @@ export function ConfirmRemoveDialog({
             size="sm"
             variant="outline"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             data-testid="confirm-remove-member"
@@ -68,14 +68,14 @@ export function ConfirmRemoveDialog({
               if (!member) return;
               removeMutation.mutate(member.pubkey, {
                 onSuccess: () => {
-                  toast.success("Member removed");
+                  toast.success(t("invites.remove.success"));
                   handleOpenChange(false);
                 },
                 onError: (error) => {
                   toast.error(
                     error instanceof Error
                       ? error.message
-                      : "Failed to remove member",
+                      : t("invites.remove.failed"),
                   );
                 },
               });
@@ -83,7 +83,9 @@ export function ConfirmRemoveDialog({
             size="sm"
             variant="destructive"
           >
-            {removeMutation.isPending ? "Removing..." : "Remove"}
+            {removeMutation.isPending
+              ? t("invites.remove.removing")
+              : t("invites.remove.action")}
           </Button>
         </div>
       </DialogContent>

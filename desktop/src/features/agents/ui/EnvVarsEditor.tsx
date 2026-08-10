@@ -388,7 +388,7 @@ export function EnvVarsEditor({
                   )}
                 >
                   <Input
-                    aria-label={`Value for ${key}`}
+                    aria-label={t("agents.valueForKeyAria", { key })}
                     className={cn(
                       "h-8 px-0 py-0 font-mono leading-6",
                       PERSONA_FIELD_CONTROL_CLASS,
@@ -398,7 +398,7 @@ export function EnvVarsEditor({
                     onChange={(event) =>
                       updateRequiredValue(key, event.target.value)
                     }
-                    placeholder="value"
+                    placeholder={t("agents.valuePlaceholder")}
                     ref={(el) => {
                       if (el) {
                         requiredValueRefs.current.set(key, el);
@@ -420,10 +420,17 @@ export function EnvVarsEditor({
                 // (even as ""), it is an intentional override — show "Overrides"
                 // not "Inherited from". Only show "Inherited from" when the local
                 // record has no entry for this key (global/persona satisfies it).
-                const verb = key in value ? "Overrides" : "Inherited from";
+                const hint =
+                  key in value
+                    ? t("agents.overridesInheritedValue", {
+                        source: resolvedInheritedLabel,
+                      })
+                    : t("agents.inheritedFromSourceValue", {
+                        source: resolvedInheritedLabel,
+                      });
                 return (
                   <p className="ml-1 text-xs text-muted-foreground">
-                    {verb} {inheritedLabel} value{" "}
+                    {hint}{" "}
                     <span className="font-mono">
                       {maskInherited(inheritedValue)}
                     </span>
@@ -509,7 +516,9 @@ export function EnvVarsEditor({
                     {irow.key}
                   </span>
                   <span className="ml-1 rounded-sm bg-muted px-1 py-0.5 text-2xs font-medium text-muted-foreground">
-                    Inherited from {inheritedRowsLabel}
+                    {t("agents.inheritedFromSource", {
+                      source: inheritedRowsLabel,
+                    })}
                   </span>
                 </div>
                 <div

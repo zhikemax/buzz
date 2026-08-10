@@ -1,3 +1,4 @@
+import type { MessageKey, TranslateFn } from "@/shared/i18n";
 import type { TranscriptItem } from "./agentSessionTypes";
 import { buildCompactToolSummary } from "./agentSessionToolSummary";
 
@@ -26,10 +27,40 @@ const LIFECYCLE_NOISE = new Set([
   "wire parse error",
 ]);
 
+/** English titles stored on transcript items → display locale. */
+const TRANSCRIPT_TITLE_KEYS: Record<string, MessageKey> = {
+  Thinking: "agents.activityThinking",
+  Plan: "agents.activityPlan",
+  "Plan updated": "agents.activityPlanUpdated",
+  "Prompt context": "agents.promptContext",
+  "System prompt": "agents.activitySystemPrompt",
+  "Turn started": "agents.activityTurnStarted",
+  "Session ready": "agents.activitySessionReady",
+  "Wire parse error": "agents.activityWireParseError",
+  "Turn error": "agents.activityTurnError",
+  "Agent error (crash)": "agents.activityAgentCrash",
+  "Permission requested": "agents.activityPermissionRequested",
+  Mode: "agents.activityMode",
+  Usage: "agents.activityUsage",
+  Commands: "agents.activityCommands",
+};
+
+/** Localize a stored English transcript title for display / headlines. */
+export function localizeTranscriptActivityTitle(
+  title: string,
+  t: TranslateFn,
+): string {
+  const key = TRANSCRIPT_TITLE_KEYS[title];
+  return key ? t(key) : title;
+}
+
 /** Human-readable headline for a single transcript item. */
-export function getActivityHeadline(item: TranscriptItem): string | null {
+export function getActivityHeadline(
+  item: TranscriptItem,
+  t: TranslateFn,
+): string | null {
   if (item.type === "tool") {
-    const summary = buildCompactToolSummary(item);
+    const summary = buildCompactToolSummary(item, t);
     return [summary.label, summary.preview].filter(Boolean).join(" · ");
   }
 
@@ -44,20 +75,22 @@ export function getActivityHeadline(item: TranscriptItem): string | null {
             : firstLine;
         }
       }
-      return "Responding";
+      return t("agents.activityResponding");
     }
-    return item.title || "User prompt";
+    return item.title
+      ? localizeTranscriptActivityTitle(item.title, t)
+      : t("agents.activityUserPrompt");
   }
 
   if (item.type === "thought") {
-    return item.title === "Plan" ? "Planning" : item.title;
+    return localizeTranscriptActivityTitle(item.title, t);
   }
 
   if (item.type === "metadata") {
-    return item.title;
+    return localizeTranscriptActivityTitle(item.title, t);
   }
 
-  return item.title;
+  return localizeTranscriptActivityTitle(item.title, t);
 }
 
 function isLifecycleNoise(

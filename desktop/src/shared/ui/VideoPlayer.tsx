@@ -17,6 +17,7 @@ import { EmojiPicker } from "@/features/custom-emoji/ui/EmojiPicker";
 import { MessageComposer } from "@/features/messages/ui/MessageComposer";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { ChannelType } from "@/shared/api/types";
+import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
@@ -555,12 +556,13 @@ function VolumeControl({
   onVolumeChange: (volume: number) => void;
   volume: number;
 }) {
+  const t = useT();
   const isSilent = muted || volume <= 0;
   const fillPercent = (muted ? 0 : volume) * 100;
   return (
     <div className="group/volume flex shrink-0 items-center">
       <button
-        aria-label={isSilent ? "Unmute" : "Mute"}
+        aria-label={isSilent ? t("video.unmute") : t("video.mute")}
         className="flex h-7 w-7 items-center justify-center rounded-md text-white transition-colors hover:bg-white/15 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary"
         type="button"
         onClick={(event) => {
@@ -575,7 +577,7 @@ function VolumeControl({
         )}
       </button>
       <input
-        aria-label="Volume"
+        aria-label={t("video.volume")}
         className={cn(
           "video-volume-slider h-3 cursor-pointer transition-all duration-200",
           expanded
@@ -686,6 +688,7 @@ export function VideoPlayer({
   downloadUrl,
   filename,
 }: VideoPlayerProps) {
+  const t = useT();
   const persistedReviewKey = reviewKey ?? src;
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const inlineSurfaceRef = React.useRef<HTMLDivElement | null>(null);
@@ -1063,7 +1066,7 @@ export function VideoPlayer({
           />
           {!hasError && !isBuffering ? (
             <button
-              aria-label={isPlaying ? "Pause video" : "Play video"}
+              aria-label={isPlaying ? t("video.pause") : t("video.play")}
               className={cn(
                 "absolute inset-0 flex cursor-pointer items-center justify-center opacity-100 outline-hidden transition-opacity duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:ring-2 focus-visible:ring-white/60 motion-reduce:transition-none",
                 started &&
@@ -1098,7 +1101,7 @@ export function VideoPlayer({
           {hasError ? (
             <button
               type="button"
-              aria-label="Retry loading video"
+              aria-label={t("video.retryLoad")}
               className="group absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-2"
               onClick={handleTogglePlay}
             >
@@ -1107,7 +1110,7 @@ export function VideoPlayer({
                 <AlertCircle className="h-6 w-6 text-white" />
               </span>
               <span className="rounded-md bg-black/50 px-2 py-1 text-xs text-white backdrop-blur-sm">
-                Failed to load — tap to retry
+                {t("video.loadFailedRetry")}
               </span>
             </button>
           ) : null}

@@ -9,6 +9,7 @@ import {
 } from "@/features/workflows/hooks";
 import { WorkflowRunTrace } from "@/features/workflows/ui/WorkflowRunTrace";
 import type { Workflow } from "@/shared/api/types";
+import { type MessageKey, type TranslateFn, useT } from "@/shared/i18n";
 import { Badge, type BadgeProps } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -29,6 +30,7 @@ export function WorkflowDetailPanel({
   onClose,
   onEdit,
 }: WorkflowDetailPanelProps) {
+  const t = useT();
   const workflowQuery = useWorkflowQuery(workflowId);
   const runsQuery = useWorkflowRunsQuery(workflowId);
   const triggerMutation = useTriggerWorkflowMutation(workflowId);
@@ -41,7 +43,7 @@ export function WorkflowDetailPanel({
     ? getWorkflowDescription(workflow.definition)
     : null;
   const triggerSummary = workflow
-    ? getWorkflowTriggerSummary(workflow.definition)
+    ? getWorkflowTriggerSummary(workflow.definition, t)
     : null;
   const workflowStatus = workflow ? getWorkflowDisplayStatus(workflow) : null;
 
@@ -69,7 +71,9 @@ export function WorkflowDetailPanel({
             ) : (
               <Skeleton className="h-4 w-36" />
             )}
-            {workflowStatus ? <RunStatusBadge status={workflowStatus} /> : null}
+            {workflowStatus ? (
+              <RunStatusBadge status={workflowStatus} t={t} />
+            ) : null}
           </div>
           {workflowDescription ? (
             <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -94,7 +98,7 @@ export function WorkflowDetailPanel({
               variant="outline"
             >
               <Pencil className="mr-1 h-4 w-4" />
-              Edit
+              {t("common.edit")}
             </Button>
           ) : null}
           <Button
@@ -104,10 +108,12 @@ export function WorkflowDetailPanel({
             variant="outline"
           >
             <Play className="mr-1 h-4 w-4" />
-            {triggerMutation.isPending ? "Triggering..." : "Trigger"}
+            {triggerMutation.isPending
+              ? t("workflows.triggering")
+              : t("workflows.trigger")}
           </Button>
           <Button
-            aria-label="Close detail panel"
+            aria-label={t("workflows.detail.closeAria")}
             onClick={onClose}
             size="icon"
             variant="ghost"
@@ -119,7 +125,7 @@ export function WorkflowDetailPanel({
 
       {triggerMutation.isError ? (
         <div className="border-b px-4 py-2 text-xs text-red-400">
-          Failed to trigger workflow
+          {t("workflows.triggerFailed")}
         </div>
       ) : null}
 
@@ -131,7 +137,7 @@ export function WorkflowDetailPanel({
           <div className="space-y-4 p-4">
             <div>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Definition
+                {t("workflows.detail.definition")}
               </h4>
               <pre className="max-h-64 overflow-auto rounded-md bg-muted/50 p-3 font-mono text-xs leading-relaxed">
                 {JSON.stringify(workflow.definition, null, 2)}
@@ -140,10 +146,12 @@ export function WorkflowDetailPanel({
 
             <div>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Run History
+                {t("workflows.detail.runHistory")}
               </h4>
               {runs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No runs yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("workflows.detail.noRuns")}
+                </p>
               ) : (
                 <div className="space-y-2">
                   {runs.map((run) => {
@@ -184,7 +192,7 @@ export function WorkflowDetailPanel({
                                 <span className="truncate font-mono text-xs font-medium">
                                   {run.id.slice(0, 8)}
                                 </span>
-                                <RunStatusBadge status={run.status} />
+                                <RunStatusBadge status={run.status} t={t} />
                               </div>
                               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6 text-2xs text-muted-foreground">
                                 <span>
@@ -195,13 +203,15 @@ export function WorkflowDetailPanel({
                                 <span>
                                   {run.executionTrace.length}{" "}
                                   {run.executionTrace.length === 1
-                                    ? "step"
-                                    : "steps"}
+                                    ? t("workflows.detail.stepOne")
+                                    : t("workflows.detail.stepMany")}
                                 </span>
                                 {duration ? <span>{duration}</span> : null}
                                 {run.currentStep !== null ? (
                                   <span>
-                                    Current step {run.currentStep + 1}
+                                    {t("workflows.detail.currentStep", {
+                                      n: run.currentStep + 1,
+                                    })}
                                   </span>
                                 ) : null}
                               </div>
@@ -217,10 +227,10 @@ export function WorkflowDetailPanel({
                         {isSelected ? (
                           <div className="border-t border-border/60 bg-background/60 px-4 py-4">
                             <div className="mb-3 flex items-center gap-2 text-2xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                              <span>Execution Trace</span>
+                              <span>{t("workflows.detail.executionTrace")}</span>
                               {approvalsQuery.isFetching ? (
                                 <span className="text-2xs tracking-[0.12em] text-muted-foreground/80">
-                                  Refreshing approvals...
+                                  {t("workflows.detail.refreshingApprovals")}
                                 </span>
                               ) : null}
                             </div>
@@ -244,7 +254,9 @@ export function WorkflowDetailPanel({
           </div>
         ) : workflowQuery.isError ? (
           <div className="flex h-32 flex-col items-center justify-center gap-2">
-            <p className="text-sm text-red-400">Failed to load workflow</p>
+            <p className="text-sm text-red-400">
+              {t("workflows.detail.loadFailed")}
+            </p>
           </div>
         ) : (
           <div className="space-y-4 p-4">
@@ -276,11 +288,23 @@ function formatRunDuration(
   return `${seconds.toFixed(1)}s`;
 }
 
-function formatStatusLabel(status: string) {
+function formatStatusFallback(status: string) {
   return status.replace(/_/g, " ");
 }
 
-function RunStatusBadge({ status }: { status: string }) {
+function workflowStatusLabel(t: TranslateFn, status: string) {
+  const key = `workflows.status.${status}` as MessageKey;
+  const translated = t(key);
+  return translated !== key ? translated : formatStatusFallback(status);
+}
+
+function RunStatusBadge({
+  status,
+  t,
+}: {
+  status: string;
+  t: TranslateFn;
+}) {
   const variants: Record<string, BadgeProps["variant"]> = {
     active: "success",
     disabled: "secondary",
@@ -295,7 +319,7 @@ function RunStatusBadge({ status }: { status: string }) {
 
   return (
     <Badge variant={variants[status] ?? "secondary"}>
-      {formatStatusLabel(status)}
+      {workflowStatusLabel(t, status)}
     </Badge>
   );
 }

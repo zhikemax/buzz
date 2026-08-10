@@ -53,6 +53,7 @@ function formatJsonValue(v: unknown): string {
 }
 
 function ChangeDescription({ change }: { change: RestartChange }) {
+  const t = useT();
   switch (change.kind) {
     case "value":
       return (
@@ -69,7 +70,7 @@ function ChangeDescription({ change }: { change: RestartChange }) {
       const after = change.after_chars ?? 0;
       return (
         <span>
-          {before} chars → {after} chars
+          {t("agents.charsArrow", { before, after })}
         </span>
       );
     }
@@ -84,9 +85,9 @@ function ChangeDescription({ change }: { change: RestartChange }) {
         </span>
       );
     case "added":
-      return <span>added</span>;
+      return <span>{t("agents.diffAdded")}</span>;
     case "removed":
-      return <span>removed</span>;
+      return <span>{t("agents.diffRemoved")}</span>;
     default:
       // Unknown kind — render nothing, remain type-safe at runtime
       return null;
@@ -112,6 +113,7 @@ function DiffList({
   cap?: number;
   variant?: "tooltip" | "inline";
 }) {
+  const t = useT();
   const visible = cap !== undefined ? entries.slice(0, cap) : entries;
   const overflow =
     cap !== undefined && entries.length > cap ? entries.length - cap : 0;
@@ -136,7 +138,9 @@ function DiffList({
         </li>
       ))}
       {overflow > 0 ? (
-        <li className={overflowClass}>and {overflow} more</li>
+        <li className={overflowClass}>
+          {t("agents.andNMore", { count: overflow })}
+        </li>
       ) : null}
     </ul>
   );
