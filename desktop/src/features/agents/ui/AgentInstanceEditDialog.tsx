@@ -81,6 +81,7 @@ import {
 } from "./bakedEnvHelpers";
 import {
   getProviderApiKeyEnvVar,
+  getProviderApiKeyGuideUrl,
   getProviderApiKeyLabel,
 } from "./agentConfigOptions";
 import { useAgentDialogDefaults } from "./useAgentDialogDefaults";
@@ -1083,6 +1084,15 @@ export function AgentInstanceEditDialog({
               <PersonaProviderApiKeyField
                 disabled={updateMutation.isPending}
                 envVarName={topLevelSecretEnvVar}
+                getKeyHref={
+                  getProviderApiKeyGuideUrl(effectiveProvider) ?? undefined
+                }
+                getKeyLabel={
+                  getProviderApiKeyGuideUrl(effectiveProvider)
+                    ? t("agents.getAimaxHugKey")
+                    : undefined
+                }
+                openLinkErrorLabel={t("agents.failedOpenLink")}
                 isInherited={apiKeyIsInherited}
                 inheritedLabel={apiKeyInheritedLabel}
                 isRequired={apiKeyIsRequired}

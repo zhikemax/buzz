@@ -262,6 +262,7 @@ export const en = {
     "Custom IDs have no dedicated API key field. For most third-party APIs, choose OpenAI-compatible, enter the API key, then set OPENAI_COMPAT_BASE_URL under Advanced → Environment variables.",
   "settings.agents.apiKey": "API Key",
   "settings.agents.apiKey.anthropic": "Anthropic API Key",
+  "settings.agents.apiKey.aimaxhug": "AimaxHug API Key",
   "settings.agents.apiKey.openai": "OpenAI Runtime API Key",
   "settings.agents.apiKey.openaiCompat": "OpenAI-compatible Runtime API Key",
   "settings.agents.apiKey.openrouter": "OpenRouter API Key",
@@ -275,6 +276,7 @@ export const en = {
   "settings.agents.defaultEffort": "Default ({level})",
   "settings.agents.advanced": "Advanced",
   "settings.agents.envVars": "Environment variables",
+  "settings.agents.provider.aimaxhug": "AimaxHug",
   "settings.agents.provider.openaiCompat": "OpenAI-compatible",
   "settings.agents.provider.relayMesh": "Buzz shared compute",
   "settings.agents.runtimesTitle": "Agent runtimes",
@@ -2689,6 +2691,7 @@ export const en = {
   "agents.mintCostKeySetupAfter":
     "in your agent defaults env — that's the row to update in Settings if you ever need to change it there.",
   "agents.getOpenaiKey": "Get a key at platform.openai.com",
+  "agents.getAimaxHugKey": "Get a key at api.aimaxhug.cloud",
   "agents.failedOpenLink": "Failed to open link",
   "agents.saveKeyContinue": "Save key & continue",
   "agents.apiKeySavedDefaults":

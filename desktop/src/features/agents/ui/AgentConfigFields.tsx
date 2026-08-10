@@ -37,8 +37,10 @@ import {
   BLOCK_BUILD_HIDDEN_PROVIDER_IDS,
   cardMintKeyAnnotations,
   CUSTOM_PROVIDER_DROPDOWN_VALUE,
+  DEFAULT_LLM_PROVIDER_ID,
   getPersonaProviderOptions,
   getProviderApiKeyEnvVar,
+  getProviderApiKeyGuideUrl,
   getProviderApiKeyLabel,
   runtimeSupportsLlmProviderSelection,
 } from "@/features/agents/ui/agentConfigOptions";
@@ -66,7 +68,7 @@ import { getGlobalAgentCredentialState } from "./globalAgentCredentialState";
 
 export const EMPTY_GLOBAL_CONFIG: GlobalAgentConfig = {
   env_vars: {},
-  provider: null,
+  provider: DEFAULT_LLM_PROVIDER_ID,
   model: null,
   preferred_runtime: null,
 };
@@ -679,11 +681,13 @@ export function AgentConfigFields({
   ].map((option) => ({
     ...option,
     label:
-      option.value === "openai-compat"
-        ? t("settings.agents.provider.openaiCompat")
-        : option.value === "relay-mesh"
-          ? t("settings.agents.provider.relayMesh")
-          : option.label,
+      option.value === "aimaxhug"
+        ? t("settings.agents.provider.aimaxhug")
+        : option.value === "openai-compat"
+          ? t("settings.agents.provider.openaiCompat")
+          : option.value === "relay-mesh"
+            ? t("settings.agents.provider.relayMesh")
+            : option.label,
   }));
   const providerSelect = useCustomSelect ? (
     <AgentDropdownSelect
@@ -763,6 +767,8 @@ export function AgentConfigFields({
 
   const apiKeyLabelKey = ((): MessageKey => {
     switch (effectiveProvider) {
+      case "aimaxhug":
+        return "settings.agents.apiKey.aimaxhug";
       case "anthropic":
         return "settings.agents.apiKey.anthropic";
       case "openai":
@@ -775,6 +781,7 @@ export function AgentConfigFields({
         return "settings.agents.apiKey";
     }
   })();
+  const apiKeyGuideUrl = getProviderApiKeyGuideUrl(effectiveProvider);
 
   const advancedEditorBlock = (
     <>
@@ -810,6 +817,11 @@ export function AgentConfigFields({
           <PersonaProviderApiKeyField
             disabled={false}
             envVarName={apiKeyEnvVar}
+            getKeyHref={apiKeyGuideUrl ?? undefined}
+            getKeyLabel={
+              apiKeyGuideUrl ? t("agents.getAimaxHugKey") : undefined
+            }
+            openLinkErrorLabel={t("agents.failedOpenLink")}
             inheritedLabel={
               apiKeyFileSatisfied
                 ? t("settings.agents.apiKeyInheritedRuntime")

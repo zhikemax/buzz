@@ -13,10 +13,11 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getGlobalAgentConfig } from "@/shared/api/tauriGlobalAgentConfig";
 import type { GlobalAgentConfig } from "@/shared/api/types";
+import { DEFAULT_LLM_PROVIDER_ID } from "@/features/agents/ui/agentConfigOptions";
 
 const EMPTY_CONFIG: GlobalAgentConfig = {
   env_vars: {},
-  provider: null,
+  provider: DEFAULT_LLM_PROVIDER_ID,
   model: null,
   preferred_runtime: null,
 };

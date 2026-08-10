@@ -181,10 +181,20 @@ fn global_config_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
 /// Load the global agent config from disk.
 ///
 /// Returns the default (all-empty) config if the file does not exist yet.
+/// Fresh-install default when no global agent config file exists yet.
+fn fresh_global_agent_config() -> GlobalAgentConfig {
+    GlobalAgentConfig {
+        env_vars: BTreeMap::new(),
+        provider: Some(super::AIMAXHUG_PROVIDER_ID.to_string()),
+        model: None,
+        preferred_runtime: None,
+    }
+}
+
 pub fn load_global_agent_config(app: &AppHandle) -> Result<GlobalAgentConfig, String> {
     let path = global_config_path(app)?;
     if !path.exists() {
-        return Ok(GlobalAgentConfig::default());
+        return Ok(fresh_global_agent_config());
     }
     let content = std::fs::read_to_string(&path)
         .map_err(|e| format!("failed to read global agent config: {e}"))?;

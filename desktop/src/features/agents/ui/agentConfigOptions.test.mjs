@@ -7,6 +7,8 @@ import {
   getDefaultPersonaRuntime,
   getPersonaModelOptions,
   getPersonaProviderOptions,
+  getProviderApiKeyEnvVar,
+  getProviderApiKeyGuideUrl,
   getProviderApiKeyLabel,
   resetConfigForHarnessChange,
   runtimeSupportsLlmProviderSelection,
@@ -30,6 +32,13 @@ function makeRuntime(id, availability = "available") {
 }
 
 // ── getPersonaProviderOptions — hideProviderIds ───────────────────────────────
+
+test("getPersonaProviderOptions lists aimaxhug first among concrete providers", () => {
+  const options = getPersonaProviderOptions("", "buzz-agent", t, "", new Set());
+  const concrete = options.filter((o) => o.id !== "");
+  assert.equal(concrete[0]?.id, "aimaxhug");
+  assert.equal(concrete[0]?.label, "AimaxHug");
+});
 
 test("getPersonaProviderOptions returns databricks v1 and v2 when hideProviderIds is empty", () => {
   const options = getPersonaProviderOptions("", "buzz-agent", t, "", new Set());
@@ -262,6 +271,21 @@ test("formatModelDiscoveryErrorStatus returns a non-null status for runtime unav
 // is the single source of truth used by all three credential field surfaces;
 // if it regresses the field labels diverge silently and the OpenRouter / compat
 // mislabeling recurs.
+
+test("getProviderApiKeyLabel_aimaxhug_returns_aimaxhug_label", () => {
+  assert.equal(getProviderApiKeyLabel("aimaxhug"), "AimaxHug API Key");
+});
+
+test("getProviderApiKeyEnvVar_aimaxhug_uses_openai_compat_key", () => {
+  assert.equal(getProviderApiKeyEnvVar("aimaxhug"), "OPENAI_COMPAT_API_KEY");
+});
+
+test("getProviderApiKeyGuideUrl_aimaxhug_points_at_console", () => {
+  assert.equal(
+    getProviderApiKeyGuideUrl("aimaxhug"),
+    "https://api.aimaxhug.cloud",
+  );
+});
 
 test("getProviderApiKeyLabel_anthropic_returns_anthropic_label", () => {
   assert.equal(getProviderApiKeyLabel("anthropic"), "Anthropic API Key");

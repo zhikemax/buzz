@@ -1305,6 +1305,11 @@ test("requiredCredentialEnvKeys: buzz-agent + anthropic → ANTHROPIC_API_KEY", 
   assert.deepEqual(keys, ["ANTHROPIC_API_KEY"]);
 });
 
+test("requiredCredentialEnvKeys: buzz-agent + aimaxhug → OPENAI_COMPAT_API_KEY", () => {
+  const keys = requiredCredentialEnvKeys("buzz-agent", "aimaxhug");
+  assert.deepEqual(keys, ["OPENAI_COMPAT_API_KEY"]);
+});
+
 test("requiredCredentialEnvKeys: buzz-agent + openai → OPENAI_COMPAT_API_KEY", () => {
   const keys = requiredCredentialEnvKeys("buzz-agent", "openai");
   assert.deepEqual(keys, ["OPENAI_COMPAT_API_KEY"]);

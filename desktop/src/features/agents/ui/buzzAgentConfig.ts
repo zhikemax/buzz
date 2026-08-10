@@ -131,6 +131,10 @@ export function getProviderEffortConfig(
   if (provider === "openrouter") {
     return { validValues: ALL_VALUES, defaultValue: "medium" };
   }
+  if (provider === "aimaxhug") {
+    // AimaxHug is OpenAI-compat; catalog models vary — show the full table.
+    return { validValues: ALL_VALUES, defaultValue: "medium" };
+  }
   // openai-compat, unknown, empty — all values, default medium.
   return { validValues: ALL_VALUES, defaultValue: "medium" };
 }

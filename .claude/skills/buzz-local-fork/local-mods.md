@@ -47,6 +47,14 @@ Files historically touched:
 Re-apply after upstream bumps these files. Do not open upstream PRs that
 disable mesh-llm unless asked.
 
+## AimaxHug default LLM provider
+
+- UI id `aimaxhug` first in provider pickers; credentials = `OPENAI_COMPAT_API_KEY`
+- Default for fresh global config (no file yet) and empty frontend placeholders
+- Spawn/readiness/discovery rewrite via `desktop/src-tauri/src/managed_agents/aimaxhug.rs`
+  → OpenAI transport, `OPENAI_COMPAT_BASE_URL=https://api.aimaxhug.cloud/v1`
+- Key guide CTA → `https://api.aimaxhug.cloud`
+
 ## Never commit
 
 - `desktop/tauri.dev.local.json`
@@ -67,3 +75,10 @@ After resolving TS merge conflicts involving personas/catalog:
 
 - `origin` → `https://github.com/zhikemax/buzz.git` (push here)
 - `upstream` → `https://github.com/block/buzz.git` (fetch/merge `upstream/main`)
+
+## Sync anti-patterns (see SKILL.md)
+
+- GitHub **Sync fork** alone does **not** update `feat/zh-CN-i18n`.
+- Real project update = `git fetch upstream main` + `git merge upstream/main`
+  on `feat/zh-CN-i18n`, then parity + `tsc`, then `git push origin HEAD`.
+- Never push to `upstream` unless the user explicitly asks.

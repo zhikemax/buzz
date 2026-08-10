@@ -253,6 +253,7 @@ export const zhCN: Record<MessageKey, string> = {
     "自定义 ID 没有单独的 API 密钥输入框。多数第三方接口请改选「OpenAI 兼容」，填写 API 密钥，再在「高级 → 环境变量」中设置 OPENAI_COMPAT_BASE_URL。",
   "settings.agents.apiKey": "API 密钥",
   "settings.agents.apiKey.anthropic": "Anthropic API 密钥",
+  "settings.agents.apiKey.aimaxhug": "AimaxHug API 密钥",
   "settings.agents.apiKey.openai": "OpenAI Runtime API 密钥",
   "settings.agents.apiKey.openaiCompat": "OpenAI 兼容 Runtime API 密钥",
   "settings.agents.apiKey.openrouter": "OpenRouter API 密钥",
@@ -266,6 +267,7 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.agents.defaultEffort": "默认（{level}）",
   "settings.agents.advanced": "高级",
   "settings.agents.envVars": "环境变量",
+  "settings.agents.provider.aimaxhug": "AimaxHug",
   "settings.agents.provider.openaiCompat": "OpenAI 兼容",
   "settings.agents.provider.relayMesh": "Buzz 共享算力",
   "settings.agents.runtimesTitle": "智能体运行时",
@@ -2522,6 +2524,7 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.mintCostKeySetupAfter":
     "到智能体默认环境变量中 — 以后若要更改，请在设置中改那一行。",
   "agents.getOpenaiKey": "在 platform.openai.com 获取密钥",
+  "agents.getAimaxHugKey": "在 api.aimaxhug.cloud 获取密钥",
   "agents.failedOpenLink": "无法打开链接",
   "agents.saveKeyContinue": "保存密钥并继续",
   "agents.apiKeySavedDefaults":

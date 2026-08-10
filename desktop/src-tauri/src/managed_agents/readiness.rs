@@ -278,6 +278,9 @@ fn resolve_effective_agent_env_with_def(
         effective_model.as_deref(),
     );
 
+    // AimaxHug is a first-class UI provider; rewrite to OpenAI-compat transport.
+    super::apply_aimaxhug_env(&mut env, effective_provider.as_deref());
+
     EffectiveAgentEnv {
         env,
         config_file_path: runtime.and_then(|r| r.config_file_path),

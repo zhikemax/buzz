@@ -68,6 +68,7 @@ function providerModelEnvKey(provider: string): string | null {
       return "ANTHROPIC_MODEL";
     case "openai":
     case "openai-compat":
+    case "aimaxhug":
       return "OPENAI_COMPAT_MODEL";
     default:
       return null;

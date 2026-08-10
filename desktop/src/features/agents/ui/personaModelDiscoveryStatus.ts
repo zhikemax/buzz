@@ -21,6 +21,8 @@ function errorMessage(error: unknown, t: TranslateFn): string {
 
 function providerObjectLabel(provider: string, t: TranslateFn): string {
   switch (provider.trim()) {
+    case "aimaxhug":
+      return t("settings.agents.provider.aimaxhug");
     case "anthropic":
       return "Anthropic";
     case "openai":

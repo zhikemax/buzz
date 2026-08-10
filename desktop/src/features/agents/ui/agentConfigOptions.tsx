@@ -43,7 +43,17 @@ export const AUTO_PROVIDER_DROPDOWN_VALUE = "__auto_provider__";
 export const CUSTOM_PROVIDER_DROPDOWN_VALUE = "__custom_provider__";
 export const NO_RUNTIME_DROPDOWN_VALUE = "__no_runtime__";
 
+/** First-class AimaxHug provider (OpenAI-compatible transport at spawn). */
+export const AIMAXHUG_PROVIDER_ID = "aimaxhug";
+/** OpenAI-compat base including `/v1` (matches `api.openai.com/v1`). */
+export const AIMAXHUG_API_BASE_URL = "https://api.aimaxhug.cloud/v1";
+/** Key / console landing page shown next to the API key field. */
+export const AIMAXHUG_KEYS_URL = "https://api.aimaxhug.cloud";
+/** Default provider for fresh global / blank agent config on this fork. */
+export const DEFAULT_LLM_PROVIDER_ID = AIMAXHUG_PROVIDER_ID;
+
 const KNOWN_LLM_PROVIDER_IDS = [
+  "aimaxhug",
   "anthropic",
   "databricks",
   "databricks_v2",
@@ -102,6 +112,11 @@ export type ProviderCredentialConfig =
 const PROVIDER_CREDENTIAL_CONFIG: Partial<
   Record<string, ProviderCredentialConfig>
 > = {
+  aimaxhug: {
+    requiredEnvKeys: ["OPENAI_COMPAT_API_KEY"],
+    secretEnvVar: "OPENAI_COMPAT_API_KEY",
+    apiKeyLabel: "AimaxHug API Key",
+  },
   anthropic: {
     requiredEnvKeys: ["ANTHROPIC_API_KEY"],
     secretEnvVar: "ANTHROPIC_API_KEY",
@@ -144,6 +159,7 @@ const DEFAULT_MODEL_OPTION: PersonaModelOption = {
 };
 
 export const PERSONA_LLM_PROVIDER_OPTIONS: readonly PersonaModelOption[] = [
+  { id: "aimaxhug", label: "AimaxHug" },
   { id: "anthropic", label: "Anthropic" },
   { id: "openai", label: "OpenAI" },
   { id: "openai-compat", label: "OpenAI-compatible" },
@@ -305,6 +321,7 @@ export function providerRequiresExplicitModel(
 ) {
   const trimmedProvider = providerId?.trim() ?? "";
   return (
+    trimmedProvider === "aimaxhug" ||
     trimmedProvider === "anthropic" ||
     trimmedProvider === "openai" ||
     trimmedProvider === "openai-compat" ||
@@ -314,6 +331,9 @@ export function providerRequiresExplicitModel(
 
 export function providerDisplayLabel(providerId: string, t: TranslateFn) {
   const trimmedProvider = providerId.trim();
+  if (trimmedProvider === "aimaxhug") {
+    return t("settings.agents.provider.aimaxhug");
+  }
   if (trimmedProvider === "relay-mesh") {
     return t("settings.agents.provider.relayMesh");
   }
@@ -321,6 +341,16 @@ export function providerDisplayLabel(providerId: string, t: TranslateFn) {
     return t("settings.agents.provider.openaiCompat");
   }
   return trimmedProvider;
+}
+
+/** Key signup URL for providers that surface a get-key CTA, if any. */
+export function getProviderApiKeyGuideUrl(providerId: string): string | null {
+  switch (providerId.trim().toLowerCase()) {
+    case "aimaxhug":
+      return AIMAXHUG_KEYS_URL;
+    default:
+      return null;
+  }
 }
 
 export function getDefaultLlmProviderLabel(
@@ -421,7 +451,9 @@ export function getPersonaProviderOptions(
     ? PERSONA_LLM_PROVIDER_OPTIONS.filter((o) => !hideProviderIds.has(o.id))
     : PERSONA_LLM_PROVIDER_OPTIONS;
   const filteredOptions = baseOptions.map((option) =>
-    option.id === "openai-compat" || option.id === "relay-mesh"
+    option.id === "aimaxhug" ||
+    option.id === "openai-compat" ||
+    option.id === "relay-mesh"
       ? { ...option, label: providerDisplayLabel(option.id, t) }
       : option,
   );

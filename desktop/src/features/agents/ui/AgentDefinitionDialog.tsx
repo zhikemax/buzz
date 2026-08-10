@@ -41,6 +41,7 @@ import {
   getDefaultPersonaRuntime,
   getPersonaModelOptions,
   getPersonaProviderOptions,
+  getProviderApiKeyGuideUrl,
   getProviderApiKeyLabel,
   getRuntimePersonaModelOptions,
   NO_RUNTIME_DROPDOWN_VALUE,
@@ -897,6 +898,15 @@ export function AgentDefinitionDialog({
             <PersonaProviderApiKeyField
               disabled={isPending}
               envVarName={topLevelSecretEnvVar}
+              getKeyHref={
+                getProviderApiKeyGuideUrl(effectiveProvider) ?? undefined
+              }
+              getKeyLabel={
+                getProviderApiKeyGuideUrl(effectiveProvider)
+                  ? t("agents.getAimaxHugKey")
+                  : undefined
+              }
+              openLinkErrorLabel={t("agents.failedOpenLink")}
               isInherited={apiKeyIsInherited}
               inheritedLabel={apiKeyInheritedLabel}
               isRequired={apiKeyIsRequired}

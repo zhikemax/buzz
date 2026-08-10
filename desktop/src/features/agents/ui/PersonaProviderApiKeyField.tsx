@@ -1,7 +1,10 @@
 import * as React from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { ExternalLink, Eye, EyeOff } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { toast } from "sonner";
 
 import { cn } from "@/shared/lib/cn";
+import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { RequiredFieldLabel } from "./agentConfigControls";
 import {
@@ -26,6 +29,9 @@ import {
 export function PersonaProviderApiKeyField({
   disabled,
   envVarName,
+  getKeyHref,
+  getKeyLabel,
+  openLinkErrorLabel = "Failed to open link",
   isInherited,
   inheritedLabel,
   isRequired,
@@ -41,6 +47,12 @@ export function PersonaProviderApiKeyField({
    * When present, the input's `aria-describedby` points at the hint element.
    */
   envVarName?: string;
+  /** Optional signup / console URL for obtaining a key. */
+  getKeyHref?: string;
+  /** Link text for `getKeyHref`. */
+  getKeyLabel?: string;
+  /** Toast when opening `getKeyHref` fails. */
+  openLinkErrorLabel?: string;
   /** True when the key is satisfied by an inherited layer. */
   isInherited: boolean;
   /** Human-readable source of the inherited value. */
@@ -69,6 +81,23 @@ export function PersonaProviderApiKeyField({
         <p className="text-xs text-muted-foreground font-mono" id={hintId}>
           {envVarName}
         </p>
+      ) : null}
+      {getKeyHref && getKeyLabel ? (
+        <Button
+          className="h-auto w-fit px-0 text-xs"
+          data-testid="persona-provider-api-key-guide"
+          onClick={() =>
+            void openUrl(getKeyHref).catch(() => {
+              toast.error(openLinkErrorLabel);
+            })
+          }
+          size="sm"
+          type="button"
+          variant="link"
+        >
+          <ExternalLink className="mr-1 h-3 w-3" />
+          {getKeyLabel}
+        </Button>
       ) : null}
       <div
         className={cn(

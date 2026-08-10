@@ -99,6 +99,8 @@ pub async fn get_agent_models(
     // so a build-provided provider still gets live discovery.
     let effective_provider =
         effective_discovery_provider(saved_provider.as_deref(), provider_env_var, &merged_env);
+    let mut merged_env = merged_env;
+    crate::managed_agents::apply_aimaxhug_env(&mut merged_env, effective_provider.as_deref());
     if let Some(models) = discover_openrouter_models(
         &state.http_client,
         &effective_provider,
@@ -237,6 +239,8 @@ pub async fn discover_agent_models(
         runtime_meta.and_then(|meta| meta.provider_env_var),
         &merged_env,
     );
+    let mut merged_env = merged_env;
+    crate::managed_agents::apply_aimaxhug_env(&mut merged_env, effective_provider.as_deref());
 
     // Buzz shared compute discovery must not depend on the local OpenAI ingress: that
     // client endpoint is started only after a live target is selected.
@@ -350,7 +354,7 @@ fn is_openai_compatible_provider(provider: Option<&str>) -> bool {
             .map(str::trim)
             .map(str::to_ascii_lowercase)
             .as_deref(),
-        Some("openai" | "openai-compat")
+        Some("openai" | "openai-compat" | "aimaxhug")
     )
 }
 

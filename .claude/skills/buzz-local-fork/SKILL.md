@@ -6,13 +6,95 @@ description: >-
   syncs them onto official block/buzz main without losing either side. Use when
   the user mentions 同步官方, 官方同步, 版本升级, sync upstream/main, 汉化,
   zh-CN i18n, 本地闭环, LocalCommunityCreateForm, localhost Host, mesh-llm
-  Windows build, or updating the feat/zh-CN-i18n branch after upstream moves.
+  Windows build, Sync fork, 源仓库更新, fork 同步, 如何同步官方, or updating
+  the feat/zh-CN-i18n branch after upstream moves.
 ---
 
 # Buzz local fork — sync + preserve mods
 
 This checkout is **not** stock Buzz. Keep both: upstream features **and** local
 behavior. Never "resolve conflicts by taking theirs" blindly.
+
+## Topology (do not confuse remotes)
+
+```text
+block/buzz (upstream)          ← official source; FETCH / MERGE only
+        │
+        │  git fetch upstream main
+        │  git merge upstream/main   (on feat/zh-CN-i18n)
+        ▼
+local: feat/zh-CN-i18n         ← working branch (i18n + fork mods)
+        │
+        │  git push origin HEAD
+        ▼
+zhikemax/buzz (origin)         ← personal GitHub fork; default PUSH target
+```
+
+| Remote | URL | Role |
+|--------|-----|------|
+| `upstream` | `https://github.com/block/buzz.git` | Official — **fetch/merge `main` only** |
+| `origin` | `https://github.com/zhikemax/buzz.git` | Personal fork — **default push** |
+| `gitee` | *(optional; ask user for URL)* | Never invent; never treat as `origin` |
+
+Default working branch: **`feat/zh-CN-i18n`**. Commits need DCO: `git commit -s`.
+
+## Critical: what does NOT sync the project
+
+| Action | Effect | Enough to update this project? |
+|--------|--------|--------------------------------|
+| GitHub UI **Sync fork** | Updates fork default branch (often `origin/main`) toward `upstream/main` | **No** — does **not** merge into `feat/zh-CN-i18n` |
+| `git fetch origin` only | Refreshes fork remotes | **No** — does not pull official commits |
+| `git pull` with no upstream | May only track `origin` | **No** unless that branch already contains upstream |
+| `git merge upstream/main` on `feat/zh-CN-i18n` | Brings official into the working branch | **Yes** — this is the real sync |
+| `git push origin HEAD` | Publishes the fused branch to the fork | Required after a successful local merge |
+
+**Rule:** Official updates become *this project* only after they are merged (or
+rebased) into **`feat/zh-CN-i18n`**. Syncing the fork on GitHub alone is not
+enough. Prefer `merge upstream/main` over relying on Sync-fork + `merge
+origin/main` (the latter is optional bookkeeping).
+
+## Sync workflow (do this)
+
+When the user says 同步官方 / sync upstream / 源仓库更新 / 版本升级, run:
+
+```text
+Progress:
+- [ ] 1. On feat/zh-CN-i18n; commit or stash WIP (never lose Host / i18n mid-merge)
+- [ ] 2. Confirm remotes: upstream=block/buzz, origin=zhikemax/buzz
+- [ ] 3. git fetch upstream main
+- [ ] 4. git merge upstream/main   (preferred; rebase only if user asks)
+- [ ] 5. Resolve conflicts with rules below — never blind "take theirs"
+- [ ] 6. i18n key parity en ↔ zh-CN (1:1, no duplicate keys)
+- [ ] 7. desktop tsc --noEmit
+- [ ] 8. Merge commit with -s (DCO); leave tauri.dev.local.json untracked
+- [ ] 9. git push origin HEAD     (GitHub fork — not upstream, not gitee)
+```
+
+PowerShell-friendly commands:
+
+```powershell
+git fetch upstream main
+git merge upstream/main
+# after conflicts fixed:
+cd desktop; pnpm exec tsc --noEmit -p tsconfig.json
+git commit -s   # complete merge if needed; do not --no-verify
+git push -u origin HEAD
+```
+
+Activate Hermit before hooks/toolchain: `. ./bin/activate-hermit` (or repo
+equivalent). Do not rewrite hook PATH.
+
+### Optional: also refresh fork `main`
+
+Only if the user wants `origin/main` aligned with official (does **not** replace
+step 4 above):
+
+```powershell
+git fetch upstream main
+git push origin upstream/main:main   # only when user explicitly wants fork main updated
+```
+
+Or use GitHub **Sync fork**, then still merge into `feat/zh-CN-i18n`.
 
 ## Local mods inventory
 
@@ -25,34 +107,6 @@ behavior. Never "resolve conflicts by taking theirs" blindly.
 | Dev Tauri override | Local only | **Never commit** | `desktop/tauri.dev.local.json` |
 
 Details and conflict recipes: [local-mods.md](local-mods.md).
-
-## Sync workflow (do this)
-
-```text
-Progress:
-- [ ] 1. Commit or stash WIP (never lose localhost Host / i18n mid-merge)
-- [ ] 2. git fetch upstream main
-- [ ] 3. Merge (preferred) or rebase onto upstream/main on feat/zh-CN-i18n
-- [ ] 4. Resolve conflicts with rules below
-- [ ] 5. i18n key parity en ↔ zh-CN
-- [ ] 6. desktop tsc --noEmit
-- [ ] 7. Merge commit with -s (DCO); leave tauri.dev.local.json untracked
-- [ ] 8. git push origin HEAD
-```
-
-Commands (PowerShell-friendly):
-
-```bash
-git fetch upstream main
-git merge upstream/main
-# after conflicts fixed:
-cd desktop && pnpm exec tsc --noEmit -p tsconfig.json
-git commit -s   # complete merge; do not --no-verify
-git push origin HEAD
-```
-
-Activate Hermit before hooks/toolchain: `. ./bin/activate-hermit` (or repo
-equivalent). Do not rewrite hook PATH.
 
 ## Conflict resolution rules
 
@@ -79,18 +133,9 @@ equivalent). Do not rewrite hook PATH.
 - Pattern: `const t = useT();` then `t("namespace.key", { name })`.
 - Prefer rem Tailwind tokens for text; never new `text-[Npx]`.
 
-Quick parity check:
-
-```bash
-node --input-type=module -e "
-import { readFileSync } from 'node:fs';
-const ex = (p) => [...readFileSync(p,'utf8').matchAll(/\"([^\"]+)\":/g)].map(m => m[1]);
-const en = new Set(ex('desktop/src/shared/i18n/messages/en.ts'));
-const zh = new Set(ex('desktop/src/shared/i18n/messages/zh-CN.ts'));
-console.log([...en].filter(k => !zh.has(k)));
-console.log([...zh].filter(k => !en.has(k)));
-"
-```
+On Windows PowerShell, prefer a temp parity script (inline `node -e` regex often
+breaks). Write `tmp-i18n-parity.mjs` at repo root, run `node tmp-i18n-parity.mjs`,
+delete it. Exit non-zero if missing/extra/duplicate keys.
 
 ## Local runtime notes (do not "fix" to official defaults)
 
@@ -112,21 +157,6 @@ console.log([...zh].filter(k => !en.has(k)));
 Prefer splitting PRs; never include local closed-loop or Windows Cargo disable
 in an i18n PR without explicit user request.
 
-## Remotes (this fork)
-
-| Remote | URL | Role |
-|--------|-----|------|
-| `origin` | `https://github.com/zhikemax/buzz.git` | Personal **GitHub** fork — default push target |
-| `upstream` | `https://github.com/block/buzz.git` | Official — fetch/merge `upstream/main` only |
-| `gitee` | *(not configured)* | Do **not** invent a URL. Ask the user for the Gitee repo URL, then `git remote add gitee <url>` |
-
-```bash
-git fetch upstream main
-git merge upstream/main
-# push your branch to the GitHub fork:
-git push -u origin HEAD
-```
-
 ### Push wording (avoid wrong remote)
 
 | User says | Action |
@@ -137,9 +167,6 @@ git push -u origin HEAD
 | 推官方 / push upstream | **Refuse** unless user explicitly wants to push to `block/buzz` (they usually do not) |
 
 Ambiguous「推送仓库」= **GitHub origin**, not Gitee, not upstream.
-## Branch
-
-Default working branch: `feat/zh-CN-i18n`. Commits need DCO: `git commit -s`.
 
 ## More local changes later
 
