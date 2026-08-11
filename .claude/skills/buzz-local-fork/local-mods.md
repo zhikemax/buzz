@@ -55,10 +55,36 @@ disable mesh-llm unless asked.
   → OpenAI transport, `OPENAI_COMPAT_BASE_URL=https://api.aimaxhug.cloud/v1`
 - Key guide CTA → `https://api.aimaxhug.cloud`
 
+## Desktop auto-update (fork)
+
+UI already exists (sidebar card + Settings → Software Updates). Official
+`block/buzz` updater channel must **not** be used on this fork.
+
+- Endpoints: `desktop/src/features/settings/hooks/updaterEndpoints.ts`
+  → `zhikemax/buzz` releases / `buzz-desktop-latest/latest.json`
+- CI: `.github/workflows/release-desktop-fork.yml` (Windows-only; repo gate
+  `zhikemax/buzz`)
+- Docs: `desktop/docs/FORK_AUTO_UPDATE.md`
+- Local bake helper: `source desktop/scripts/fork-updater-env.sh` then set
+  `BUZZ_UPDATER_PUBLIC_KEY` + `TAURI_SIGNING_PRIVATE_KEY`
+
+**Secrets (GitHub Actions, never commit):**
+
+| Secret | Role |
+|--------|------|
+| `BUZZ_UPDATER_PUBLIC_KEY` | Baked into release binary |
+| `TAURI_SIGNING_PRIVATE_KEY` | Signs updater artifacts |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Optional |
+
+Generate: `cargo tauri signer generate -w ~/.tauri/buzz-fork.key`
+
+Users must install **one** release build that was baked with these secrets;
+`just dev` / unsigned debug builds show “auto-update unavailable”.
+
 ## Never commit
 
 - `desktop/tauri.dev.local.json`
-- Local secrets / `.env` with keys
+- Local secrets / `.env` with keys / Tauri signing private keys
 - Accidental Hermit `bin/` PATH workarounds as permanent project changes
 
 ## Post-merge checklist extras
