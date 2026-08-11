@@ -1611,13 +1611,14 @@ export const en = {
   "onboard.acceptingInvite": "Accepting your invite…",
   "onboard.connectingSecurely": "Connecting securely…",
   "onboard.buildProfile": "Build your profile",
-  "onboard.buildProfileHint": "Add a name and avatar so people recognize you.",
+  "onboard.buildProfileHint":
+    "Add a name and avatar. They'll show up on your messages, reactions, and agent handoffs.",
   "onboard.yourUsername": "Your username",
   "onboard.enterUsername": "Enter your username here",
   "onboard.editAvatar": "Edit your avatar",
   "onboard.meetStarterTeam": "Meet your starter team",
   "onboard.meetStarterTeamHint":
-    "Buzz lets you bring multiple agents into your workspace.",
+    "Buzz lets you bring multiple agents into the same workspace. Your team will help you get started using Buzz.",
   "onboard.takeMeToBuzz": "Take me to Buzz",
   "onboard.preparingWelcome": "Preparing Welcome",
   "onboard.enterKeyHere": "Enter your key here",

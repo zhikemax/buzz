@@ -1511,12 +1511,14 @@ export const zhCN: Record<MessageKey, string> = {
   "onboard.acceptingInvite": "正在接受邀请…",
   "onboard.connectingSecurely": "正在安全连接…",
   "onboard.buildProfile": "完善个人资料",
-  "onboard.buildProfileHint": "添加名称和头像，方便他人认出你。",
+  "onboard.buildProfileHint":
+    "添加名称和头像。它们会出现在你的消息、回应和智能体交接中。",
   "onboard.yourUsername": "你的用户名",
   "onboard.enterUsername": "在此输入用户名",
   "onboard.editAvatar": "编辑头像",
   "onboard.meetStarterTeam": "认识你的初始团队",
-  "onboard.meetStarterTeamHint": "Buzz 可让你在工作区中接入多个智能体。",
+  "onboard.meetStarterTeamHint":
+    "Buzz 可让你在同一工作区接入多个智能体。你的团队会帮助你上手使用 Buzz。",
   "onboard.takeMeToBuzz": "进入 Buzz",
   "onboard.preparingWelcome": "正在准备欢迎内容",
   "onboard.enterKeyHere": "在此输入密钥",

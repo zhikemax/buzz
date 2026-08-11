@@ -218,7 +218,11 @@ export const ChannelPane = React.memo(function ChannelPane({
     bannerState: welcomeComposerBannerState,
     completeBanner: completeWelcomeComposerBanner,
     dismissBanner: handleDismissWelcomeBanner,
-  } = useWelcomeComposerBanner(activeChannelId, isActiveWelcomeChannel);
+  } = useWelcomeComposerBanner(
+    activeChannelId,
+    isActiveWelcomeChannel,
+    currentPubkey ?? null,
+  );
   const isEditInThread =
     editTarget != null &&
     threadHeadMessage != null &&

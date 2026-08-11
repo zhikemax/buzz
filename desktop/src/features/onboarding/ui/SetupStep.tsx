@@ -1,6 +1,6 @@
 import * as React from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Check } from "lucide-react";
+import { Check, Info } from "lucide-react";
 
 import {
   useAcpAuthMethodsQuery,
@@ -607,10 +607,12 @@ function RuntimeProvidersLoadingState() {
 
 function RuntimeProvidersSection({
   installResults,
+  navigateToAgentSettings,
   onInstallResultsChange,
   runtimeProviders,
 }: {
   installResults: InstallResultsState;
+  navigateToAgentSettings?: () => void;
   onInstallResultsChange: React.Dispatch<
     React.SetStateAction<InstallResultsState>
   >;
@@ -659,6 +661,26 @@ function RuntimeProvidersSection({
             {errorMessage}
           </p>
         ) : null}
+
+        <p className="mx-auto flex max-w-[440px] items-start justify-center gap-1.5 text-center text-xs leading-5 text-[var(--buzz-onboarding-backup-ink)]">
+          <Info aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            More harnesses (Cursor, Grok, Amp&hellip;){" "}
+            {navigateToAgentSettings ? (
+              <button
+                className="underline underline-offset-2 hover:text-foreground"
+                data-testid="onboarding-setup-more-harnesses"
+                onClick={navigateToAgentSettings}
+                type="button"
+              >
+                Settings → Agents
+              </button>
+            ) : (
+              <span>Settings → Agents</span>
+            )}{" "}
+            after setup.
+          </span>
+        </p>
       </div>
     </section>
   );
@@ -698,60 +720,30 @@ function SetupStepContent({
     >
       <RuntimeProvidersSection
         installResults={installResults}
+        navigateToAgentSettings={actions.navigateToAgentSettings}
         onInstallResultsChange={setInstallResults}
         runtimeProviders={runtimeProviders}
       />
 
       <OnboardingFooter>
-        {/* Relative row keeps the primary CTA truly centered while Skip
-            hangs off its right edge without shifting the center. */}
-        <div className="relative flex items-center justify-center">
-          <Button
-            className={`${ONBOARDING_PRIMARY_CTA_CLASS} text-sm`}
-            data-testid="onboarding-setup-next"
-            disabled={readyRuntimeIds.length === 0}
-            onClick={() => actions.next(readyRuntimeIds)}
-            type="button"
-          >
-            {t("common.next")}
-          </Button>
-          <Button
-            className="absolute left-full ml-3 h-9 animate-in whitespace-nowrap rounded-full px-6 text-sm fade-in fill-mode-backwards [animation-delay:1000ms] animation-duration-[500ms] hover:bg-foreground/10 motion-reduce:animate-none"
-            data-testid="onboarding-setup-skip"
-            onClick={() => actions.next([])}
-            type="button"
-            variant="ghost"
-          >
-            {t("common.skip")}
-          </Button>
-        </div>
-
         <Button
-          className="h-9 rounded-full bg-foreground/10 px-6 text-sm hover:bg-foreground/15"
-          data-testid="onboarding-back"
-          onClick={actions.back}
+          className={`${ONBOARDING_PRIMARY_CTA_CLASS} text-sm`}
+          data-testid="onboarding-setup-next"
+          disabled={readyRuntimeIds.length === 0}
+          onClick={() => actions.next(readyRuntimeIds)}
+          type="button"
+        >
+          {t("common.next")}
+        </Button>
+        <Button
+          className="h-9 whitespace-nowrap rounded-full px-6 text-sm hover:bg-foreground/10"
+          data-testid="onboarding-setup-skip"
+          onClick={() => actions.next([])}
           type="button"
           variant="ghost"
         >
-          {t("common.back")}
+          {t("common.skip")}
         </Button>
-
-        <p className="text-xs text-foreground/50">
-          {t("onboard.moreHarnessesLead")}{" "}
-          {actions.navigateToAgentSettings ? (
-            <button
-              className="text-foreground/70 underline underline-offset-2 hover:text-foreground"
-              data-testid="onboarding-setup-more-harnesses"
-              onClick={actions.navigateToAgentSettings}
-              type="button"
-            >
-              {t("onboard.settingsAgents")}
-            </button>
-          ) : (
-            <span className="text-foreground/70">{t("onboard.settingsAgents")}</span>
-          )}{" "}
-          {t("onboard.settingsAgentsAfterSetup")}
-        </p>
       </OnboardingFooter>
     </OnboardingSlideTransition>
   );
@@ -763,7 +755,6 @@ export function SetupStep({
   onReadyRuntimeIdsChange,
 }: SetupStepProps) {
   const state = useSetupStepState();
-
   return (
     <SetupStepContent
       actions={actions}

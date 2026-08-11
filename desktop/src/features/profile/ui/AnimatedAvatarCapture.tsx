@@ -48,6 +48,7 @@ import {
   clampOffset,
   defaultPersonScaleForSource,
   preferredCameraDevice,
+  presentAnimatedAvatar,
   randomBackdropColor,
 } from "@/features/profile/ui/AnimatedAvatarCapture.helpers";
 import {
@@ -63,7 +64,6 @@ import {
 } from "@/features/profile/ui/ProfileAvatarEditor.utils";
 import { uploadMediaBytes } from "@/shared/api/tauri";
 import { useT } from "@/shared/i18n";
-import { buildAnimatedAvatarUrl } from "@/shared/lib/animatedAvatar";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
@@ -517,7 +517,9 @@ export function AnimatedAvatarCapture({
         setErrorMessage(t("avatar.relayRejected"));
         return false;
       }
-      onApply(buildAnimatedAvatarUrl(posterUpload.url, animationUpload.url));
+      onApply(
+        presentAnimatedAvatar(posterUpload, animationUpload, posterBytes),
+      );
       return true;
     } catch (error) {
       setErrorMessage(

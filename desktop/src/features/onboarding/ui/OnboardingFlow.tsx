@@ -20,7 +20,10 @@ import { AvatarStep } from "./AvatarStep";
 import { OnboardingChrome } from "./OnboardingChrome";
 import { OnboardingFooterProvider } from "./OnboardingFooter";
 import { MembershipDenied } from "./MembershipDenied";
-import { NostrKeyImportForm } from "./NostrKeyImportForm";
+import {
+  NostrKeyImportForm,
+  type NostrKeyImportStage,
+} from "./NostrKeyImportForm";
 import { useCommunities } from "@/features/communities/useCommunities";
 import { CommunityChangeOverlay } from "@/features/communities/ui/CommunityChangeOverlay";
 import {
@@ -167,6 +170,10 @@ export function OnboardingFlow({
   const [currentPage, setCurrentPage] = React.useState<OnboardingPage>(
     identityLost ? "key-import" : "profile",
   );
+  const [keyImportStage, setKeyImportStage] =
+    React.useState<NostrKeyImportStage>("key-entry");
+  const [isKeyImporting, setIsKeyImporting] = React.useState(false);
+  const [keyImportFormKey, setKeyImportFormKey] = React.useState(0);
   const [profileDraft, setProfileDraft] =
     React.useState<OnboardingProfileValues>(savedProfile);
   const [deniedPubkey, setDeniedPubkey] = React.useState<string>("");
@@ -427,6 +434,47 @@ export function OnboardingFlow({
     }
   }, [queryClient, t]);
 
+  const handleKeyImportBack = React.useCallback(() => {
+    if (keyImportStage === "backup-password") {
+      setKeyImportFormKey((current) => current + 1);
+      setKeyImportStage("key-entry");
+      return;
+    }
+    if (identityLost) {
+      void handleLostModeBack();
+      return;
+    }
+    showProfilePage();
+  }, [handleLostModeBack, identityLost, keyImportStage, showProfilePage]);
+
+  const chromeBackAction =
+    currentPage === "profile"
+      ? {
+          disabled: profileStepState.isSaving,
+          onClick: () => {
+            setMembershipError(null);
+            setIsCommunityChangeOpen(true);
+          },
+        }
+      : currentPage === "key-import"
+        ? {
+            label:
+              keyImportStage === "backup-password"
+                ? t("common.back")
+                : identityLost
+                  ? t("onboard.startNewIdentity")
+                  : t("common.back"),
+            disabled: isKeyImporting,
+            onClick: handleKeyImportBack,
+          }
+        : currentPage === "avatar"
+          ? {
+              disabled:
+                avatarStepState.isSaving || avatarStepState.isUploadingAvatar,
+              onClick: showProfilePage,
+            }
+          : undefined;
+
   if (currentPage === "membership-denied") {
     return (
       <>
@@ -461,7 +509,7 @@ export function OnboardingFlow({
       >
         <StartupWindowDragRegion />
         <OnboardingChrome current={currentStep} total={totalOnboardingSteps} />
-        <OnboardingFooterProvider>
+        <OnboardingFooterProvider backAction={chromeBackAction}>
           <div
             className={`relative flex w-full flex-col items-center text-center ${
               currentPage === "avatar" ? "max-w-[1080px]" : "max-w-[500px]"
@@ -504,10 +552,6 @@ export function OnboardingFlow({
               <ProfileStep
                 actions={{
                   advanceWithoutSaving: advanceFromProfileWithoutSaving,
-                  back: () => {
-                    setMembershipError(null);
-                    setIsCommunityChangeOpen(true);
-                  },
                   clearAvatarDraft: resetAvatarDraft,
                   importExistingKey: showKeyImportPage,
                   onUploadingChange: setIsUploadingAvatar,
@@ -557,9 +601,13 @@ export function OnboardingFlow({
                 ) : null}
 
                 <NostrKeyImportForm
-                  backLabel={identityLost ? t("onboard.startNewIdentity") : undefined}
-                  onBack={identityLost ? handleLostModeBack : showProfilePage}
+                  key={keyImportFormKey}
+                  onBack={handleKeyImportBack}
                   onImport={importExistingKey}
+                  onImportingChange={setIsKeyImporting}
+                  onStageChange={setKeyImportStage}
+                  showBack={false}
+                  showPasswordStageBack={false}
                 />
               </OnboardingSlideTransition>
             ) : (
@@ -576,6 +624,7 @@ export function OnboardingFlow({
                 }}
                 direction={transitionDirection}
                 showAlwaysSkip={true}
+                showBack={false}
                 state={avatarStepState}
               />
             )}
