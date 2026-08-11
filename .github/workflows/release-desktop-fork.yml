@@ -1,7 +1,11 @@
-name: Release Desktop (fork Windows)
+name: Release Desktop (fork)
 
-# Personal fork (zhikemax/buzz) Windows-only desktop release + Tauri updater
-# manifest. Official block/buzz uses .github/workflows/release.yml instead.
+# Personal fork (zhikemax/buzz): Windows + macOS desktop release with Tauri
+# updater manifest. Official block/buzz uses release.yml instead.
+#
+# Apple Developer codesign/notarization is NOT used here (no Block signing
+# secrets). macOS users may need to right-click → Open the first install;
+# in-app updates still verify Tauri updater signatures.
 
 concurrency:
   group: desktop-release-fork-${{ github.ref }}
@@ -170,16 +174,241 @@ jobs:
             ${{ steps.artifacts.outputs.exe }}
             ${{ steps.artifacts.outputs.sig }}
 
+  release-macos-arm64:
+    name: Release macOS (Apple Silicon)
+    if: github.repository == 'zhikemax/buzz'
+    runs-on: macos-latest
+    needs: setup
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      archive_name: ${{ steps.artifacts.outputs.archive_name }}
+      sig: ${{ steps.read-sig.outputs.sig }}
+    env:
+      VERSION: ${{ needs.setup.outputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag-bound release source
+        run: scripts/verify-release-ref.sh desktop-v "$VERSION"
+
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.1
+          package-manager-cache: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 11.4.0
+
+      - name: Install desktop dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Patch version
+        run: |
+          cd desktop && node scripts/set-version-from-tag.mjs "$VERSION"
+          cd src-tauri && cargo update --workspace
+
+      - name: Generate release config
+        run: cd desktop && node scripts/build-release-config.mjs
+        env:
+          BUZZ_UPDATER_PUBLIC_KEY: ${{ secrets.BUZZ_UPDATER_PUBLIC_KEY }}
+          BUZZ_UPDATER_ENDPOINT: ${{ env.BUZZ_UPDATER_ENDPOINT }}
+
+      - name: Build sidecars
+        run: |
+          cargo build --release -p buzz-acp -p buzz-agent -p buzz-dev-mcp -p git-credential-nostr -p buzz-cli
+          ./scripts/bundle-sidecars.sh
+
+      - name: Build unsigned Tauri app (updater-signed)
+        run: cd desktop && pnpm tauri build --verbose --no-sign --config src-tauri/tauri.release.conf.json
+        env:
+          BUZZ_UPDATER_PUBLIC_KEY: ${{ secrets.BUZZ_UPDATER_PUBLIC_KEY }}
+          BUZZ_UPDATER_ENDPOINT: ${{ env.BUZZ_UPDATER_ENDPOINT }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
+
+      - name: Locate macOS build artifacts
+        id: artifacts
+        run: |
+          set -euo pipefail
+          BUNDLE_DIR="desktop/src-tauri/target/release/bundle"
+
+          DMG=$(find "$BUNDLE_DIR/dmg" -name '*.dmg' -type f | head -1)
+          if [[ -z "$DMG" ]]; then
+            echo "::error::No DMG found in $BUNDLE_DIR/dmg"
+            exit 1
+          fi
+          DMG_RENAMED="$(dirname "$DMG")/Buzz_${VERSION}_aarch64.dmg"
+          mv "$DMG" "$DMG_RENAMED"
+
+          ARCHIVE=$(find "$BUNDLE_DIR/macos" -name '*.tar.gz' ! -name '*.sig' -type f | head -1)
+          SIG="${ARCHIVE}.sig"
+          if [[ -z "$ARCHIVE" || ! -f "$SIG" ]]; then
+            echo "::error::Updater archive or signature not found in $BUNDLE_DIR/macos"
+            exit 1
+          fi
+
+          RENAMED="$(dirname "$ARCHIVE")/Buzz_${VERSION}_aarch64.app.tar.gz"
+          mv "$ARCHIVE" "$RENAMED"
+          mv "$SIG" "${RENAMED}.sig"
+          echo "dmg=$DMG_RENAMED" >> "$GITHUB_OUTPUT"
+          echo "archive=$RENAMED" >> "$GITHUB_OUTPUT"
+          echo "archive_name=$(basename "$RENAMED")" >> "$GITHUB_OUTPUT"
+          echo "sig=${RENAMED}.sig" >> "$GITHUB_OUTPUT"
+
+      - name: Read updater signature
+        id: read-sig
+        run: echo "sig=$(cat "$SIG_PATH")" >> "$GITHUB_OUTPUT"
+        env:
+          SIG_PATH: ${{ steps.artifacts.outputs.sig }}
+
+      - name: Stage Apple Silicon release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: desktop-release-macos-arm64
+          if-no-files-found: error
+          path: |
+            ${{ steps.artifacts.outputs.dmg }}
+            ${{ steps.artifacts.outputs.archive }}
+            ${{ steps.artifacts.outputs.sig }}
+
+  release-macos-x64:
+    name: Release macOS (Intel)
+    if: github.repository == 'zhikemax/buzz'
+    runs-on: macos-latest
+    needs: setup
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      archive_name: ${{ steps.artifacts.outputs.archive_name }}
+      sig: ${{ steps.read-sig.outputs.sig }}
+    env:
+      VERSION: ${{ needs.setup.outputs.version }}
+      TARGET: x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ needs.setup.outputs.source_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag-bound release source
+        run: scripts/verify-release-ref.sh desktop-v "$VERSION"
+
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          targets: ${{ env.TARGET }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.1
+          package-manager-cache: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 11.4.0
+
+      - name: Install desktop dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Patch version
+        run: |
+          cd desktop && node scripts/set-version-from-tag.mjs "$VERSION"
+          cd src-tauri && cargo update --workspace
+
+      - name: Generate release config
+        run: cd desktop && node scripts/build-release-config.mjs
+        env:
+          BUZZ_UPDATER_PUBLIC_KEY: ${{ secrets.BUZZ_UPDATER_PUBLIC_KEY }}
+          BUZZ_UPDATER_ENDPOINT: ${{ env.BUZZ_UPDATER_ENDPOINT }}
+
+      - name: Build sidecars
+        run: |
+          cargo build --release --target "$TARGET" -p buzz-acp -p buzz-agent -p buzz-dev-mcp -p git-credential-nostr -p buzz-cli
+          ./scripts/bundle-sidecars.sh "$TARGET"
+
+      - name: Build unsigned Tauri app (updater-signed)
+        run: cd desktop && pnpm tauri build --verbose --no-sign --target "$TARGET" --config src-tauri/tauri.release.conf.json
+        env:
+          BUZZ_UPDATER_PUBLIC_KEY: ${{ secrets.BUZZ_UPDATER_PUBLIC_KEY }}
+          BUZZ_UPDATER_ENDPOINT: ${{ env.BUZZ_UPDATER_ENDPOINT }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
+          CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
+
+      - name: Locate macOS build artifacts
+        id: artifacts
+        run: |
+          set -euo pipefail
+          BUNDLE_DIR="desktop/src-tauri/target/${TARGET}/release/bundle"
+
+          DMG=$(find "$BUNDLE_DIR/dmg" -name '*.dmg' -type f | head -1)
+          if [[ -z "$DMG" ]]; then
+            echo "::error::No DMG found in $BUNDLE_DIR/dmg"
+            exit 1
+          fi
+          DMG_RENAMED="$(dirname "$DMG")/Buzz_${VERSION}_x64.dmg"
+          mv "$DMG" "$DMG_RENAMED"
+
+          ARCHIVE=$(find "$BUNDLE_DIR/macos" -name '*.tar.gz' ! -name '*.sig' -type f | head -1)
+          SIG="${ARCHIVE}.sig"
+          if [[ -z "$ARCHIVE" || ! -f "$SIG" ]]; then
+            echo "::error::Updater archive or signature not found in $BUNDLE_DIR/macos"
+            exit 1
+          fi
+
+          RENAMED="$(dirname "$ARCHIVE")/Buzz_${VERSION}_x64.app.tar.gz"
+          mv "$ARCHIVE" "$RENAMED"
+          mv "$SIG" "${RENAMED}.sig"
+          echo "dmg=$DMG_RENAMED" >> "$GITHUB_OUTPUT"
+          echo "archive=$RENAMED" >> "$GITHUB_OUTPUT"
+          echo "archive_name=$(basename "$RENAMED")" >> "$GITHUB_OUTPUT"
+          echo "sig=${RENAMED}.sig" >> "$GITHUB_OUTPUT"
+
+      - name: Read updater signature
+        id: read-sig
+        run: echo "sig=$(cat "$SIG_PATH")" >> "$GITHUB_OUTPUT"
+        env:
+          SIG_PATH: ${{ steps.artifacts.outputs.sig }}
+
+      - name: Stage Intel macOS release artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: desktop-release-macos-x64
+          if-no-files-found: error
+          path: |
+            ${{ steps.artifacts.outputs.dmg }}
+            ${{ steps.artifacts.outputs.archive }}
+            ${{ steps.artifacts.outputs.sig }}
+
   assemble-manifest:
-    name: Assemble Windows latest.json
+    name: Assemble multi-platform latest.json
     if: |
       always() &&
       github.repository == 'zhikemax/buzz' &&
       needs.setup.result == 'success' &&
       needs.release-windows.result == 'success' &&
+      needs.release-macos-arm64.result == 'success' &&
+      needs.release-macos-x64.result == 'success' &&
       github.ref == format('refs/tags/desktop-v{0}', needs.setup.outputs.version)
     runs-on: ubuntu-latest
-    needs: [setup, release-windows]
+    needs: [setup, release-windows, release-macos-arm64, release-macos-x64]
     timeout-minutes: 15
     permissions:
       contents: write
@@ -215,24 +444,38 @@ jobs:
             cp "$file" "staged/$name"
           done < <(find staged-by-platform -type f -print0)
 
-      - name: Write signature + generate latest.json
+      - name: Write signatures + generate latest.json
         env:
           ARCHIVE_WIN: ${{ needs.release-windows.outputs.archive_name }}
           SIG_WIN: ${{ needs.release-windows.outputs.sig }}
+          ARCHIVE_ARM64: ${{ needs.release-macos-arm64.outputs.archive_name }}
+          SIG_ARM64: ${{ needs.release-macos-arm64.outputs.sig }}
+          ARCHIVE_X64: ${{ needs.release-macos-x64.outputs.archive_name }}
+          SIG_X64: ${{ needs.release-macos-x64.outputs.sig }}
         run: |
           set -euo pipefail
-          [[ -n "$ARCHIVE_WIN" && -n "$SIG_WIN" ]] || {
-            echo "::error::missing Windows archive or signature"; exit 1;
-          }
-          grep -Fxq "$ARCHIVE_WIN" <<<"$(find staged -type f -exec basename {} \;)" || {
-            echo "::error::draft staging missing $ARCHIVE_WIN"; exit 1;
-          }
+          assets=$(find staged -type f -exec basename {} \;)
           mkdir -p /tmp/sigs
-          printf '%s' "$SIG_WIN" > /tmp/sigs/windows-x86_64.sig
+          TRIPLES=()
           BASE="https://github.com/${FORK_GITHUB_REPO}/releases/download/desktop-v${VERSION}"
-          bash desktop/scripts/generate-oss-latest-json.sh "$VERSION" \
-            "windows-x86_64:/tmp/sigs/windows-x86_64.sig:${BASE}/${ARCHIVE_WIN}" \
-            > latest.json
+
+          add_platform() {
+            local platform="$1" archive="$2" sig="$3"
+            [[ -n "$archive" && -n "$sig" ]] || {
+              echo "::error::missing archive/signature for $platform"; exit 1;
+            }
+            grep -Fxq "$archive" <<<"$assets" || {
+              echo "::error::staging missing $archive"; exit 1;
+            }
+            printf '%s' "$sig" > "/tmp/sigs/${platform}.sig"
+            TRIPLES+=("${platform}:/tmp/sigs/${platform}.sig:${BASE}/${archive}")
+          }
+
+          add_platform windows-x86_64 "$ARCHIVE_WIN" "$SIG_WIN"
+          add_platform darwin-aarch64 "$ARCHIVE_ARM64" "$SIG_ARM64"
+          add_platform darwin-x86_64 "$ARCHIVE_X64" "$SIG_X64"
+
+          bash desktop/scripts/generate-oss-latest-json.sh "$VERSION" "${TRIPLES[@]}" > latest.json
           cat latest.json
 
       - name: Create or verify versioned release
@@ -242,7 +485,9 @@ jobs:
           {
             echo "Buzz Desktop (fork) v${VERSION}"
             echo
-            echo "Windows auto-update build for \`${FORK_GITHUB_REPO}\`."
+            echo "Windows + macOS (Apple Silicon & Intel) auto-update build for \`${FORK_GITHUB_REPO}\`."
+            echo
+            echo "macOS first install is Apple-unsigned: right-click the app → Open if Gatekeeper blocks it."
           } > "$NOTES_FILE"
           PRERELEASE_FLAGS=()
           if [[ "$VERSION" == *-* ]]; then

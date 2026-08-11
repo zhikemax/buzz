@@ -105,7 +105,7 @@ Or use GitHub **Sync fork**, then still merge into `feat/zh-CN-i18n`.
 | Managed-agent `BUZZ_RELAY_URL` Host spelling | Yes | Yes | `desktop/src-tauri/src/managed_agents/runtime.rs` (+ restore / runtime_commands) |
 | Windows mesh-llm off / sherpa shared | Yes locally | **No** | `desktop/src-tauri/Cargo.toml` (`mesh-llm = []`), `crates/buzz-voice/Cargo.toml` |
 | AimaxHug default LLM provider | Yes locally | **No** | `aimaxhug.rs`, agent UI provider catalog |
-| Fork desktop auto-update | Yes locally | **No** | `updaterEndpoints.ts`, `release-desktop-fork.yml`, `desktop/docs/FORK_AUTO_UPDATE.md` |
+| Fork desktop auto-update | Yes locally | **No** | `updaterEndpoints.ts`, `release-desktop-fork.yml` (Win+macOS), `desktop/docs/FORK_AUTO_UPDATE.md` |
 | Dev Tauri override | Local only | **Never commit** | `desktop/tauri.dev.local.json` |
 
 Details and conflict recipes: [local-mods.md](local-mods.md).

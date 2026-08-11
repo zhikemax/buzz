@@ -62,8 +62,8 @@ UI already exists (sidebar card + Settings → Software Updates). Official
 
 - Endpoints: `desktop/src/features/settings/hooks/updaterEndpoints.ts`
   → `zhikemax/buzz` releases / `buzz-desktop-latest/latest.json`
-- CI: `.github/workflows/release-desktop-fork.yml` (Windows-only; repo gate
-  `zhikemax/buzz`)
+- CI: `.github/workflows/release-desktop-fork.yml` (Windows + macOS arm64/x64;
+  repo gate `zhikemax/buzz`)
 - Docs: `desktop/docs/FORK_AUTO_UPDATE.md`
 - Local bake helper: `source desktop/scripts/fork-updater-env.sh` then set
   `BUZZ_UPDATER_PUBLIC_KEY` + `TAURI_SIGNING_PRIVATE_KEY`
@@ -80,6 +80,7 @@ Generate: `cargo tauri signer generate -w ~/.tauri/buzz-fork.key`
 
 Users must install **one** release build that was baked with these secrets;
 `just dev` / unsigned debug builds show “auto-update unavailable”.
+macOS first install is Apple-unsigned (Gatekeeper: right-click → Open).
 
 ## Never commit
 
