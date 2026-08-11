@@ -1,13 +1,5 @@
 # Changelog
 
-## v0.5.10
-
-### Fork release
-
-- Sync `upstream/main` (official desktop 0.5.9 line) into `feat/zh-CN-i18n`
-- Keep fork mods: zh-CN i18n, local community create, AimaxHug, Win+macOS auto-update
-- Desktop package/tauri version set to **0.5.10** so release tags match code
-
 ## v0.5.9
 
 ### Desktop and shared changes
