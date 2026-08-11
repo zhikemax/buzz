@@ -103,9 +103,21 @@ After resolving TS merge conflicts involving personas/catalog:
 - `origin` → `https://github.com/zhikemax/buzz.git` (push here)
 - `upstream` → `https://github.com/block/buzz.git` (fetch/merge `upstream/main`)
 
+## Desktop version = official
+
+Keep `desktop/package.json`, `desktop/src-tauri/tauri.conf.json`, and
+`desktop/src-tauri/Cargo.toml` (+ lock) **identical** to `upstream/main`.
+Do **not** bump ahead (e.g. fork-only `0.5.10` while official is `0.5.9`) —
+users will misread the fork as a different product line.
+
+Fork release tags stay `desktop-vX.Y.Z` matching that same official version.
+If a prior fork tag already pointed at older code, move/rebuild that tag
+only when intentionally re-shipping the synced tree under the same version.
+
 ## Sync anti-patterns (see SKILL.md)
 
 - GitHub **Sync fork** alone does **not** update `feat/zh-CN-i18n`.
 - Real project update = `git fetch upstream main` + `git merge upstream/main`
   on `feat/zh-CN-i18n`, then parity + `tsc`, then `git push origin HEAD`.
 - Never push to `upstream` unless the user explicitly asks.
+- Never bump desktop version past official just to mint a new release tag.
