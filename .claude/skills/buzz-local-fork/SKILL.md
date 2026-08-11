@@ -127,6 +127,8 @@ Details and conflict recipes: [local-mods.md](local-mods.md).
    components need their own `useT()` + `getPersonaCatalogCopy(t)`.
 5. **Windows Cargo tweaks** — if `Cargo.toml` conflicts, re-apply local
    `mesh-llm = []` / sherpa shared after taking upstream dependency bumps.
+6. **Desktop version = official** — keep package/tauri/Cargo version identical
+   to `upstream/main`. Never bump ahead for a fork-only release tag.
 
 ## i18n parity (required after sync)
 
