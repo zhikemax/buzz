@@ -48,7 +48,8 @@ pub(super) fn requirements(
             };
             let augmented_path = cli_probe::augmented_path();
             match cli_probe::login_probe(&binary_path, probe_args, augmented_path.as_deref()) {
-                cli_probe::ProbeOutcome::LoggedIn => vec![],
+                cli_probe::ProbeOutcome::VendorLoggedIn
+                | cli_probe::ProbeOutcome::ApiCredentialReady => vec![],
                 cli_probe::ProbeOutcome::LoggedOut => vec![missing_requirement(
                     probe_args,
                     setup_copy,

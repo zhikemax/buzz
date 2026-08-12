@@ -858,11 +858,18 @@ pub fn spawn_agent_child(
     // `Command` above, BEFORE spawning. Re-resolving after `spawn()` would let
     // a persona/harness/global edit landing in between stamp the NEW config
     // onto a child running the OLD one, silently suppressing the badge.
+    //
+    // `relay_url` in the stamp is the *pair identity* (canonical
+    // `runtime_key.relay_url`), not `connect_relay_url`. Prospective comparison
+    // always uses the pair key's canonical form; stamping the caller spelling
+    // (`localhost` vs folded `127.0.0.1`) permanently lit the restart badge
+    // even when nothing changed. Child `BUZZ_RELAY_URL` still gets the connect
+    // spelling above.
     let spawn_config = super::spawn_snapshot::SpawnConfigSnapshot::from_inputs(
         super::spawn_snapshot::SpawnConfigInputs {
             record,
             descriptor: &descriptor,
-            relay_url: &connect_relay_url,
+            relay_url: &runtime_key.relay_url,
             team_instructions: team_instructions.as_deref(),
             system_prompt: effective_prompt.as_deref(),
             model: effective_model.as_deref(),

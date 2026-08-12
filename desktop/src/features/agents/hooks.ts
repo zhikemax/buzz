@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   connectAcpRuntime,
+  disconnectAcpRuntime,
   discoverAcpAuthMethods,
 } from "@/shared/api/tauriAgentAuth";
 import {
@@ -237,6 +238,18 @@ export function useConnectAcpRuntimeMutation() {
   return useMutation({
     mutationFn: (input: { runtimeId: string; methodId: string }) =>
       connectAcpRuntime(input.runtimeId, input.methodId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: acpRuntimesQueryKey });
+      void queryClient.invalidateQueries({ queryKey: acpAuthMethodsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: managedAgentsQueryKey });
+    },
+  });
+}
+
+export function useDisconnectAcpRuntimeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (runtimeId: string) => disconnectAcpRuntime(runtimeId),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: acpRuntimesQueryKey });
       void queryClient.invalidateQueries({ queryKey: acpAuthMethodsQueryKey });

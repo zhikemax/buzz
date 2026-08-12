@@ -17,9 +17,8 @@ export type ProviderRuntimeCapability = "capable" | "locked" | "unknown";
  * — leaving the record inheriting a provider-backed runtime with a null
  * provider. To avoid that, we resolve capability STATICALLY for known ids:
  *
- * - buzz-agent / goose → "capable" (`isProviderCapable`, id-based).
- * - claude / codex → "locked" (CLI-login runtimes; no LLM provider selection).
- * - anything else (custom, empty, genuinely unknown) → "unknown".
+ * - anything with `runtimeSupportsLlmProviderSelection` → "capable".
+ * - empty / unknown with no capability flag → "unknown".
  *
  * `isProviderCapable` is the caller-supplied {@link
  * runtimeSupportsLlmProviderSelection} result, kept as the single source of
@@ -31,10 +30,6 @@ export function resolveRuntimeProviderCapability(
 ): ProviderRuntimeCapability {
   if (isProviderCapable) {
     return "capable";
-  }
-  const id = runtimeId.trim();
-  if (id === "claude" || id === "codex") {
-    return "locked";
   }
   return "unknown";
 }

@@ -338,6 +338,19 @@ fn relay_url_is_masked_without_any_suffix() {
 }
 
 #[test]
+fn loopback_host_spelling_alone_is_a_relay_url_diff() {
+    // Spawn must stamp the canonical pair relay (`runtime_key.relay_url`), not
+    // the connect spelling written to `BUZZ_RELAY_URL`. Prospective comparison
+    // always uses the pair key; stamping `localhost` while comparing
+    // `127.0.0.1` permanently lit「需要重启」after every successful start.
+    let mut before = base();
+    before.relay_url = "ws://localhost:13000".into();
+    let mut after = base();
+    after.relay_url = "ws://127.0.0.1:13000".into();
+    assert_eq!(fields(&diff(&before, &after)), vec!["relay_url"]);
+}
+
+#[test]
 fn auth_tag_is_masked_with_a_suffix() {
     let mut after = base();
     after.auth_tag = Some("tag-ijklmnop".into());

@@ -260,6 +260,21 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.agents.defaultHarness": "默认运行时",
   "settings.agents.selectHarness": "选择运行时",
   "settings.agents.saveDefaults": "保存默认设置",
+  "settings.agents.cliLogin.tabConfig": "配置",
+  "settings.agents.cliLogin.tabLogin": "登录授权",
+  "settings.agents.cliLogin.title": "登录 {label}",
+  "settings.agents.cliLogin.installFirst":
+    "请先安装 {label}，再回到这里完成官方登录。",
+  "settings.agents.cliLogin.signedIn": "{label} 已登录",
+  "settings.agents.cliLogin.signedInOnly": "当前使用官方登录授权。",
+  "settings.agents.cliLogin.signedInPreferLogin":
+    "官方登录与「配置」中的 API Key 均已就绪时，优先使用官方登录。取消授权后将改用配置页的 API Key。",
+  "settings.agents.cliLogin.configReadyOptional":
+    "「配置」页中的 API Key 已可用。登录授权为可选项；若完成登录，将优先使用官方登录，直到你取消授权。",
+  "settings.agents.cliLogin.revoke": "取消授权",
+  "settings.agents.cliLogin.revokeFailed": "取消授权失败：{error}",
+  "settings.agents.cliLogin.loadMethods": "加载登录方式",
+  "settings.agents.cliLogin.waiting": "正在等待登录完成…",
   "settings.agents.saved": "已保存。",
   "settings.agents.savedRestarted": "已保存。已重启 {count} 个智能体。",
   "settings.agents.savedRestartPartial":

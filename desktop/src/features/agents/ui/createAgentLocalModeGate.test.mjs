@@ -65,19 +65,19 @@ test("localMode_goose_supportsProviderSelection", () => {
   );
 });
 
-test("localMode_claude_doesNotSupportProviderSelection", () => {
+test("localMode_claude_supportsProviderSelection", () => {
   assert.equal(
     runtimeSupportsLlmProviderSelection("claude"),
-    false,
-    "claude must NOT support LLM provider selection (CLI-login runtime)",
+    true,
+    "claude uses the same provider / API key / model fields as Buzz Agent",
   );
 });
 
-test("localMode_custom_doesNotSupportProviderSelection", () => {
+test("localMode_custom_supportsProviderSelection", () => {
   assert.equal(
     runtimeSupportsLlmProviderSelection("custom"),
-    false,
-    "custom runtime must NOT support LLM provider selection",
+    true,
+    "custom runtimes use the same provider / API key / model fields",
   );
 });
 
@@ -182,12 +182,10 @@ test("localMode_buzzAgent_anthropic_allRequired_present_allowed", () => {
   );
 });
 
-// ── Gate: claude runtime (CLI-login) → NOT blocked ────────────────────────
+// ── Gate: claude runtime uses shared provider fields ──────────────────────
 
-test("localMode_claude_noRequiredFields_notBlocked", () => {
-  // Scenario: user selects claude. Claude uses CLI-login (out-of-band auth),
-  // runtimeSupportsLlmProviderSelection=false → no provider/model required,
-  // no credential keys required. The gate must not block.
+test("localMode_claude_emptyProvider_notSatisfied", () => {
+  // Claude now shares Buzz Agent provider / model / API-key fields.
   const result = computeLocalModeGate({
     envVars: {},
     isProviderMode: false,
@@ -196,21 +194,29 @@ test("localMode_claude_noRequiredFields_notBlocked", () => {
     runtimeId: "claude",
   });
 
-  assert.deepEqual(
-    result.missingNormalizedFields,
-    [],
-    "claude must have no required normalized fields",
+  assert.ok(
+    result.missingNormalizedFields.includes("provider"),
+    "claude must require provider",
   );
-  assert.deepEqual(
-    result.missingEnvKeys,
-    [],
-    "claude must return no required credential keys",
+  assert.ok(
+    result.missingNormalizedFields.includes("model"),
+    "claude must require model",
   );
-  assert.equal(
-    result.satisfied,
-    true,
-    "claude must NOT be blocked by the local-mode gate",
-  );
+  assert.equal(result.satisfied, false);
+});
+
+test("localMode_claude_aimaxhug_withKey_satisfied", () => {
+  const result = computeLocalModeGate({
+    envVars: { OPENAI_COMPAT_API_KEY: "sk-test" },
+    isProviderMode: false,
+    model: "claude-sonnet-5",
+    provider: "aimaxhug",
+    runtimeId: "claude",
+  });
+
+  assert.deepEqual(result.missingNormalizedFields, []);
+  assert.deepEqual(result.missingEnvKeys, []);
+  assert.equal(result.satisfied, true);
 });
 
 // ── Gate: provider mode bypass ─────────────────────────────────

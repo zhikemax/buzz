@@ -139,6 +139,13 @@ export function stableRowOrder(
 /** Human status label key for a catalog entry; null when nothing needs saying. */
 export function entryStatusLabel(
   entry: AcpRuntimeCatalogEntry,
+  _options?: {
+    /**
+     * Retained for call-site compatibility. Vendor login is no longer surfaced
+     * as a row/catalog status chip — use Agent Defaults login tab instead.
+     */
+    vendorLoginOptional?: boolean;
+  },
 ): MessageKey | null {
   if (entry.authStatus.status === "config_invalid") {
     return "settings.agents.status.configError";
@@ -152,9 +159,7 @@ export function entryStatusLabel(
     case "not_installed":
       return "settings.agents.status.cliNeeded";
     case "available":
-      return entry.authStatus.status === "logged_out"
-        ? "settings.agents.status.signInNeeded"
-        : null;
+      return null;
     default:
       return null;
   }

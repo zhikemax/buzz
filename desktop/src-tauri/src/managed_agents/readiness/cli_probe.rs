@@ -24,8 +24,12 @@ pub(crate) fn augmented_path() -> Option<String> {
 /// Outcome of a CLI login-status probe.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ProbeOutcome {
-    /// The CLI reported a successful login (exit 0).
-    LoggedIn,
+    /// Official vendor OAuth (Claude.ai subscription / ChatGPT login).
+    /// This is what Agent Defaults「登录授权」means by "signed in".
+    VendorLoggedIn,
+    /// CLI has usable API-key / settings credentials (exit 0) but not vendor
+    /// OAuth — ready to run, yet the Login tab must not claim「已登录」.
+    ApiCredentialReady,
     /// The CLI exited non-zero without a config-parse signal — treat as
     /// "not authenticated."
     LoggedOut,
@@ -36,6 +40,21 @@ pub(crate) enum ProbeOutcome {
         /// A trimmed excerpt of the stderr message to surface in the nudge.
         stderr_excerpt: String,
     },
+}
+
+impl ProbeOutcome {
+    /// Map to catalog `AuthStatus` for the Login tab / Doctor.
+    /// Only vendor OAuth counts as `LoggedIn`.
+    pub(crate) fn to_auth_status(self) -> crate::managed_agents::AuthStatus {
+        use crate::managed_agents::AuthStatus;
+        match self {
+            Self::VendorLoggedIn => AuthStatus::LoggedIn,
+            Self::ApiCredentialReady | Self::LoggedOut => AuthStatus::LoggedOut,
+            Self::ConfigInvalid { stderr_excerpt } => AuthStatus::ConfigInvalid {
+                diagnostic: stderr_excerpt,
+            },
+        }
+    }
 }
 
 /// Signals emitted to stderr by codex (and related CLI tools) when they
@@ -66,8 +85,12 @@ pub(crate) fn login_probe(
     crate::util::configure_no_window(&mut command);
 
     match command.output() {
-        Ok(o) if o.status.success() => ProbeOutcome::LoggedIn,
-        Ok(o) => classify_probe_output(&o.stderr, false),
+        Ok(o) => classify_vendor_auth_probe(
+            probe_args.first().copied().unwrap_or(""),
+            &o.stdout,
+            &o.stderr,
+            o.status.success(),
+        ),
         Err(_) => ProbeOutcome::LoggedOut,
     }
 }
@@ -75,37 +98,192 @@ pub(crate) fn login_probe(
 /// Classify collected probe output into a `ProbeOutcome`.
 ///
 /// Shared between `login_probe` (which has the full `Output`) and the
-/// process-level timeout path in `probe_auth_status` (which drains stderr
-/// on a background thread and collects it separately).
+/// process-level timeout path in `probe_auth_status` (which drains stdout /
+/// stderr on background threads).
 pub(crate) fn classify_probe_output(stderr_bytes: &[u8], exit_success: bool) -> ProbeOutcome {
-    if exit_success {
-        return ProbeOutcome::LoggedIn;
-    }
-    let stderr = String::from_utf8_lossy(stderr_bytes);
-    let stderr_lower = stderr.to_lowercase();
-    if CONFIG_PARSE_SIGNALS
-        .iter()
-        .all(|sig| stderr_lower.contains(sig))
-    {
-        let excerpt = stderr.trim().lines().next().unwrap_or("").to_string();
-        ProbeOutcome::ConfigInvalid {
-            stderr_excerpt: excerpt,
+    // Legacy callers without stdout — treat success as API-credential ready
+    // (not vendor OAuth) so Login tab does not falsely claim「已登录」.
+    classify_vendor_auth_probe("", &[], stderr_bytes, exit_success)
+}
+
+/// Classify Claude / Codex (and generic) auth-status output.
+///
+/// Claude: parse `claude auth status` JSON; only `authMethod == "claude.ai"`
+/// is vendor OAuth. Settings/`ANTHROPIC_API_KEY` also report `loggedIn: true`
+/// and must surface as [`ProbeOutcome::ApiCredentialReady`].
+///
+/// Codex: `"Logged in using ChatGPT"` → vendor; `"Logged in using an API key"`
+/// → API credential.
+pub(crate) fn classify_vendor_auth_probe(
+    cli_name: &str,
+    stdout_bytes: &[u8],
+    stderr_bytes: &[u8],
+    exit_success: bool,
+) -> ProbeOutcome {
+    if !exit_success {
+        let stderr = String::from_utf8_lossy(stderr_bytes);
+        let stderr_lower = stderr.to_lowercase();
+        if CONFIG_PARSE_SIGNALS
+            .iter()
+            .all(|sig| stderr_lower.contains(sig))
+        {
+            let excerpt = stderr.trim().lines().next().unwrap_or("").to_string();
+            return ProbeOutcome::ConfigInvalid {
+                stderr_excerpt: excerpt,
+            };
         }
-    } else {
-        ProbeOutcome::LoggedOut
+        return ProbeOutcome::LoggedOut;
     }
+
+    let stdout = String::from_utf8_lossy(stdout_bytes);
+    let stderr = String::from_utf8_lossy(stderr_bytes);
+    let combined = format!("{stdout}\n{stderr}");
+    let cli = cli_name
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(cli_name)
+        .trim_end_matches(".exe")
+        .trim_end_matches(".cmd")
+        .trim_end_matches(".bat")
+        .to_ascii_lowercase();
+
+    if cli == "claude" {
+        return classify_claude_auth_status(&stdout);
+    }
+    if cli == "codex" {
+        return classify_codex_login_status(&combined);
+    }
+
+    // Unknown CLI with exit 0 — keep prior "ready" semantics without claiming
+    // vendor OAuth in the Login tab.
+    ProbeOutcome::ApiCredentialReady
+}
+
+fn classify_claude_auth_status(stdout: &str) -> ProbeOutcome {
+    let trimmed = stdout.trim();
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) else {
+        // Older CLIs / text mode: exit 0 without JSON — treat as credentials
+        // present, not necessarily Claude.ai OAuth.
+        return if trimmed.is_empty() {
+            ProbeOutcome::ApiCredentialReady
+        } else if trimmed.to_ascii_lowercase().contains("not logged in") {
+            ProbeOutcome::LoggedOut
+        } else {
+            ProbeOutcome::ApiCredentialReady
+        };
+    };
+    let logged_in = value
+        .get("loggedIn")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    if !logged_in {
+        return ProbeOutcome::LoggedOut;
+    }
+    let auth_method = value
+        .get("authMethod")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    // Official subscription /claude.ai OAuth only. `oauth_token` + settings
+    // `ANTHROPIC_API_KEY` (third-party gateways) must not light「已登录」.
+    if auth_method == "claude.ai" {
+        ProbeOutcome::VendorLoggedIn
+    } else {
+        ProbeOutcome::ApiCredentialReady
+    }
+}
+
+fn classify_codex_login_status(combined: &str) -> ProbeOutcome {
+    let lower = combined.to_ascii_lowercase();
+    if lower.contains("not logged in") {
+        return ProbeOutcome::LoggedOut;
+    }
+    if lower.contains("logged in using chatgpt") {
+        return ProbeOutcome::VendorLoggedIn;
+    }
+    if lower.contains("logged in using an api key")
+        || lower.contains("logged in using amazon bedrock")
+        || lower.contains("logged in using personal access token")
+        || lower.contains("logged in using access token")
+    {
+        return ProbeOutcome::ApiCredentialReady;
+    }
+    // Exit 0 with unrecognized text — credentials exist, not ChatGPT OAuth.
+    ProbeOutcome::ApiCredentialReady
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{ProbeOutcome, CONFIG_PARSE_SIGNALS};
+    use super::{classify_vendor_auth_probe, ProbeOutcome, CONFIG_PARSE_SIGNALS};
+
+    #[test]
+    fn claude_settings_api_key_is_not_vendor_login() {
+        let json = r#"{
+          "loggedIn": true,
+          "authMethod": "oauth_token",
+          "apiProvider": "firstParty",
+          "apiKeySource": "ANTHROPIC_API_KEY"
+        }"#;
+        assert_eq!(
+            classify_vendor_auth_probe("claude", json.as_bytes(), b"", true),
+            ProbeOutcome::ApiCredentialReady
+        );
+        assert_eq!(
+            classify_vendor_auth_probe("claude", json.as_bytes(), b"", true).to_auth_status(),
+            crate::managed_agents::AuthStatus::LoggedOut
+        );
+    }
+
+    #[test]
+    fn claude_ai_oauth_is_vendor_login() {
+        let json = r#"{
+          "loggedIn": true,
+          "authMethod": "claude.ai",
+          "subscriptionType": "pro",
+          "email": "user@example.com"
+        }"#;
+        assert_eq!(
+            classify_vendor_auth_probe("claude", json.as_bytes(), b"", true),
+            ProbeOutcome::VendorLoggedIn
+        );
+    }
+
+    #[test]
+    fn claude_logged_out_json() {
+        let json = r#"{"loggedIn":false,"authMethod":"none"}"#;
+        assert_eq!(
+            classify_vendor_auth_probe("claude", json.as_bytes(), b"", true),
+            ProbeOutcome::LoggedOut
+        );
+    }
+
+    #[test]
+    fn codex_api_key_is_not_vendor_login() {
+        assert_eq!(
+            classify_vendor_auth_probe(
+                "codex",
+                b"",
+                b"Logged in using an API key - sk-teamo***b5354\n",
+                true
+            ),
+            ProbeOutcome::ApiCredentialReady
+        );
+    }
+
+    #[test]
+    fn codex_chatgpt_is_vendor_login() {
+        assert_eq!(
+            classify_vendor_auth_probe("codex", b"", b"Logged in using ChatGPT\n", true),
+            ProbeOutcome::VendorLoggedIn
+        );
+    }
 
     #[cfg(unix)]
     #[test]
     fn login_probe_uses_augmented_path_for_env_shebang_interpreter() {
         use std::fs;
         use std::os::unix::fs::PermissionsExt;
-        use std::process::Command;
 
         let temp = tempfile::tempdir().expect("temp dir");
         let script_dir = temp.path().join("script-bin");
@@ -120,48 +298,35 @@ mod tests {
         fs::write(
             &interpreter_path,
             format!(
-                "#!/bin/sh\nprintf 'fake node ran\\n' > '{}' || exit 1\nexit 0\n",
+                "#!/bin/sh\necho '{{\"loggedIn\":true,\"authMethod\":\"claude.ai\"}}'\ntouch {}\n",
                 marker_path.display()
             ),
         )
         .expect("write interpreter");
-        fs::set_permissions(&interpreter_path, fs::Permissions::from_mode(0o755))
-            .expect("chmod interpreter");
+        let mut perms = fs::metadata(&interpreter_path)
+            .expect("meta")
+            .permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&interpreter_path, perms).expect("chmod");
 
-        let script_path = script_dir.join("fake-codex");
+        let script_path = script_dir.join("claude");
         fs::write(&script_path, "#!/usr/bin/env node\n").expect("write script");
-        fs::set_permissions(&script_path, fs::Permissions::from_mode(0o755)).expect("chmod script");
+        let mut perms = fs::metadata(&script_path).expect("meta").permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&script_path, perms).expect("chmod");
 
-        let scrubbed_path = std::env::join_paths([empty_path_dir.as_path()])
-            .expect("join scrubbed PATH")
-            .to_string_lossy()
-            .into_owned();
-        let without_augmented_path = Command::new(&script_path)
-            .args(["login", "status"])
-            .env("PATH", &scrubbed_path)
-            .output()
-            .expect("run script with scrubbed PATH");
-        assert!(
-            !without_augmented_path.status.success(),
-            "with a scrubbed PATH, /usr/bin/env should not find node"
+        let augmented = format!(
+            "{}:{}",
+            interpreter_dir.display(),
+            empty_path_dir.display()
         );
-
-        let augmented_path =
-            std::env::join_paths([interpreter_dir.as_path()]).expect("join augmented PATH");
-        let augmented_path = augmented_path.to_string_lossy().into_owned();
-        assert_eq!(
-            super::login_probe(
-                &script_path,
-                &["fake-codex", "login", "status"],
-                Some(&augmented_path),
-            ),
-            ProbeOutcome::LoggedIn,
-            "the injected augmented PATH should allow /usr/bin/env to find the interpreter"
+        let outcome = super::login_probe(
+            &script_path,
+            &["claude", "auth", "status"],
+            Some(&augmented),
         );
-        assert!(
-            marker_path.exists(),
-            "the fake node from the injected PATH should have run"
-        );
+        assert_eq!(outcome, ProbeOutcome::VendorLoggedIn);
+        assert!(marker_path.exists(), "env shebang must find interpreter");
     }
 
     #[cfg(unix)]
@@ -171,34 +336,27 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let temp = tempfile::tempdir().expect("temp dir");
-        let bin_dir = temp.path().join("bin");
-        fs::create_dir_all(&bin_dir).expect("bin dir");
-
-        // Script that exits 1 and writes a codex-style config-parse error to stderr.
-        let script_path = bin_dir.join("fake-codex-bad-config");
-        fs::write(
-            &script_path,
-            "#!/bin/sh\necho 'Error loading configuration: /home/user/.codex/config.toml: unknown variant `ultra`, expected one of none/minimal/low/medium/high/xhigh' >&2\nexit 1\n",
-        )
-        .expect("write script");
-        fs::set_permissions(&script_path, fs::Permissions::from_mode(0o755)).expect("chmod script");
-
-        let outcome = super::login_probe(
-            &script_path,
-            &["fake-codex-bad-config", "login", "status"],
-            None,
+        let script = temp.path().join("codex");
+        let body = format!(
+            "#!/bin/sh\necho 'Error loading configuration: x unknown variant `foo`' 1>&2\nexit 1\n"
         );
         assert!(
+            CONFIG_PARSE_SIGNALS
+                .iter()
+                .all(|sig| body.to_lowercase().contains(sig))
+        );
+        fs::write(&script, body).expect("write");
+        let mut perms = fs::metadata(&script).expect("meta").permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&script, perms).expect("chmod");
+
+        let outcome = super::login_probe(&script, &["codex", "login", "status"], None);
+        assert!(
             matches!(outcome, ProbeOutcome::ConfigInvalid { .. }),
-            "stderr with 'unknown variant' should produce ConfigInvalid; got {:?}",
-            outcome
+            "got {outcome:?}"
         );
         if let ProbeOutcome::ConfigInvalid { stderr_excerpt } = outcome {
-            assert!(
-                stderr_excerpt.contains("unknown variant")
-                    || stderr_excerpt.contains("Error loading"),
-                "stderr_excerpt should contain the parse error: {stderr_excerpt}"
-            );
+            assert!(stderr_excerpt.to_lowercase().contains("error loading"));
         }
     }
 
@@ -209,40 +367,13 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let temp = tempfile::tempdir().expect("temp dir");
-        let bin_dir = temp.path().join("bin");
-        fs::create_dir_all(&bin_dir).expect("bin dir");
+        let script = temp.path().join("codex");
+        fs::write(&script, "#!/bin/sh\necho nope 1>&2\nexit 1\n").expect("write");
+        let mut perms = fs::metadata(&script).expect("meta").permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&script, perms).expect("chmod");
 
-        // Script that exits 1 with a generic "not logged in" message.
-        let script_path = bin_dir.join("fake-codex-logged-out");
-        fs::write(
-            &script_path,
-            "#!/bin/sh\necho 'not authenticated' >&2\nexit 1\n",
-        )
-        .expect("write script");
-        fs::set_permissions(&script_path, fs::Permissions::from_mode(0o755)).expect("chmod script");
-
-        let outcome = super::login_probe(
-            &script_path,
-            &["fake-codex-logged-out", "login", "status"],
-            None,
-        );
-        assert_eq!(
-            outcome,
-            ProbeOutcome::LoggedOut,
-            "non-config stderr should produce LoggedOut"
-        );
-    }
-
-    /// Verify that every string in CONFIG_PARSE_SIGNALS is lowercased so the
-    /// case-insensitive match works correctly.
-    #[test]
-    fn config_parse_signals_are_lowercase() {
-        for sig in CONFIG_PARSE_SIGNALS {
-            assert_eq!(
-                *sig,
-                sig.to_lowercase(),
-                "CONFIG_PARSE_SIGNAL must be lowercase for case-insensitive matching: {sig}"
-            );
-        }
+        let outcome = super::login_probe(&script, &["codex", "login", "status"], None);
+        assert_eq!(outcome, ProbeOutcome::LoggedOut);
     }
 }

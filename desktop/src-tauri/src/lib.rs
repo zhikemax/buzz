@@ -679,6 +679,7 @@ pub fn run() {
             save_custom_harness,
             delete_custom_harness,
             connect_acp_runtime,
+            disconnect_acp_runtime,
             discover_managed_agent_prereqs,
             sign_event,
             sign_nostr_identity_binding,

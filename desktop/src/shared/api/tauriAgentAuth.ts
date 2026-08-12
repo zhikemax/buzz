@@ -53,3 +53,19 @@ export async function connectAcpRuntime(
     request: { runtimeId, methodId },
   });
 }
+
+export type DisconnectAcpRuntimeResult = {
+  cleared: boolean;
+};
+
+type RawDisconnectAcpRuntimeResult = {
+  cleared: boolean;
+};
+
+export async function disconnectAcpRuntime(
+  runtimeId: string,
+): Promise<DisconnectAcpRuntimeResult> {
+  return invokeTauri<RawDisconnectAcpRuntimeResult>("disconnect_acp_runtime", {
+    runtimeId,
+  });
+}

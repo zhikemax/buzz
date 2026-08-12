@@ -232,6 +232,29 @@ test("resolveAgentReadiness_legacy_config_does_not_treat_goose_binary_as_ready",
   assert.deepEqual(result, { ready: false });
 });
 
+test("resolveAgentReadiness_aimaxhug_key_unlocks_logged_out_catalog_cli", () => {
+  const runtimes = [
+    makeRuntime({
+      id: "amp",
+      label: "Amp",
+      authStatus: { status: "logged_out" },
+    }),
+  ];
+  const result = resolveAgentReadiness(
+    runtimes,
+    makeConfig({
+      preferred_runtime: "amp",
+      provider: "aimaxhug",
+      env_vars: { OPENAI_COMPAT_API_KEY: "sk-aimax" },
+    }),
+  );
+  assert.deepEqual(result, {
+    ready: true,
+    reason: "cli",
+    runtimeLabel: "Amp",
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Preferred runtime isolation
 // ---------------------------------------------------------------------------

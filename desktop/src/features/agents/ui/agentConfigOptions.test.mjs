@@ -12,6 +12,8 @@ import {
   getProviderApiKeyLabel,
   resetConfigForHarnessChange,
   runtimeSupportsLlmProviderSelection,
+  runtimeSupportsVendorLoginTab,
+  runtimeUsesAimaxHugGatewayAuth,
 } from "./agentConfigOptions.tsx";
 import { formatModelDiscoveryErrorStatus } from "./personaModelDiscoveryStatus.ts";
 
@@ -158,12 +160,48 @@ test("runtimeSupportsLlmProviderSelection is true for buzz-agent and goose", () 
   assert.equal(runtimeSupportsLlmProviderSelection("goose"), true);
 });
 
-test("runtimeSupportsLlmProviderSelection is false for codex and claude", () => {
-  assert.equal(runtimeSupportsLlmProviderSelection("codex"), false);
-  assert.equal(runtimeSupportsLlmProviderSelection("claude"), false);
+test("runtimeSupportsLlmProviderSelection is true for codex, claude, and catalog CLIs", () => {
+  assert.equal(runtimeSupportsLlmProviderSelection("codex"), true);
+  assert.equal(runtimeSupportsLlmProviderSelection("claude"), true);
+  assert.equal(runtimeSupportsLlmProviderSelection("amp"), true);
 });
 
-test("resetConfigForHarnessChange clears harness-specific values", () => {
+test("runtimeSupportsLlmProviderSelection is false for empty id", () => {
+  assert.equal(runtimeSupportsLlmProviderSelection(""), false);
+});
+
+test("runtimeSupportsVendorLoginTab covers claude and codex", () => {
+  assert.equal(
+    runtimeSupportsVendorLoginTab({ id: "claude", loginHint: null }),
+    true,
+  );
+  assert.equal(
+    runtimeSupportsVendorLoginTab({ id: "codex", loginHint: "" }),
+    true,
+  );
+  assert.equal(
+    runtimeSupportsVendorLoginTab({ id: "amp", loginHint: null }),
+    false,
+  );
+  assert.equal(
+    runtimeSupportsVendorLoginTab({
+      id: "amp",
+      loginHint: "Run amp login",
+    }),
+    true,
+  );
+});
+
+test("runtimeUsesAimaxHugGatewayAuth covers catalog CLIs but not goose/buzz-agent", () => {
+  assert.equal(runtimeUsesAimaxHugGatewayAuth("amp"), true);
+  assert.equal(runtimeUsesAimaxHugGatewayAuth("cursor"), true);
+  assert.equal(runtimeUsesAimaxHugGatewayAuth("codex"), true);
+  assert.equal(runtimeUsesAimaxHugGatewayAuth("claude"), true);
+  assert.equal(runtimeUsesAimaxHugGatewayAuth("buzz-agent"), false);
+  assert.equal(runtimeUsesAimaxHugGatewayAuth("goose"), false);
+});
+
+test("resetConfigForHarnessChange clears model but keeps compatible provider", () => {
   const config = {
     env_vars: { BUZZ_AGENT_THINKING_EFFORT: "high", KEEP_ME: "yes" },
     model: "claude-opus",
@@ -175,7 +213,7 @@ test("resetConfigForHarnessChange clears harness-specific values", () => {
     env_vars: { KEEP_ME: "yes" },
     model: null,
     preferred_runtime: "claude",
-    provider: null,
+    provider: "anthropic",
   });
 });
 
@@ -206,19 +244,22 @@ test("resetConfigForHarnessChange does not carry relay mesh to Goose", () => {
   assert.equal(resetConfigForHarnessChange(config, "goose").provider, null);
 });
 
-// ── getPersonaModelOptions — codex/claude do not use global provider ──────────
-//
-// The discovery call in AgentDefinitionDialog passes
-// `runtimeSupportsLlmProviderSelection(runtime) ? effectiveProvider : ""`
-// so codex/claude never receive the global provider. These tests verify that
-// the static model options also stay provider-agnostic for those runtimes.
+// ── getPersonaModelOptions — all harnesses honor provider selection ─────────
 
-test("getPersonaModelOptions for codex returns only default model regardless of provider", () => {
-  const withProvider = getPersonaModelOptions("codex", "anthropic");
-  const withoutProvider = getPersonaModelOptions("codex", "");
-  assert.deepEqual(withProvider, withoutProvider);
-  assert.equal(withProvider.length, 1);
-  assert.equal(withProvider[0]?.id, "");
+test("getPersonaModelOptions for codex with anthropic filters out zero-value default", () => {
+  const options = getPersonaModelOptions("codex", "anthropic");
+  const zeroValue = options.find((o) => o.id === "");
+  assert.equal(
+    zeroValue,
+    undefined,
+    "explicit-model provider must not allow zero-value selection",
+  );
+});
+
+test("getPersonaModelOptions for codex with no provider returns default model", () => {
+  const options = getPersonaModelOptions("codex", "");
+  assert.equal(options.length, 1);
+  assert.equal(options[0]?.id, "");
 });
 
 test("getPersonaModelOptions for buzz-agent with anthropic filters out zero-value default", () => {

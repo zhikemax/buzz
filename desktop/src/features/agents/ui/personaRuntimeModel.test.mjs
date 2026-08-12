@@ -191,11 +191,12 @@ test("resolveRuntimeProviderCapability classifies provider-capable runtimes as c
   assert.equal(resolveRuntimeProviderCapability("goose", true), "capable");
 });
 
-test("resolveRuntimeProviderCapability classifies known CLI-login runtimes as locked before the catalog loads", () => {
-  // The core fix: a not-yet-loaded catalog must not force these to "unknown".
-  assert.equal(resolveRuntimeProviderCapability("claude", false), "locked");
-  assert.equal(resolveRuntimeProviderCapability("codex", false), "locked");
-  assert.equal(resolveRuntimeProviderCapability(" claude ", false), "locked");
+test("resolveRuntimeProviderCapability treats incapable known ids as unknown", () => {
+  // Without the capable flag, we no longer special-case claude/codex as locked —
+  // callers pass true once the catalog/runtime supports shared provider fields.
+  assert.equal(resolveRuntimeProviderCapability("claude", false), "unknown");
+  assert.equal(resolveRuntimeProviderCapability("codex", false), "unknown");
+  assert.equal(resolveRuntimeProviderCapability(" claude ", false), "unknown");
 });
 
 test("resolveRuntimeProviderCapability leaves genuinely unknown/custom runtimes as unknown", () => {

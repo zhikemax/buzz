@@ -264,6 +264,10 @@ pub(super) fn managed_node_runtime_supported() -> bool {
 
 pub(super) fn ensure_managed_node_runtime_blocking() -> Result<(), Box<InstallStepResult>> {
     if managed_node_runtime_ready() {
+        // npm `.cmd` shims look for `%dp0%\node.exe` before PATH. Keep a
+        // co-located copy so auth-methods / agent spawn work even when the
+        // GUI process PATH omits Node (common on Windows).
+        ensure_windows_npm_prefix_node_shim();
         return Ok(());
     }
 
@@ -283,17 +287,58 @@ pub(super) fn ensure_managed_node_runtime_blocking() -> Result<(), Box<InstallSt
     })?;
 
     if managed_node_runtime_ready() {
+        ensure_windows_npm_prefix_node_shim();
         return Ok(());
     }
 
     install_managed_node_runtime(&root, artifact)
         .map_err(|err| Box::new(managed_node_failed_step(err)))?;
     if managed_node_runtime_ready() {
+        ensure_windows_npm_prefix_node_shim();
         Ok(())
     } else {
         Err(Box::new(managed_node_failed_step(
             "managed Node.js runtime did not pass readiness after install".to_string(),
         )))
+    }
+}
+
+/// On Windows, place `node.exe` next to Buzz-managed npm shims (`codex-acp.cmd`,
+/// etc.). Those shims prefer `%dp0%\node.exe` over PATH; without it, GUI-spawned
+/// children often fail with `'node' is not recognized`.
+fn ensure_windows_npm_prefix_node_shim() {
+    #[cfg(windows)]
+    {
+        let Some(prefix) = crate::managed_agents::buzz_managed_npm_prefix() else {
+            return;
+        };
+        let Some(node_src) = crate::managed_agents::buzz_managed_node_bin_path() else {
+            return;
+        };
+        if !node_src.is_file() {
+            return;
+        }
+        let dest = prefix.join("node.exe");
+        if dest.is_file() {
+            return;
+        }
+        if let Err(error) = std::fs::create_dir_all(&prefix) {
+            eprintln!(
+                "buzz-desktop: create npm prefix for node shim failed: {error} ({})",
+                prefix.display()
+            );
+            return;
+        }
+        // Prefer hardlink (cheap); fall back to copy across volumes / FS limits.
+        if std::fs::hard_link(&node_src, &dest).is_err() {
+            if let Err(error) = std::fs::copy(&node_src, &dest) {
+                eprintln!(
+                    "buzz-desktop: copy managed node.exe into npm prefix failed: {error} ({} → {})",
+                    node_src.display(),
+                    dest.display()
+                );
+            }
+        }
     }
 }
 
@@ -629,6 +674,9 @@ pub(super) fn managed_npm_command(command: &str) -> Result<Option<String>, Box<I
             hint: Some(managed_npm_prefix_hint()),
         }));
     }
+
+    // Keep node.exe beside newly installed `.cmd` shims (Windows PATH gap).
+    ensure_windows_npm_prefix_node_shim();
 
     let prefix_arg = shell_quote(&prefix);
     Ok(Some(rewrite_npm_global_install(command, &prefix_arg)))

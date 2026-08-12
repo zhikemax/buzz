@@ -280,6 +280,10 @@ fn resolve_effective_agent_env_with_def(
 
     // AimaxHug is a first-class UI provider; rewrite to OpenAI-compat transport.
     super::apply_aimaxhug_env(&mut env, effective_provider.as_deref());
+    // Codex/Claude: AimaxHug API key unlocks spawn without vendor login.
+    // When vendor login is already active, gateway inject is skipped so login
+    // wins until the user revokes it in Agent Defaults.
+    super::apply_aimaxhug_gateway_for_runtime(&mut env, runtime.map(|rt| rt.id));
 
     EffectiveAgentEnv {
         env,
@@ -438,14 +442,47 @@ fn collect_missing_requirements(
             let file_cfg = read_goose_file_config();
             goose_requirements(effective, file_cfg.as_ref())
         }
-        "claude" => cli_login::requirements(
+        "claude" => cli_login_or_aimaxhug_requirements(
+            effective,
             &["claude", "auth", "status"],
-            "complete Claude Code authentication by running the Claude CLI",
+            "Add an AimaxHug API key in Agent Defaults, or complete Claude Code authentication",
             rt,
         ),
-        "codex" => cli_login::requirements(&["codex", "login", "status"], "run `codex login`", rt),
+        "codex" => cli_login_or_aimaxhug_requirements(
+            effective,
+            &["codex", "login", "status"],
+            "Add an AimaxHug API key in Agent Defaults, or run `codex login`",
+            rt,
+        ),
         _ => vec![],
     }
+}
+
+/// Codex/Claude readiness: AimaxHug gateway key **or** successful vendor login.
+fn cli_login_or_aimaxhug_requirements(
+    effective: &EffectiveAgentEnv,
+    probe_args: &[&str],
+    setup_copy: &str,
+    runtime: &KnownAcpRuntime,
+) -> Vec<Requirement> {
+    let missing = cli_login::requirements(probe_args, setup_copy, runtime);
+    if !super::has_aimaxhug_gateway_key(&effective.env) {
+        return missing;
+    }
+    // Key present — only surface install/adapter gaps. Available+LoggedOut would
+    // incorrectly block users who intentionally skip ChatGPT/Claude site login.
+    missing
+        .into_iter()
+        .filter(|req| {
+            !matches!(
+                req,
+                Requirement::CliLogin {
+                    availability: crate::managed_agents::AcpAvailabilityStatus::Available,
+                    ..
+                }
+            )
+        })
+        .collect()
 }
 
 /// Requirements for buzz-agent (provider + model + provider-specific creds).

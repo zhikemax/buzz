@@ -42,11 +42,11 @@ test("editAgent_providerFieldVisible_forGoose", () => {
   );
 });
 
-test("editAgent_providerFieldHidden_forClaude", () => {
+test("editAgent_providerFieldVisible_forClaude", () => {
   assert.equal(
     runtimeSupportsLlmProviderSelection("claude"),
-    false,
-    "claude runtime locks the provider; picker must be hidden",
+    true,
+    "claude runtime uses the shared provider picker",
   );
 });
 

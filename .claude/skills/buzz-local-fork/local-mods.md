@@ -28,8 +28,12 @@ Do not force welcome create back to hosted during merge.
 Symptom: agent gets 👀 ack but no reply / 404 when community is on
 `localhost` and code rewrites loopback to `127.0.0.1`.
 
-Fix idea: pass **caller** relay URL into child `BUZZ_RELAY_URL` and probes;
-use canonical URL only for pair identity if needed.
+Fix: pass **caller** relay URL into child `BUZZ_RELAY_URL` and probes;
+use canonical URL only for pair identity.
+
+Related badge bug: spawn snapshot must stamp **canonical**
+`runtime_key.relay_url`, not connect spelling — otherwise prospective
+(`127.0.0.1`) vs stamp (`localhost`) forever shows「需要重启 / Relay url».
 
 Files historically touched:
 
@@ -54,6 +58,36 @@ disable mesh-llm unless asked.
 - Spawn/readiness/discovery rewrite via `desktop/src-tauri/src/managed_agents/aimaxhug.rs`
   → OpenAI transport, `OPENAI_COMPAT_BASE_URL=https://api.aimaxhug.cloud/v1`
 - Key guide CTA → `https://api.aimaxhug.cloud`
+- **Codex / Claude Code / catalog CLIs**: Agent Defaults uses the same
+  provider + API key + model fields as Buzz Agent. AimaxHug key unlocks spawn
+  via gateway env inject:
+  - Claude → `ANTHROPIC_API_KEY` + `ANTHROPIC_BASE_URL`
+  - Codex → managed `CODEX_HOME` (`%AppData%/Buzz/codex-aimaxhug`) with
+    `model_providers.aimaxhug` + `wire_api=responses` (Codex ignores fake
+    `CODEX_CONFIG` env). Claude-named models remap to `gpt-5` for Codex.
+  - Other presets → generic OpenAI + Anthropic env pair
+  Optional vendor login lives on Agent Defaults **登录授权** tab.
+  When Configuration API key is set: login tab says config is ready /
+  login is optional. When both are set, spawn prefers vendor login.
+  Logged-in state offers **取消授权** (`disconnect_acp_runtime`) to fall
+  back to the Configuration key.
+  Doctor rows: no 「需要登录」 / ···; CLI guide under each row.
+  Readiness: gateway key **or** vendor login.
+## Dev keyring scoped migration
+
+Symptom (Windows): restart managed agent fails with
+`has no private key available — the OS keyring may be unreachable` when
+launching with `BUZZ_DEV_KEYRING_SERVICE=buzz-desktop-dev.main` (or other
+`buzz-desktop-dev.<scope>`).
+
+Cause: agent nsecs live under `buzz-desktop-dev` / `buzz-desktop` credential
+blobs; old migration only ran for exact `"buzz-desktop-dev"`, so scoped
+services stayed empty (and an early migration marker blocked recovery).
+
+Fix: `desktop/src-tauri/src/managed_agents/storage.rs` —
+`migrate_agent_keys_to_dev_service` for any `buzz-desktop-dev*` service;
+scoped copies from default-dev then prod; re-copy if marker exists but an
+agent key is still missing.
 
 ## Desktop auto-update (fork)
 

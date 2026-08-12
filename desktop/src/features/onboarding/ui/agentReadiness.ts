@@ -1,4 +1,8 @@
-import { requiredCredentialEnvKeys } from "@/features/agents/ui/agentConfigOptions";
+import {
+  AIMAXHUG_PROVIDER_ID,
+  requiredCredentialEnvKeys,
+  runtimeUsesAimaxHugGatewayAuth,
+} from "@/features/agents/ui/agentConfigOptions";
 import type {
   AcpRuntimeCatalogEntry,
   GlobalAgentConfig,
@@ -9,12 +13,46 @@ export type AgentReadinessResult =
   | { ready: true; reason: "buzz-agent" }
   | { ready: false };
 
+function aimaxHugGatewayUnlocks(
+  runtimeId: string,
+  globalConfig: GlobalAgentConfig,
+): boolean {
+  if (!runtimeUsesAimaxHugGatewayAuth(runtimeId)) {
+    return false;
+  }
+  const provider = globalConfig.provider?.trim() || AIMAXHUG_PROVIDER_ID;
+  if (provider !== AIMAXHUG_PROVIDER_ID) {
+    return false;
+  }
+  return (globalConfig.env_vars.OPENAI_COMPAT_API_KEY ?? "").trim().length > 0;
+}
+
+function cliAuthReady(
+  runtime: AcpRuntimeCatalogEntry,
+  globalConfig: GlobalAgentConfig,
+): boolean {
+  if (runtime.availability !== "available") {
+    return false;
+  }
+  if (
+    runtime.authStatus.status === "logged_in" ||
+    runtime.authStatus.status === "not_applicable"
+  ) {
+    return true;
+  }
+  return (
+    runtime.authStatus.status === "logged_out" &&
+    aimaxHugGatewayUnlocks(runtime.id, globalConfig)
+  );
+}
+
 /**
  * Determine whether the user has a working agent path configured.
  *
- * CLI path: the preferred Claude or Codex runtime is available and logged in.
- * Provider path: the preferred Buzz Agent or Goose runtime has provider and
- * model set, plus all required credential env vars for that provider.
+ * CLI path: the preferred Claude or Codex runtime is available and logged in
+ * (or unlocked via AimaxHug API key). Provider path: the preferred Buzz Agent
+ * or Goose runtime has provider and model set, plus all required credential
+ * env vars for that provider.
  *
  * Returns enough info for the UI to say which path matched, or that neither did.
  */
@@ -26,11 +64,7 @@ export function resolveAgentReadiness(
   if (scope === "any") {
     for (const runtime of runtimes) {
       if (runtime.id === "buzz-agent") continue;
-      if (
-        runtime.availability === "available" &&
-        (runtime.authStatus.status === "logged_in" ||
-          runtime.authStatus.status === "not_applicable")
-      ) {
+      if (cliAuthReady(runtime, globalConfig)) {
         return { ready: true, reason: "cli", runtimeLabel: runtime.label };
       }
     }
@@ -48,8 +82,7 @@ export function resolveAgentReadiness(
 
   if (
     (preferredRuntime.id === "claude" || preferredRuntime.id === "codex") &&
-    (preferredRuntime.authStatus.status === "logged_in" ||
-      preferredRuntime.authStatus.status === "not_applicable")
+    cliAuthReady(preferredRuntime, globalConfig)
   ) {
     return {
       ready: true,

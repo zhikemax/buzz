@@ -273,6 +273,22 @@ export const en = {
   "settings.agents.defaultHarness": "Default harness",
   "settings.agents.selectHarness": "Select a harness",
   "settings.agents.saveDefaults": "Save defaults",
+  "settings.agents.cliLogin.tabConfig": "Configuration",
+  "settings.agents.cliLogin.tabLogin": "Sign in",
+  "settings.agents.cliLogin.title": "Sign in to {label}",
+  "settings.agents.cliLogin.installFirst":
+    "Install {label} first, then return here to complete vendor sign-in.",
+  "settings.agents.cliLogin.signedIn": "{label} is signed in",
+  "settings.agents.cliLogin.signedInOnly":
+    "Vendor sign-in is active for this harness.",
+  "settings.agents.cliLogin.signedInPreferLogin":
+    "Vendor sign-in is preferred while both are set. Revoke sign-in to use the API key from Configuration instead.",
+  "settings.agents.cliLogin.configReadyOptional":
+    "Configuration already has a usable API key. Vendor sign-in is optional; if you sign in, it takes priority until you revoke it.",
+  "settings.agents.cliLogin.revoke": "Revoke sign-in",
+  "settings.agents.cliLogin.revokeFailed": "Couldn't revoke sign-in: {error}",
+  "settings.agents.cliLogin.loadMethods": "Load sign-in options",
+  "settings.agents.cliLogin.waiting": "Waiting for sign-in to finish…",
   "settings.agents.saved": "Saved.",
   "settings.agents.savedRestarted": "Saved. Restarted {count} agent(s).",
   "settings.agents.savedRestartPartial":

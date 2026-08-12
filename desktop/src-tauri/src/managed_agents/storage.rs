@@ -445,26 +445,31 @@ fn persist_agent_keys_with(store: &impl KeyStore, records: &mut [ManagedAgentRec
 
 /// One-time migration of agent keys from the production keyring service
 /// (`"buzz-desktop"`) to the dev service (`"buzz-desktop-dev"`). Only runs
-/// in debug builds — release builds never touch `"buzz-desktop"` from this
-/// path.
+/// Migrate agent keys into the active debug keyring service.
 ///
-/// Idempotent: skips any key that already exists in the dev service so
-/// repeated boots after migration are no-ops. Leaves the production keyring
-/// untouched — a dev build and a prod install can coexist without sharing
-/// keys after this migration.
+/// Covers both the default `"buzz-desktop-dev"` service and scoped worktree
+/// services (`buzz-desktop-dev.<scope>`, e.g. `buzz-desktop-dev.main`). Scoped
+/// services copy from `"buzz-desktop-dev"` first, then fall back to production
+/// `"buzz-desktop"`, so agents created under the default-dev service keep
+/// working when Buzz is launched with `BUZZ_DEV_KEYRING_SERVICE`.
+///
+/// Idempotent: skips any key that already exists in the destination so
+/// repeated boots after migration are no-ops. Leaves source keyrings
+/// untouched — a scoped/dev build and a prod install can coexist.
 ///
 /// Call this at boot before `hydrate_keys` runs (i.e. before
 /// `load_managed_agents` is called) so agents find their keys on first boot
 /// after the service-name change.
 #[cfg(debug_assertions)]
 pub fn migrate_agent_keys_to_dev_service(app: &tauri::AppHandle) {
-    if !cfg!(feature = "system-keyring") || keyring_service() != "buzz-desktop-dev" {
+    let service = keyring_service();
+    if !cfg!(feature = "system-keyring") || !service.starts_with("buzz-desktop-dev") {
         return;
     }
 
     // Read the JSON store for pubkeys only — we want every instance
-    // record without running hydrate_keys (which would try the dev
-    // keyring that is empty, and log noisy "has no key" warnings).
+    // record without running hydrate_keys (which would try the destination
+    // keyring that may be empty, and log noisy "has no key" warnings).
     let records = match load_agent_store(app) {
         Ok(r) => r,
         Err(e) => {
@@ -478,12 +483,23 @@ pub fn migrate_agent_keys_to_dev_service(app: &tauri::AppHandle) {
         .filter(|r| !r.pubkey.is_empty())
         .map(|r| r.pubkey)
         .collect();
-    // A fresh non-singleton store for the prod service — its own empty
-    // cache so reads go to the OS keyring without polluting the dev
-    // singleton's cache.
+    // Destination is the process-wide shared store for the active service.
+    let dst = crate::secret_store::SecretStore::shared(service);
+
+    if service == "buzz-desktop-dev" {
+        // Fresh non-singleton store for prod — own empty cache so reads go to
+        // the OS keyring without polluting the dest singleton's cache.
+        let prod_store = crate::secret_store::SecretStore::keyring("buzz-desktop");
+        copy_agent_keys_between_stores(&pubkeys, &prod_store, dst);
+        return;
+    }
+
+    // Scoped worktree service: prefer default-dev (where most `just dev`
+    // agents live), then production.
+    let default_dev = crate::secret_store::SecretStore::keyring("buzz-desktop-dev");
+    copy_agent_keys_between_stores(&pubkeys, &default_dev, dst);
     let prod_store = crate::secret_store::SecretStore::keyring("buzz-desktop");
-    let dev_store = crate::secret_store::SecretStore::shared(keyring_service());
-    copy_agent_keys_between_stores(&pubkeys, &prod_store, dev_store);
+    copy_agent_keys_between_stores(&pubkeys, &prod_store, dst);
 }
 
 /// Marker key stored inside the dev blob after a successful agent-key migration.
@@ -513,20 +529,26 @@ const DEV_MIGRATION_MARKER: &str = "_dev_migration_v1";
 /// fresh key on their next onboarding run.
 #[cfg(debug_assertions)]
 fn copy_agent_keys_between_stores(pubkeys: &[String], src: &impl KeyStore, dst: &impl KeyStore) {
-    // One read of the dev blob. If the migration-complete marker is present,
-    // all prior agent keys are already in the dev service — skip entirely.
+    // One read of the destination blob. Skip only when the migration marker
+    // is present AND every known agent key is already there — a scoped
+    // service may have inherited an empty/early marker without the keys.
     let dst_map: HashMap<String, String> = match dst.load_all_readonly() {
-        Ok(Some(map)) if map.contains_key(DEV_MIGRATION_MARKER) => {
-            return; // already migrated: 0 prod keyring accesses
+        Ok(Some(map)) => {
+            let all_present = pubkeys
+                .iter()
+                .all(|pubkey| map.contains_key(&agent_keyring_name(pubkey)));
+            if map.contains_key(DEV_MIGRATION_MARKER) && all_present {
+                return;
+            }
+            map
         }
-        Ok(Some(map)) => map,
         Ok(None) => HashMap::new(),
         Err(e) => {
-            eprintln!("buzz-desktop: keyring-dev-migration: cannot read dev keyring: {e}");
+            eprintln!("buzz-desktop: keyring-dev-migration: cannot read dest keyring: {e}");
             return;
         }
     };
-    // Skip production when a reset left no agents or onboarding created every dev key.
+    // Skip source when a reset left no agents or destination already has every key.
     let src_map: HashMap<String, String> = if pubkeys
         .iter()
         .all(|pubkey| dst_map.contains_key(&agent_keyring_name(pubkey)))
@@ -535,9 +557,9 @@ fn copy_agent_keys_between_stores(pubkeys: &[String], src: &impl KeyStore, dst: 
     } else {
         match src.load_all_readonly() {
             Ok(Some(map)) => map,
-            Ok(None) => HashMap::new(), // prod has no blob yet — nothing to copy
+            Ok(None) => HashMap::new(), // source has no blob yet — nothing to copy
             Err(e) => {
-                eprintln!("buzz-desktop: keyring-dev-migration: cannot read prod keyring: {e}");
+                eprintln!("buzz-desktop: keyring-dev-migration: cannot read source keyring: {e}");
                 return;
             }
         }
@@ -550,7 +572,7 @@ fn copy_agent_keys_between_stores(pubkeys: &[String], src: &impl KeyStore, dst: 
     for pubkey in pubkeys {
         let name = agent_keyring_name(pubkey);
         if dst_map.contains_key(&name) {
-            continue; // already in dev service — do not overwrite (idempotent)
+            continue; // already in destination — do not overwrite (idempotent)
         }
         if let Some(nsec) = src_map.get(&name) {
             to_write.insert(name, nsec.clone());
@@ -559,18 +581,18 @@ fn copy_agent_keys_between_stores(pubkeys: &[String], src: &impl KeyStore, dst: 
         // absent from src → new agent, will mint a fresh key
     }
 
-    // Always write the marker so future boots skip the prod read entirely,
-    // even when there were no keys to copy (empty dev environment).
+    // Always write the marker so future boots can short-circuit when keys are
+    // complete, even when there were no keys to copy (empty environment).
     to_write.insert(DEV_MIGRATION_MARKER.to_string(), "done".to_string());
 
     if let Err(e) = dst.store_all(&to_write) {
-        eprintln!("buzz-desktop: keyring-dev-migration: cannot write to dev keyring: {e}");
+        eprintln!("buzz-desktop: keyring-dev-migration: cannot write to dest keyring: {e}");
         return;
     }
 
     if copied > 0 {
         eprintln!(
-            "buzz-desktop: keyring-dev-migration: copied {copied} agent key(s) from buzz-desktop"
+            "buzz-desktop: keyring-dev-migration: copied {copied} agent key(s) into active service"
         );
     }
 }

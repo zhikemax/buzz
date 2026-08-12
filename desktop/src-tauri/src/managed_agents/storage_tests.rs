@@ -669,6 +669,25 @@ fn copy_agent_keys_skips_entirely_when_marker_present() {
 }
 
 #[test]
+fn copy_agent_keys_recovers_when_marker_present_but_agent_key_missing() {
+    // Scoped services can inherit an empty/early marker without the agent
+    // keys. Migration must still copy missing keys from src.
+    let src = FakeKeyStore::reachable().with_key(&agent_keyring_name("agent-alpha"), "nsec1alpha");
+    let dst = FakeKeyStore::reachable().with_key(super::DEV_MIGRATION_MARKER, "done");
+
+    super::copy_agent_keys_between_stores(&["agent-alpha".to_string()], &src, &dst);
+
+    assert_eq!(
+        dst.stored
+            .borrow()
+            .get(&agent_keyring_name("agent-alpha"))
+            .map(String::as_str),
+        Some("nsec1alpha"),
+        "missing agent key must be copied even when marker was already set"
+    );
+}
+
+#[test]
 fn copy_agent_keys_writes_marker_even_with_empty_agent_list() {
     // An empty pubkey list (no agents yet) must still write the marker so
     // future boots skip the prod read.

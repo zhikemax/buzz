@@ -279,7 +279,7 @@ describe("entryStatusLabel", () => {
     );
   });
 
-  it("flags sign-in for available-but-logged-out", () => {
+  it("does not flag sign-in for available-but-logged-out", () => {
     assert.equal(
       entryStatusLabel(
         entry({
@@ -287,7 +287,7 @@ describe("entryStatusLabel", () => {
           authStatus: { status: "logged_out" },
         }),
       ),
-      "settings.agents.status.signInNeeded",
+      null,
     );
   });
 

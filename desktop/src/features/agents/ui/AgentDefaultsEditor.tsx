@@ -30,6 +30,7 @@ import {
   PERSONA_FIELD_CONTROL_CLASS,
   PERSONA_FIELD_SHELL_CLASS,
   resetConfigForHarnessChange,
+  runtimeSupportsVendorLoginTab,
   sortPersonaRuntimes,
 } from "@/features/agents/ui/agentConfigOptions";
 import { AgentDropdownSelect } from "@/features/agents/ui/agentConfigControls";
@@ -37,9 +38,11 @@ import {
   AgentConfigFields,
   EMPTY_GLOBAL_CONFIG,
 } from "@/features/agents/ui/AgentConfigFields";
+import { AgentDefaultsCliLoginPanel } from "@/features/agents/ui/AgentDefaultsCliLoginPanel";
 import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -89,6 +92,9 @@ export function AgentDefaultsEditor({
   const [configIsValid, setConfigIsValid] = React.useState(true);
   const [isCustomProvider, setIsCustomProvider] = React.useState(false);
   const [isCustomModelEditing, setIsCustomModelEditing] = React.useState(false);
+  const [defaultsTab, setDefaultsTab] = React.useState<"config" | "login">(
+    "config",
+  );
   const savedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -161,6 +167,12 @@ export function AgentDefaultsEditor({
         : { ...config, preferred_runtime: selectedRuntime.id },
     [config, selectedRuntime],
   );
+  const configApiKeyReady = React.useMemo(() => {
+    const env = renderedConfig.env_vars;
+    return ["OPENAI_COMPAT_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"].some(
+      (key) => (env[key] ?? "").trim().length > 0,
+    );
+  }, [renderedConfig.env_vars]);
   const { data: runtimeFileConfig } = useRuntimeFileConfigQuery(
     selectedRuntime?.id ?? "",
   );
@@ -191,6 +203,7 @@ export function AgentDefaultsEditor({
     setConfigIsValid(false);
     setIsCustomModelEditing(false);
     setIsCustomProvider(false);
+    setDefaultsTab("config");
   }
 
   async function handleSave() {
@@ -238,6 +251,7 @@ export function AgentDefaultsEditor({
     }
   }
 
+  const showLoginTab = runtimeSupportsVendorLoginTab(selectedRuntime);
   const configFields = selectedRuntime ? (
     <AgentConfigFields
       bakedEnv={bakedEnv}
@@ -261,6 +275,26 @@ export function AgentDefaultsEditor({
   const progressiveFieldsTransition = shouldReduceMotion
     ? { duration: 0 }
     : PROGRESSIVE_FIELDS_TRANSITION;
+
+  const runtimeFields = flatLayout ? (
+    <AnimatePresence initial={false}>
+      {configFields ? (
+        <motion.div
+          animate={{ height: "auto", opacity: 1 }}
+          className="overflow-hidden"
+          data-testid="global-agent-runtime-fields-motion"
+          exit={{ height: 0, opacity: 0 }}
+          initial={{ height: 0, opacity: 0 }}
+          key={selectedRuntime?.id}
+          transition={progressiveFieldsTransition}
+        >
+          {configFields}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  ) : (
+    configFields
+  );
 
   return (
     <div className={cn("min-w-0", flatLayout ? "space-y-7" : "space-y-4")}>
@@ -296,30 +330,47 @@ export function AgentDefaultsEditor({
               value={selectedRuntime?.id ?? ""}
             />
           </div>
-          {flatLayout ? (
-            <AnimatePresence initial={false}>
-              {configFields ? (
-                <motion.div
-                  animate={{ height: "auto", opacity: 1 }}
-                  className="overflow-hidden"
-                  data-testid="global-agent-runtime-fields-motion"
-                  exit={{ height: 0, opacity: 0 }}
-                  initial={{ height: 0, opacity: 0 }}
-                  key={selectedRuntime?.id}
-                  transition={progressiveFieldsTransition}
+          {showLoginTab && selectedRuntime ? (
+            <Tabs
+              onValueChange={(value) =>
+                setDefaultsTab(value === "login" ? "login" : "config")
+              }
+              value={defaultsTab}
+            >
+              <TabsList className="grid h-9 w-full grid-cols-2">
+                <TabsTrigger
+                  data-testid="agent-defaults-tab-config"
+                  value="config"
                 >
-                  {configFields}
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+                  {t("settings.agents.cliLogin.tabConfig")}
+                </TabsTrigger>
+                <TabsTrigger
+                  data-testid="agent-defaults-tab-login"
+                  value="login"
+                >
+                  {t("settings.agents.cliLogin.tabLogin")}
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent className="mt-4 space-y-4" value="config">
+                {runtimeFields}
+              </TabsContent>
+              <TabsContent className="mt-4" value="login">
+                <AgentDefaultsCliLoginPanel
+                  configApiKeyReady={configApiKeyReady}
+                  runtime={selectedRuntime}
+                />
+              </TabsContent>
+            </Tabs>
           ) : (
-            configFields
+            runtimeFields
           )}
         </>
       )}
 
-      {/* Save bar */}
-      {!configSurfaceLoading && !configSurfaceError && (
+      {/* Save bar — only for provider/model config (login is an action, not a save). */}
+      {!configSurfaceLoading &&
+        !configSurfaceError &&
+        defaultsTab === "config" && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {saveState === "saved" && (
             <span className="flex min-w-0 items-center gap-1 text-sm text-green-600 dark:text-green-400">

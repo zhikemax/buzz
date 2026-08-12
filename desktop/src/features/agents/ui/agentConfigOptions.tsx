@@ -52,6 +52,14 @@ export const AIMAXHUG_KEYS_URL = "https://api.aimaxhug.cloud";
 /** Default provider for fresh global / blank agent config on this fork. */
 export const DEFAULT_LLM_PROVIDER_ID = AIMAXHUG_PROVIDER_ID;
 
+/**
+ * Runtimes that can skip vendor site login when AimaxHug API key is set.
+ * (buzz-agent / goose already use the provider picker + apply_aimaxhug_env.)
+ */
+export function runtimeUsesAimaxHugGatewayAuth(runtimeId: string): boolean {
+  return runtimeId !== "buzz-agent" && runtimeId !== "goose";
+}
+
 const KNOWN_LLM_PROVIDER_IDS = [
   "aimaxhug",
   "anthropic",
@@ -203,7 +211,7 @@ export function requiredCredentialEnvKeys(
   provider: string,
 ): readonly string[] {
   const normalizedRuntime = runtimeId.trim();
-  if (normalizedRuntime !== "buzz-agent" && normalizedRuntime !== "goose") {
+  if (normalizedRuntime.length === 0) {
     return [];
   }
   const config = PROVIDER_CREDENTIAL_CONFIG[provider.trim().toLowerCase()];
@@ -217,8 +225,26 @@ export function isMissingRequiredDropdownField(
   return field?.isRequired === true && value.trim().length === 0;
 }
 
+/** True for every concrete harness — Defaults / create / edit share Buzz Agent fields. */
 export function runtimeSupportsLlmProviderSelection(runtimeId: string) {
-  return runtimeId === "buzz-agent" || runtimeId === "goose";
+  return runtimeId.trim().length > 0;
+}
+
+/**
+ * Runtimes that offer an optional vendor-CLI login tab in Agent Defaults
+ * (Claude Code, Codex, and any catalog entry with a login hint).
+ */
+export function runtimeSupportsVendorLoginTab(
+  runtime: { id: string; loginHint?: string | null } | null | undefined,
+): boolean {
+  if (!runtime) {
+    return false;
+  }
+  const id = runtime.id.trim();
+  if (id === "claude" || id === "codex") {
+    return true;
+  }
+  return (runtime.loginHint ?? "").trim().length > 0;
 }
 
 /** Clears values whose meaning or support changes with the selected harness. */

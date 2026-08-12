@@ -129,9 +129,9 @@ const KNOWN_ACP_RUNTIMES: &[KnownAcpRuntime] = &[
         adapter_install_hint: "Buzz talks to the Claude Code CLI through an ACP adapter. Install it with: npm install -g @agentclientprotocol/claude-agent-acp.",
         skill_dir: Some(".claude/skills"),
         supports_acp_model_switching: false,
-        model_env_var: None,
-        provider_env_var: None,
-        provider_locked: true,
+        model_env_var: Some("BUZZ_AGENT_MODEL"),
+        provider_env_var: Some("BUZZ_AGENT_PROVIDER"),
+        provider_locked: false,
         default_env: &[],
         config_file_path: Some("~/.claude/settings.json"),
         config_file_format: Some("json"),
@@ -162,8 +162,8 @@ const KNOWN_ACP_RUNTIMES: &[KnownAcpRuntime] = &[
         adapter_install_hint: "Buzz talks to the Codex CLI through an ACP adapter. Install it with: npm install -g @agentclientprotocol/codex-acp.",
         skill_dir: Some(".codex/skills"),
         supports_acp_model_switching: false,
-        model_env_var: None,
-        provider_env_var: None,
+        model_env_var: Some("BUZZ_AGENT_MODEL"),
+        provider_env_var: Some("BUZZ_AGENT_PROVIDER"),
         provider_locked: false,
         default_env: &[],
         config_file_path: Some("~/.codex/config.toml"),
@@ -577,6 +577,7 @@ pub fn clear_resolve_cache() {
     // Also invalidate the adapter-availability cache so a freshly-installed
     // adapter is reflected the next time the summary builder checks the badge.
     clear_adapter_availability_cache();
+    clear_runtime_auth_status_cache(None);
 }
 
 // ── Adapter availability cache (Phase-2 badge fallback) ─────────────────────
@@ -593,6 +594,41 @@ fn adapter_availability_cache() -> &'static std::sync::Mutex<Option<AcpAvailabil
     use std::sync::{Mutex, OnceLock};
     static CACHE: OnceLock<Mutex<Option<AcpAvailabilityStatus>>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(None))
+}
+
+fn runtime_auth_status_cache()
+-> &'static std::sync::Mutex<std::collections::HashMap<String, AuthStatus>> {
+    use std::sync::{Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<std::collections::HashMap<String, AuthStatus>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(std::collections::HashMap::new()))
+}
+
+/// Remember the last auth probe for a runtime (warmed by discovery / logout).
+pub(crate) fn cache_runtime_auth_status(runtime_id: &str, status: AuthStatus) {
+    if let Ok(mut guard) = runtime_auth_status_cache().lock() {
+        guard.insert(runtime_id.to_string(), status);
+    }
+}
+
+/// Read cached vendor login status without spawning a probe.
+pub(crate) fn cached_runtime_auth_status(runtime_id: &str) -> Option<AuthStatus> {
+    runtime_auth_status_cache()
+        .lock()
+        .ok()
+        .and_then(|guard| guard.get(runtime_id).cloned())
+}
+
+/// Drop one runtime (or all) from the auth-status cache after login/logout.
+pub(crate) fn clear_runtime_auth_status_cache(runtime_id: Option<&str>) {
+    let Ok(mut guard) = runtime_auth_status_cache().lock() else {
+        return;
+    };
+    match runtime_id {
+        Some(id) => {
+            guard.remove(id);
+        }
+        None => guard.clear(),
+    }
 }
 
 fn clear_adapter_availability_cache() {
@@ -1035,6 +1071,7 @@ fn probe_auth_status(binary_path: &Path, probe_args: &[&str]) -> AuthStatus {
         if let Some(mut pipe) = stdout_pipe {
             let _ = pipe.read_to_end(&mut buf);
         }
+        buf
     });
     let stderr_thread = std::thread::spawn(move || {
         let mut buf = Vec::new();
@@ -1086,16 +1123,17 @@ fn probe_auth_status(binary_path: &Path, probe_args: &[&str]) -> AuthStatus {
     };
 
     let _ = wait_thread.join();
-    let _ = stdout_thread.join();
+    let stdout_bytes = stdout_thread.join().unwrap_or_default();
     let stderr_bytes = stderr_thread.join().unwrap_or_default();
+    let cli_name = probe_args.first().copied().unwrap_or("");
 
-    match cli_probe::classify_probe_output(&stderr_bytes, exit_status.success()) {
-        cli_probe::ProbeOutcome::LoggedIn => AuthStatus::LoggedIn,
-        cli_probe::ProbeOutcome::LoggedOut => AuthStatus::LoggedOut,
-        cli_probe::ProbeOutcome::ConfigInvalid { stderr_excerpt } => AuthStatus::ConfigInvalid {
-            diagnostic: stderr_excerpt,
-        },
-    }
+    cli_probe::classify_vendor_auth_probe(
+        cli_name,
+        &stdout_bytes,
+        &stderr_bytes,
+        exit_status.success(),
+    )
+    .to_auth_status()
 }
 
 pub fn command_availability(command: &str) -> CommandAvailabilityInfo {
@@ -1471,6 +1509,7 @@ pub fn discover_acp_runtimes_from(
     for (idx, handle) in probe_handles {
         let status = handle.join().unwrap_or(AuthStatus::Unknown);
         let partial = &mut partials[idx];
+        cache_runtime_auth_status(partial.runtime.id, status.clone());
         partial.entry.login_hint =
             if matches!(status, AuthStatus::LoggedIn | AuthStatus::NotApplicable) {
                 None

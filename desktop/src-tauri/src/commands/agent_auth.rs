@@ -67,6 +67,67 @@ pub async fn connect_acp_runtime(
         .map_err(|error| format!("connect-account task failed: {error}"))?
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DisconnectAcpRuntimeResult {
+    pub cleared: bool,
+}
+
+/// Revoke vendor CLI login (Claude / Codex) so Agent Defaults can fall back to
+/// the Configuration-tab API key. Does not clear Buzz-stored provider keys.
+#[tauri::command]
+pub async fn disconnect_acp_runtime(
+    runtime_id: String,
+) -> Result<DisconnectAcpRuntimeResult, String> {
+    tokio::task::spawn_blocking(move || disconnect_acp_runtime_blocking(&runtime_id))
+        .await
+        .map_err(|error| format!("disconnect-account task failed: {error}"))?
+}
+
+fn disconnect_acp_runtime_blocking(runtime_id: &str) -> Result<DisconnectAcpRuntimeResult, String> {
+    let runtime = known_acp_runtime_exact(runtime_id)
+        .ok_or_else(|| format!("unknown ACP runtime: {runtime_id}"))?;
+    let logout_argv: &[&str] = match runtime.id {
+        "claude" => &["claude", "auth", "logout"],
+        "codex" => &["codex", "logout"],
+        other => {
+            return Err(format!(
+                "{other} does not support in-app vendor sign-out; clear login from its own CLI"
+            ));
+        }
+    };
+    let binary = resolve_command(logout_argv[0]).ok_or_else(|| {
+        format!(
+            "{} CLI is not installed — cannot revoke vendor login",
+            runtime.label
+        )
+    })?;
+    let mut command = Command::new(&binary);
+    command
+        .args(&logout_argv[1..])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    if let Some(path) = auth_command_path() {
+        command.env("PATH", path);
+    }
+    // Avoid ambient AimaxHug/OpenAI keys changing logout behavior for Claude.
+    command.env_remove("ANTHROPIC_API_KEY");
+    command.env_remove("ANTHROPIC_BASE_URL");
+    command.env_remove("OPENAI_API_KEY");
+    command.env_remove("OPENAI_BASE_URL");
+    command.env_remove("OPENAI_COMPAT_API_KEY");
+    crate::util::configure_no_window(&mut command);
+    let output = command
+        .output()
+        .map_err(|error| format!("failed to run {} logout: {error}", runtime.label))?;
+    if !output.status.success() {
+        return Err(command_error(&format!("{} logout", runtime.label), &output));
+    }
+    crate::managed_agents::clear_runtime_auth_status_cache(Some(runtime.id));
+    Ok(DisconnectAcpRuntimeResult { cleared: true })
+}
+
 fn discover_acp_auth_methods_blocking(runtime_id: &str) -> Result<AcpAuthMethodsResult, String> {
     let output = run_buzz_acp_auth_command(runtime_id, ["auth-methods", "--json"])?;
     if !output.status.success() {
@@ -93,6 +154,9 @@ fn connect_acp_runtime_blocking(
         } else {
             launch_terminal_auth(&request.runtime_id, method)?;
         }
+        crate::managed_agents::clear_runtime_auth_status_cache(Some(
+            request.runtime_id.as_str(),
+        ));
         return Ok(ConnectAcpRuntimeResult { launched: true });
     }
 
@@ -104,6 +168,9 @@ fn connect_acp_runtime_blocking(
         return Err(command_error("buzz-acp authenticate", &output));
     }
 
+    crate::managed_agents::clear_runtime_auth_status_cache(Some(
+        request.runtime_id.as_str(),
+    ));
     Ok(ConnectAcpRuntimeResult { launched: true })
 }
 
@@ -143,10 +210,11 @@ fn run_buzz_acp_auth_command<const N: usize>(
 /// launches and readiness probes use.
 ///
 /// On Windows, `login_shell_path()` is intentionally `None`, so the augmented
-/// PATH contains only Buzz-managed directories and the exe parent. Buzz does
-/// not ship a managed Node runtime on Windows, and npm `.cmd` adapters need
-/// the user's normal PATH to find `node` (and often `claude`/`codex`), so the
-/// inherited process PATH is appended there instead of being replaced.
+/// PATH starts with Buzz-managed npm/Node dirs plus the exe parent, then
+/// appends the process PATH. npm `.cmd` adapters still need `node` on PATH
+/// (or `node.exe` co-located in the npm prefix — see
+/// `ensure_windows_npm_prefix_node_shim`) because GUI-launched Buzz often
+/// inherits a PATH that omits the user's Node install.
 fn auth_command_path() -> Option<String> {
     let augmented = crate::managed_agents::readiness::cli_probe::augmented_path();
     if !cfg!(windows) {

@@ -3,6 +3,7 @@ import type {
   GlobalAgentConfig,
 } from "@/shared/api/types";
 import { BUZZ_AGENT_THINKING_EFFORT } from "../ui/buzzAgentConfig";
+import { runtimeSupportsLlmProviderSelection } from "../ui/agentConfigOptions";
 
 /**
  * Lifecycle status of the ACP runtime catalog query on a per-agent surface.
@@ -181,12 +182,15 @@ export function deriveAgentConfigFieldModel({
   const fields: AgentConfigFieldDescriptor[] = [];
   const omissions: AgentConfigOmission[] = [];
 
-  if (runtime?.providerEnvVar) {
+  if (runtime?.providerEnvVar || runtimeSupportsLlmProviderSelection(runtime?.id ?? "")) {
     fields.push({
       kind: "provider",
       optionSource: "providerCatalog",
       persistence: { kind: "normalizedField", field: "provider" },
-      targetApplication: { kind: "envVar", key: runtime.providerEnvVar },
+      targetApplication: {
+        kind: "envVar",
+        key: runtime?.providerEnvVar ?? "BUZZ_AGENT_PROVIDER",
+      },
       render: "control",
       value: config.provider,
     });
@@ -196,9 +200,12 @@ export function deriveAgentConfigFieldModel({
     kind: "model",
     optionSource: "acpModels",
     persistence: { kind: "normalizedField", field: "model" },
-    targetApplication: runtime?.modelEnvVar
-      ? { kind: "envVar", key: runtime.modelEnvVar }
-      : { kind: "acpNative" },
+    targetApplication:
+      runtime?.modelEnvVar
+        ? { kind: "envVar", key: runtime.modelEnvVar }
+        : runtimeSupportsLlmProviderSelection(runtime?.id ?? "")
+          ? { kind: "envVar", key: "BUZZ_AGENT_MODEL" }
+          : { kind: "acpNative" },
     render: "control",
     value: config.model,
   });
