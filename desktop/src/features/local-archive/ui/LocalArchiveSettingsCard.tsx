@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { Archive, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -25,7 +26,6 @@ import {
   SettingsOptionRow,
 } from "@/features/settings/ui/SettingsOptionGroup";
 import { SettingsSectionHeader } from "@/features/settings/ui/SettingsSectionHeader";
-import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
 import { setExplicitAgentMetricArchiveChoice } from "../agentMetricArchivePreference";
 import { setExplicitObserverArchiveChoice } from "../observerArchivePreference";
 
@@ -39,81 +39,28 @@ import {
   toggleKind,
 } from "./localArchiveKinds";
 
-// ── Label maps (English KIND_GROUPS labels → MessageKey) ──────────────────────
-
-const GROUP_LABEL_KEYS: Record<string, MessageKey> = {
-  "Messages & posts": "settings.archive.group.messages",
-  "Reactions, edits & deletions": "settings.archive.group.reactions",
-  "Huddle events": "settings.archive.group.huddle",
-  "System messages": "settings.archive.group.system",
-};
-
-const KIND_LABEL_KEYS: Record<string, MessageKey> = {
-  "Message diffs (kind 40008)": "settings.archive.kind.messageDiffs",
-  "Huddle started": "settings.archive.kind.huddleStarted",
-  "Participant joined": "settings.archive.kind.participantJoined",
-  "Participant left": "settings.archive.kind.participantLeft",
-  "Huddle ended": "settings.archive.kind.huddleEnded",
-  "System messages (kind 40099)": "settings.archive.kind.systemMessages",
-  "Event deletions (kind 5)": "settings.archive.kind.deletions",
-  "Reactions (kind 7)": "settings.archive.kind.reactions",
-  "Stream messages (kind 9)": "settings.archive.kind.streamMessages",
-  "Buzz-native deletions (kind 9005)": "settings.archive.kind.buzzDeletions",
-  "Stream messages v2 (kind 40002)": "settings.archive.kind.streamMessagesV2",
-  "Message edits (kind 40003)": "settings.archive.kind.messageEdits",
-  "Forum posts (kind 45001)": "settings.archive.kind.forumPosts",
-  "Forum comments (kind 45003)": "settings.archive.kind.forumComments",
-};
-
-function translateGroupLabel(label: string, t: TranslateFn): string {
-  const key = GROUP_LABEL_KEYS[label];
-  return key ? t(key) : label;
-}
-
-function translateKindLabel(
-  label: string,
-  kind: number,
-  t: TranslateFn,
-): string {
-  const key = KIND_LABEL_KEYS[label];
-  if (key) return t(key);
-  const parsed = /^Kind (\d+)$/.exec(label);
-  if (parsed) {
-    return t("settings.archive.kind.generic", { kind: parsed[1] });
-  }
-  if (Number.isFinite(kind)) {
-    return t("settings.archive.kind.generic", { kind });
-  }
-  return label;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function scopeLabel(
   sub: SaveSubscription,
   channelNameById: Map<string, string>,
-  t: TranslateFn,
 ): string {
   if (sub.scopeType === "channel_h") {
     return channelNameById.get(sub.scopeValue) ?? sub.scopeValue;
   }
   if (sub.scopeType === "owner_p") {
     if (sub.kinds.includes(KIND_AGENT_TURN_METRIC)) {
-      return t("settings.archive.scope.metrics");
+      return "My agents' turn metrics";
     }
-    return t("settings.archive.scope.frames");
+    return "My agent session frames";
   }
   return sub.scopeValue;
 }
 
-function kindSummary(kinds: number[], t: TranslateFn): string {
-  if (kinds.length === 0) return t("settings.archive.noKinds");
+function kindSummary(kinds: number[]): string {
+  if (kinds.length === 0) return "no kinds";
   if (kinds.length <= 4) return kinds.join(", ");
-  const prefix = kinds.slice(0, 3).join(", ");
-  return t("settings.archive.kindsMore", {
-    prefix,
-    count: kinds.length - 3,
-  });
+  return `${kinds.slice(0, 3).join(", ")} +${kinds.length - 3} more`;
 }
 
 // ── Observer-feed archive section ─────────────────────────────────────────────
@@ -132,11 +79,8 @@ function ObserverArchiveSection({
   const t = useT();
   const toggleDisabled = toggling;
   return (
-    <div className="space-y-3" data-testid="local-archive-observer-section">
-      <h2 className="text-lg font-semibold tracking-tight">
-        {t("settings.archive.observerTitle")}
-      </h2>
-      <SettingsOptionGroup>
+    <div data-testid="local-archive-observer-section">
+      <SettingsOptionGroup title={t("settings.archive.observerTitle")}>
         <SettingsOptionRow>
           <div className="min-w-0 flex-1">
             <label
@@ -145,10 +89,11 @@ function ObserverArchiveSection({
             >
               {t("settings.archive.observerToggle")}
             </label>
-            <p className="text-sm font-normal text-muted-foreground">
-              {t("settings.archive.observerHint", {
-                kind: KIND_AGENT_OBSERVER_FRAME,
-              })}
+            <p
+              className="text-sm font-normal text-muted-foreground/70"
+              data-settings-subcopy
+            >
+              {`Saves kind ${KIND_AGENT_OBSERVER_FRAME} observer frames addressed to your pubkey. These are ephemeral — not stored by the relay — so local archiving is the only way to retain them.`}
             </p>
           </div>
           <Switch
@@ -179,11 +124,8 @@ function AgentMetricArchiveSection({
 }: AgentMetricSectionProps) {
   const t = useT();
   return (
-    <div className="space-y-3" data-testid="local-archive-agent-metric-section">
-      <h2 className="text-lg font-semibold tracking-tight">
-        {t("settings.archive.metricTitle")}
-      </h2>
-      <SettingsOptionGroup>
+    <div data-testid="local-archive-agent-metric-section">
+      <SettingsOptionGroup title={t("settings.archive.metricTitle")}>
         <SettingsOptionRow>
           <div className="min-w-0 flex-1">
             <label
@@ -192,10 +134,13 @@ function AgentMetricArchiveSection({
             >
               {t("settings.archive.metricToggle")}
             </label>
-            <p className="text-sm font-normal text-muted-foreground">
-              {t("settings.archive.metricHint", {
-                kind: KIND_AGENT_TURN_METRIC,
-              })}
+            <p
+              className="text-sm font-normal text-muted-foreground/70"
+              data-settings-subcopy
+            >
+              Saves kind {KIND_AGENT_TURN_METRIC} turn-metric events addressed
+              to your pubkey. Stored as plaintext in your local archive so
+              token-usage calculators can read them directly.
             </p>
           </div>
           <Switch
@@ -219,13 +164,11 @@ type KindChecklistProps = {
 };
 
 function KindChecklist({ checkedKinds, onChange }: KindChecklistProps) {
-  const t = useT();
   return (
     <div className="space-y-4">
       {KIND_GROUPS.map((group) => {
         const fullyChecked = isGroupFullyChecked(group, checkedKinds);
         const indeterminate = isGroupIndeterminate(group, checkedKinds);
-        const groupLabel = translateGroupLabel(group.label, t);
         return (
           <div key={group.label}>
             {/* Group header */}
@@ -242,7 +185,7 @@ function KindChecklist({ checkedKinds, onChange }: KindChecklistProps) {
                 className="cursor-pointer text-sm font-medium"
                 htmlFor={`local-archive-group-${group.label}`}
               >
-                {groupLabel}
+                {group.label}
               </label>
             </div>
             {/* Individual kind checkboxes */}
@@ -261,7 +204,7 @@ function KindChecklist({ checkedKinds, onChange }: KindChecklistProps) {
                     className="cursor-pointer text-sm text-muted-foreground"
                     htmlFor={`local-archive-kind-${kind}`}
                   >
-                    {translateKindLabel(label, kind, t)}
+                    {label}
                   </label>
                 </div>
               ))}
@@ -301,19 +244,20 @@ function CustomKindsInput({ value, onChange }: CustomKindsInputProps) {
         type="text"
         value={value}
       />
-      <p className="mt-1 text-xs text-muted-foreground">
-        {t("settings.archive.customKindsHint")}
-      </p>
+      <p
+        className="mt-1 text-xs text-muted-foreground/70"
+        data-settings-subcopy
+      >{t("settings.archive.customKindsHint")}</p>
       {hasInvalid && (
         <p
           className="mt-1 text-xs text-destructive"
           data-testid="local-archive-custom-kinds-error"
         >
-          {t("settings.archive.invalidTokens")}
-          {invalid.map((token, i) => (
-            <React.Fragment key={token}>
+          Invalid tokens (ignored):{" "}
+          {invalid.map((t, i) => (
+            <React.Fragment key={t}>
               {i > 0 && ", "}
-              <code className="font-mono">{token}</code>
+              <code className="font-mono">{t}</code>
             </React.Fragment>
           ))}
         </p>
@@ -326,11 +270,17 @@ function CustomKindsInput({ value, onChange }: CustomKindsInputProps) {
 
 type AddFormProps = {
   channels: Array<{ id: string; name: string }>;
+  title?: React.ReactNode;
   onSaved: () => void;
   onCancel: () => void;
 };
 
-function AddSubscriptionForm({ channels, onSaved, onCancel }: AddFormProps) {
+function AddSubscriptionForm({
+  channels,
+  title,
+  onSaved,
+  onCancel,
+}: AddFormProps) {
   const t = useT();
   const [selectedChannelId, setSelectedChannelId] = React.useState("");
   const [checkedKinds, setCheckedKinds] = React.useState<Set<number>>(
@@ -359,17 +309,15 @@ function AddSubscriptionForm({ channels, onSaved, onCancel }: AddFormProps) {
         request.kinds,
       );
       onSaved();
-      toast.success(t("settings.archive.created"));
+      toast.success("Archive subscription created.");
     } catch (err) {
       toast.error(
-        err instanceof Error
-          ? err.message
-          : t("settings.archive.createFailed"),
+        err instanceof Error ? err.message : t("settings.archive.createFailed"),
       );
     } finally {
       setIsAdding(false);
     }
-  }, [request, onSaved, t]);
+  }, [request, onSaved]);
 
   const handleCancel = () => {
     setSelectedChannelId("");
@@ -379,7 +327,7 @@ function AddSubscriptionForm({ channels, onSaved, onCancel }: AddFormProps) {
   };
 
   return (
-    <SettingsOptionGroup>
+    <SettingsOptionGroup title={title}>
       <div className="space-y-5 px-4 py-4">
         {/* Channel picker */}
         <div>
@@ -407,9 +355,7 @@ function AddSubscriptionForm({ channels, onSaved, onCancel }: AddFormProps) {
 
         {/* Event types (per-kind checklist) */}
         <div>
-          <p className="mb-3 text-sm font-medium">
-            {t("settings.archive.eventTypes")}
-          </p>
+          <p className="mb-3 text-sm font-medium">{t("settings.archive.eventTypes")}</p>
           <KindChecklist
             checkedKinds={checkedKinds}
             onChange={setCheckedKinds}
@@ -434,7 +380,7 @@ function AddSubscriptionForm({ channels, onSaved, onCancel }: AddFormProps) {
             onClick={() => void handleAdd()}
             type="button"
           >
-            {isAdding ? t("common.saving") : t("common.save")}
+            {isAdding ? "Saving…" : "Save"}
           </Button>
         </div>
       </div>
@@ -492,18 +438,16 @@ export function LocalArchiveSettingsCard() {
       try {
         await deleteSaveSubscription(scopeType, scopeValue);
         await reload();
-        toast.success(t("settings.archive.removed"));
+        toast.success("Archive subscription removed.");
       } catch (err) {
         toast.error(
-          err instanceof Error
-            ? err.message
-            : t("settings.archive.removeFailed"),
+          err instanceof Error ? err.message : t("settings.archive.removeFailed"),
         );
       } finally {
         setDeletingKey(null);
       }
     },
-    [reload, t],
+    [reload],
   );
 
   const observerEnabled = subs.some(
@@ -528,8 +472,8 @@ export function LocalArchiveSettingsCard() {
         setExplicitObserverArchiveChoice(pubkey, checked);
         toast.success(
           checked
-            ? t("settings.archive.observerEnabled")
-            : t("settings.archive.observerDisabled"),
+            ? "Observer feed archive enabled."
+            : "Observer feed archive disabled.",
         );
         await reload();
       } catch (err) {
@@ -542,7 +486,7 @@ export function LocalArchiveSettingsCard() {
         setObserverToggling(false);
       }
     },
-    [pubkey, reload, t],
+    [pubkey, reload],
   );
 
   const handleMetricToggle = React.useCallback(
@@ -558,8 +502,8 @@ export function LocalArchiveSettingsCard() {
         setExplicitAgentMetricArchiveChoice(pubkey, checked);
         toast.success(
           checked
-            ? t("settings.archive.metricEnabled")
-            : t("settings.archive.metricDisabled"),
+            ? "Agent turn metric archive enabled."
+            : "Agent turn metric archive disabled.",
         );
         await reload();
       } catch (err) {
@@ -572,7 +516,7 @@ export function LocalArchiveSettingsCard() {
         setMetricToggling(false);
       }
     },
-    [pubkey, reload, t],
+    [pubkey, reload],
   );
 
   // Non-owner_p subscriptions shown in the active-subscriptions list.
@@ -603,31 +547,25 @@ export function LocalArchiveSettingsCard() {
         />
 
         {/* Channel subscriptions */}
-        <div className="space-y-3" data-testid="local-archive-subscriptions">
-          <h2 className="text-lg font-semibold tracking-tight">
-            {channelSubs.length > 0
-              ? t("settings.archive.channelSubsCount", {
-                  count: channelSubs.length,
-                })
-              : t("settings.archive.channelSubs")}
-          </h2>
+        <div data-testid="local-archive-subscriptions">
           {isLoading ? (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={t("settings.archive.channelSubs")}>
               <div className="px-4 py-3 text-sm font-normal text-muted-foreground">
                 {t("settings.archive.loading")}
               </div>
             </SettingsOptionGroup>
           ) : channelSubs.length === 0 ? (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={t("settings.archive.channelSubs")}>
               <div className="px-4 py-3 text-sm font-normal text-muted-foreground">
                 {t("settings.archive.noChannelSubs")}
               </div>
             </SettingsOptionGroup>
           ) : (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup
+              title={`Channel subscriptions (${channelSubs.length})`}
+            >
               {channelSubs.map((sub) => {
                 const key = `${sub.scopeType}:${sub.scopeValue}`;
-                const name = scopeLabel(sub, channelNameById, t);
                 return (
                   <div
                     key={key}
@@ -636,18 +574,18 @@ export function LocalArchiveSettingsCard() {
                   >
                     <Archive className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("settings.archive.subKinds", {
-                          scope: sub.scopeType,
-                          kinds: kindSummary(sub.kinds, t),
-                        })}
+                      <p className="truncate text-sm font-medium">
+                        {scopeLabel(sub, channelNameById)}
+                      </p>
+                      <p
+                        className="text-xs text-muted-foreground/70"
+                        data-settings-subcopy
+                      >
+                        {sub.scopeType} · kinds: {kindSummary(sub.kinds)}
                       </p>
                     </div>
                     <Button
-                      aria-label={t("settings.archive.removeSubAria", {
-                        name,
-                      })}
+                      aria-label={`Remove archive subscription for ${scopeLabel(sub, channelNameById)}`}
                       disabled={deletingKey === key}
                       onClick={() =>
                         void handleDelete(sub.scopeType, sub.scopeValue)
@@ -665,10 +603,7 @@ export function LocalArchiveSettingsCard() {
         </div>
 
         {/* Add channel subscription */}
-        <div className="space-y-3" data-testid="local-archive-add">
-          <h2 className="text-lg font-semibold tracking-tight">
-            {t("settings.archive.addChannelSub")}
-          </h2>
+        <div data-testid="local-archive-add">
           {isAddingOpen ? (
             <AddSubscriptionForm
               channels={joinedChannels}
@@ -677,15 +612,17 @@ export function LocalArchiveSettingsCard() {
                 setIsAddingOpen(false);
                 void reload();
               }}
+              title={t("settings.archive.addChannelSub")}
             />
           ) : (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={t("settings.archive.addChannelSub")}>
               <SettingsOptionRow>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">
-                    {t("settings.archive.subscribeTitle")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm font-medium">{t("settings.archive.subscribeTitle")}</p>
+                  <p
+                    className="text-xs text-muted-foreground/70"
+                    data-settings-subcopy
+                  >
                     {t("settings.archive.subscribeHint")}
                   </p>
                 </div>

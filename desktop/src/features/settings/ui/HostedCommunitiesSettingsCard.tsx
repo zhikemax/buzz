@@ -1,3 +1,4 @@
+import { useT, type MessageKey } from "@/shared/i18n";
 import * as React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -30,7 +31,6 @@ import {
 } from "@/features/communities/hostedCommunityApi";
 import { CommunityIconSettingsCard } from "@/features/communities/ui/CommunityIconSettingsCard";
 import { useCommunities } from "@/features/communities/useCommunities";
-import { useT, type MessageKey } from "@/shared/i18n";
 import { safeNpub } from "@/shared/lib/nostrUtils";
 import { useCommunityOnboarding } from "@/features/onboarding/communityOnboarding";
 import {
@@ -394,7 +394,8 @@ export function HostedCommunitiesSettingsCard() {
         );
       }
       const url = relayUrl(response.community);
-      if (!url) throw new Error(t("hosted.noRelayAfterCreate"));
+      if (!url)
+        throw new Error("The new community did not return a relay address.");
       setName("");
       setAvailability(null);
       await loadAccount();
@@ -405,7 +406,9 @@ export function HostedCommunitiesSettingsCard() {
           communityName: response.community.name ?? normalizedName,
         })
       ) {
-        throw new Error(t("hosted.onboardingInProgress"));
+        throw new Error(
+          "Another community is already being connected. Finish it before connecting this one.",
+        );
       }
     });
   };
@@ -429,15 +432,15 @@ export function HostedCommunitiesSettingsCard() {
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <LoaderCircle className="h-4 w-4 animate-spin" />{" "}
-          {t("hosted.checkingSignIn")}
+          <LoaderCircle className="h-4 w-4 animate-spin" /> Checking sign-in…
         </div>
       ) : !auth ? (
         <div className="rounded-xl border border-border/70 p-5">
           <h3 className="font-medium">{t("settings.hosted.signInTitle")}</h3>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {t("settings.hosted.signInBody")}
-          </p>
+          <p
+            className="mt-2 max-w-2xl text-sm text-muted-foreground/70"
+            data-settings-subcopy
+          >{t("settings.hosted.signInBody")}</p>
           <Button
             className="mt-4"
             disabled={busy}
@@ -456,9 +459,7 @@ export function HostedCommunitiesSettingsCard() {
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 p-4">
             <div>
               <p className="text-sm font-medium">
-                {auth.name ||
-                  auth.email ||
-                  t("settings.hosted.accountFallback")}
+                {auth.name || auth.email || "Builderlab account"}
               </p>
               {auth.name && auth.email ? (
                 <p className="text-xs text-muted-foreground">{auth.email}</p>
@@ -479,8 +480,14 @@ export function HostedCommunitiesSettingsCard() {
               <h3 className="font-medium">
                 {t("settings.hosted.linkIdentityTitle")}
               </h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t("settings.hosted.linkIdentityBody")}
+              <p
+                className="mt-2 text-sm text-muted-foreground/70"
+                data-settings-subcopy
+              >
+                This Builderlab account isn&apos;t linked to a Buzz identity
+                yet. Connect this device&apos;s key to create and own
+                communities under it — Buzz signs a one-time challenge locally,
+                so your private key never leaves Desktop.
               </p>
               <Button
                 className="mt-4"
@@ -501,22 +508,24 @@ export function HostedCommunitiesSettingsCard() {
                   <h3 className="font-medium">
                     {t("settings.hosted.mismatchTitle")}
                   </h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {t("settings.hosted.mismatchBody")}
+                  <p
+                    className="mt-2 text-sm text-muted-foreground/70"
+                    data-settings-subcopy
+                  >
+                    Your Builderlab account owns communities under another Buzz
+                    key, so connecting them here would join a relay this device
+                    isn&apos;t a member of. Creating and connecting are paused
+                    until the identities match.
                   </p>
                   <dl className="mt-3 space-y-1 text-xs">
                     <div className="flex flex-wrap gap-x-2">
-                      <dt className="text-muted-foreground">
-                        {t("settings.hosted.accountUses")}
-                      </dt>
+                      <dt className="text-muted-foreground">{t("settings.hosted.accountUses")}</dt>
                       <dd className="font-mono">
                         {identity.npub ?? boundPubkey}
                       </dd>
                     </div>
                     <div className="flex flex-wrap gap-x-2">
-                      <dt className="text-muted-foreground">
-                        {t("settings.hosted.thisDevice")}
-                      </dt>
+                      <dt className="text-muted-foreground">{t("settings.hosted.thisDevice")}</dt>
                       <dd className="font-mono">{localNpub ?? localPubkey}</dd>
                     </div>
                   </dl>
@@ -536,8 +545,8 @@ export function HostedCommunitiesSettingsCard() {
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />{" "}
-                {t("settings.hosted.identityConnected")}
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Buzz
+                identity connected
                 {identity.npub ? (
                   <span className="font-mono text-xs">{identity.npub}</span>
                 ) : null}
@@ -554,22 +563,16 @@ export function HostedCommunitiesSettingsCard() {
               <h3 className="font-medium">
                 {t("hosted.yourCommunities")}
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {t("settings.hosted.communitiesUsed", {
-                    used: communities.length,
-                    max: MAX_COMMUNITIES,
-                  })}
+                  {communities.length} of {MAX_COMMUNITIES} used
                 </span>
               </h3>
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={busy}
-                onClick={() =>
-                  void run("settings.hosted.refreshing", loadAccount)
-                }
+                onClick={() => void run("settings.hosted.refreshing", loadAccount)}
               >
-                <RefreshCw className="h-4 w-4" />{" "}
-                {t("settings.hosted.refresh")}
+                <RefreshCw className="h-4 w-4" /> {t("settings.hosted.refresh")}
               </Button>
             </div>
             {communities.length === 0 ? (
@@ -617,16 +620,19 @@ export function HostedCommunitiesSettingsCard() {
             onSubmit={createCommunity}
           >
             <div>
-              <h3 className="font-medium">
-                {t("settings.hosted.createTitle")}
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <h3 className="font-medium">{t("settings.hosted.createTitle")}</h3>
+              <p
+                className="mt-1 text-sm text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {t("settings.hosted.createHint")}
               </p>
             </div>
             {atCommunityLimit ? (
               <p className="text-sm text-muted-foreground">
-                {t("settings.hosted.limitHint", { max: MAX_COMMUNITIES })}
+                You&apos;ve reached the limit of {MAX_COMMUNITIES} hosted
+                communities. Transfer one to free up a slot before creating
+                another.
               </p>
             ) : null}
             <div className="flex max-w-xl items-center gap-2">
@@ -650,7 +656,9 @@ export function HostedCommunitiesSettingsCard() {
               </span>
             </div>
             {name && !validName ? (
-              <p className="text-sm text-destructive">{t("hosted.nameRules")}</p>
+              <p className="text-sm text-destructive">
+                {t("hosted.nameRules")}
+              </p>
             ) : validName && checkingName ? (
               <p className="text-sm text-muted-foreground">
                 {t("hosted.checkingAvailability")}
@@ -711,9 +719,7 @@ function UnpairIdentityButton({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("settings.hosted.unpairTitle")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("settings.hosted.unpairBody")}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{t("settings.hosted.unpairBody")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
@@ -754,8 +760,7 @@ function CommunityRow({
   const [transferOpen, setTransferOpen] = React.useState(false);
   const url = relayUrl(community);
   const archived = Boolean(community.archived_at);
-  const displayName =
-    community.name ?? community.slug ?? t("settings.hosted.fallbackName");
+  const displayName = community.name ?? community.slug ?? "Hosted community";
 
   return (
     <li
@@ -768,9 +773,12 @@ function CommunityRow({
         {showIconPicker ? <CommunityIconSettingsCard compact /> : null}
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{displayName}</p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p
+            className="truncate text-xs text-muted-foreground/70"
+            data-settings-subcopy
+          >
             {community.normalized_host}
-            {archived ? ` · ${t("channel.archived")}` : ""}
+            {archived ? " · Archived" : ""}
           </p>
         </div>
       </div>
@@ -783,8 +791,7 @@ function CommunityRow({
             disabled={busy || !community.id}
             onClick={() => setConfirmUnarchive(true)}
           >
-            <ArchiveRestore className="h-4 w-4" />{" "}
-            {t("settings.hosted.unarchive")}
+            <ArchiveRestore className="h-4 w-4" /> {t("settings.hosted.unarchive")}
           </Button>
           <AlertDialog
             open={confirmUnarchive}
@@ -792,12 +799,8 @@ function CommunityRow({
           >
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t("settings.hosted.unarchiveTitle", { name: displayName })}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("settings.hosted.unarchiveBody")}
-                </AlertDialogDescription>
+                <AlertDialogTitle>Unarchive {displayName}?</AlertDialogTitle>
+                <AlertDialogDescription>{t("settings.hosted.unarchiveBody")}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
@@ -826,8 +829,7 @@ function CommunityRow({
             disabled={busy || !community.id}
             onClick={() => setTransferOpen(true)}
           >
-            <ArrowLeftRight className="h-4 w-4" />{" "}
-            {t("settings.hosted.transfer")}
+            <ArrowLeftRight className="h-4 w-4" /> {t("settings.hosted.transfer")}
           </Button>
           <Button
             variant="ghost"
@@ -842,11 +844,12 @@ function CommunityRow({
           <AlertDialog open={confirmArchive} onOpenChange={setConfirmArchive}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t("settings.hosted.archiveTitle", { name: displayName })}
-                </AlertDialogTitle>
+                <AlertDialogTitle>Archive {displayName}?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {t("settings.hosted.archiveBody")}
+                  New and existing connections stop and the address stays
+                  reserved. Archiving can&apos;t be undone from here without
+                  unarchiving, and the community keeps counting toward your
+                  quota — it isn&apos;t deleted.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -907,7 +910,9 @@ function TransferOwnershipDialog({
         <DialogHeader>
           <DialogTitle>{t("settings.hosted.transferTitle")}</DialogTitle>
           <DialogDescription>
-            {t("settings.hosted.transferBody", { name: communityName })}
+            Transfer {communityName} to another person. You become a regular
+            member. The recipient needs a connected Buzz identity first, and
+            this can&apos;t be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
@@ -936,7 +941,7 @@ function TransferOwnershipDialog({
             onClick={() => void submit()}
           >
             {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-            {t("settings.hosted.transferTitle")}
+            Transfer ownership
           </Button>
         </DialogFooter>
       </DialogContent>

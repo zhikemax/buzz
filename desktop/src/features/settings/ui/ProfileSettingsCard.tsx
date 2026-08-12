@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { Check, ChevronDown, Copy, Pencil } from "lucide-react";
 import {
   AnimatePresence,
@@ -19,7 +20,6 @@ import {
   parseEmojiAvatarDataUrl,
 } from "@/features/profile/ui/ProfileAvatarEditor";
 import { cn } from "@/shared/lib/cn";
-import { useT } from "@/shared/i18n";
 import { Input } from "@/shared/ui/input";
 import { Spinner } from "@/shared/ui/spinner";
 import { Textarea } from "@/shared/ui/textarea";
@@ -73,14 +73,14 @@ function IdentityRow({
       </div>
       {copyValue ? (
         <button
-          aria-label={t("profile.copyLabel", { label })}
+          aria-label={`Copy ${label}`}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           data-testid={`copy-${testId}`}
           onClick={async () => {
             await writeTextToClipboard(copyValue);
-            toast.success(t("profile.copiedClipboard"));
+            toast.success("Copied to clipboard");
           }}
-          title={t("profile.copyLabel", { label })}
+          title={`Copy ${label}`}
           type="button"
         >
           <Copy className="h-4 w-4 shrink-0" />
@@ -104,12 +104,9 @@ function EditProfileMetadataButton({
   disabled: boolean;
   isEditing: boolean;
 }) {
-  const t = useT();
   const Icon = isEditing ? Check : Pencil;
-  const actionLabel = isEditing ? t("common.done") : t("profile.edit");
-  const accessibleLabel = isEditing
-    ? t("profile.doneEditing", { label })
-    : t("profile.editField", { label });
+  const actionLabel = isEditing ? "Done" : "Edit";
+  const accessibleLabel = isEditing ? `Done editing ${label}` : `Edit ${label}`;
 
   return (
     <button
@@ -303,9 +300,9 @@ export function ProfileSettingsCard({
     nextDisplayName ||
     profile?.displayName ||
     fallbackDisplayName ||
-    t("profile.yourProfile");
-  const resolvedPubkey = profile?.pubkey ?? currentPubkey ?? t("profile.unavailable");
-  const nip05Handle = profile?.nip05Handle ?? t("profile.notSet");
+    "Your profile";
+  const resolvedPubkey = profile?.pubkey ?? currentPubkey ?? "Unavailable";
+  const nip05Handle = profile?.nip05Handle ?? "Not set";
   const emojiAvatarPreview = React.useMemo(
     () => parseEmojiAvatarDataUrl(avatarUrlDraft),
     [avatarUrlDraft],
@@ -404,14 +401,13 @@ export function ProfileSettingsCard({
     setDisplayNameDraft(updatePayload.displayName ?? currentDisplayName);
     setAvatarUrlDraft(updatePayload.avatarUrl ?? currentAvatarUrl);
     setAboutDraft(updatePayload.about ?? currentAbout);
-    toast.success(t("profile.saved"));
+    toast.success("Profile saved");
     return true;
   }, [
     canSave,
     currentAbout,
     currentAvatarUrl,
     currentDisplayName,
-    t,
     updatePayload,
     updateProfileMutation,
   ]);
@@ -564,8 +560,8 @@ export function ProfileSettingsCard({
                                 aria-expanded={isAvatarEditorOpen}
                                 aria-label={
                                   isAvatarEditorSaving
-                                    ? t("profile.savingPhoto")
-                                    : t("profile.editPhoto")
+                                    ? "Saving profile photo"
+                                    : "Edit profile photo"
                                 }
                                 className={avatarEditButtonClassName}
                                 data-testid="profile-avatar-edit"
@@ -573,8 +569,8 @@ export function ProfileSettingsCard({
                                 onClick={openAvatarEditor}
                                 title={
                                   isAvatarEditorSaving
-                                    ? t("profile.savingPhoto")
-                                    : t("profile.editPhoto")
+                                    ? "Saving profile photo"
+                                    : "Edit profile photo"
                                 }
                                 type="button"
                               >
@@ -718,9 +714,9 @@ export function ProfileSettingsCard({
                                 <p
                                   className="min-w-0 truncate text-sm text-muted-foreground"
                                   data-testid="profile-display-name-value"
-                                  title={displayNameDraft || t("profile.notSet")}
+                                  title={displayNameDraft || "Not set"}
                                 >
-                                  {displayNameDraft || t("profile.notSet")}
+                                  {displayNameDraft || "Not set"}
                                 </p>
                               )}
                             </div>
@@ -756,9 +752,9 @@ export function ProfileSettingsCard({
                                       : "text-muted-foreground/55",
                                   )}
                                   data-testid="profile-about-value"
-                                  title={aboutDraft || t("profile.notSet")}
+                                  title={aboutDraft || "Not set"}
                                 >
-                                  {aboutDraft || t("profile.notSet")}
+                                  {aboutDraft || "Not set"}
                                 </p>
                               )}
                             </div>
@@ -778,9 +774,10 @@ export function ProfileSettingsCard({
                                 <h2 className="text-lg font-semibold tracking-tight">
                                   {t("profile.identity")}
                                 </h2>
-                                <p className="mt-1 text-sm font-normal text-muted-foreground">
-                                  {t("profile.identityHint")}
-                                </p>
+                                <p
+                                  className="mt-1 text-sm font-normal text-muted-foreground/70"
+                                  data-settings-subcopy
+                                >{t("profile.identityHint")}</p>
                               </div>
                               <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-[color,transform] duration-150 ease-out group-open:rotate-180 group-hover/identity:text-foreground group-focus-visible/identity:text-foreground" />
                             </summary>
@@ -851,9 +848,7 @@ export function ProfileSettingsCard({
               {shouldShowSaveArea && !isAvatarEditorOpen ? (
                 <div className="mx-auto w-full max-w-[576px] space-y-2">
                   {hasPendingClearRequest ? (
-                    <p className="text-sm text-muted-foreground">
-                      {t("profile.clearFieldsUnsupported")}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t("profile.clearFieldsUnsupported")}</p>
                   ) : null}
                 </div>
               ) : null}

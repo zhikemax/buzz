@@ -1,8 +1,8 @@
+import { useT } from "@/shared/i18n";
 import { Circle, CircleDashed } from "lucide-react";
 import * as React from "react";
 
 import { clampFrameIndex } from "@/features/profile/ui/AnimatedAvatarCapture.helpers";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { performDefaultHaptic } from "@/shared/lib/haptics";
 import { Spinner } from "@/shared/ui/spinner";
@@ -63,7 +63,12 @@ function findCrossedSliderTick(
 }
 
 type AvatarFramingSliderProps = {
+  ariaDescribedBy?: string;
+  ariaLabel?: string;
+  ariaValueText?: string;
+  compact?: boolean;
   disabled?: boolean;
+  handleAlwaysVisible?: boolean;
   helpText?: string | null;
   helpTestId?: string;
   max: number;
@@ -71,6 +76,7 @@ type AvatarFramingSliderProps = {
   onChange: (value: number) => void;
   onReset: () => void;
   resetValue: number;
+  resetLabel?: string;
   resetTestId: string;
   testId: string;
   tipText?: string | null;
@@ -78,7 +84,12 @@ type AvatarFramingSliderProps = {
 };
 
 export function AvatarFramingSlider({
+  ariaDescribedBy,
+  ariaLabel = "Avatar size",
+  ariaValueText,
+  compact = false,
   disabled = false,
+  handleAlwaysVisible = false,
   helpText = null,
   helpTestId,
   max,
@@ -86,12 +97,12 @@ export function AvatarFramingSlider({
   onChange,
   onReset,
   resetValue,
+  resetLabel = "Reset avatar size",
   resetTestId,
   testId,
   tipText = null,
   value,
 }: AvatarFramingSliderProps) {
-  const t = useT();
   const sliderRef = React.useRef<HTMLDivElement | null>(null);
   const activePointerRef = React.useRef<number | null>(null);
   const valueRef = React.useRef(value);
@@ -160,13 +171,18 @@ export function AvatarFramingSlider({
   const sliderControl = (
     <div className="buzz-avatar-framing-slider-wrapper">
       <div
-        aria-label={t("avatar.sizeAria")}
-        aria-describedby={tipText ? tipId : undefined}
+        aria-label={ariaLabel}
+        aria-describedby={tipText ? tipId : ariaDescribedBy}
         aria-valuemax={max}
         aria-valuemin={min}
         aria-valuenow={value}
-        className="buzz-avatar-framing-slider"
+        aria-valuetext={ariaValueText}
+        className={cn(
+          "buzz-avatar-framing-slider",
+          compact && "buzz-avatar-framing-slider--compact",
+        )}
         data-active={isActive ? "true" : undefined}
+        data-handle-visible={handleAlwaysVisible ? "true" : undefined}
         data-testid={testId}
         onKeyDown={(event) => {
           if (disabled) {
@@ -244,7 +260,7 @@ export function AvatarFramingSlider({
         <div aria-hidden="true" className="buzz-avatar-framing-slider-handle" />
       </div>
       <button
-        aria-label={t("avatar.resetSize")}
+        aria-label={resetLabel}
         className="buzz-avatar-framing-slider-hashmark"
         data-reset="true"
         data-testid={resetTestId}
@@ -257,7 +273,7 @@ export function AvatarFramingSlider({
           onReset();
         }}
         style={resetTickStyle}
-        title={t("avatar.resetSize")}
+        title={resetLabel}
         type="button"
       />
       {tipText ? (
@@ -300,13 +316,10 @@ export function AvatarOutlineToggle({
   onChange,
   testIdPrefix,
 }: AvatarOutlineToggleProps) {
-  const t = useT();
   const Icon = enabled ? Circle : CircleDashed;
   return (
     <button
-      aria-label={
-        enabled ? t("avatar.turnOutlineOff") : t("avatar.turnOutlineOn")
-      }
+      aria-label={enabled ? "Turn outline off" : "Turn outline on"}
       aria-pressed={enabled}
       className={cn(
         "grid h-12 w-12 shrink-0 place-items-center rounded-full border border-foreground/10 bg-background text-foreground transition-[background-color,box-shadow,color] duration-150 ease-out hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -315,7 +328,7 @@ export function AvatarOutlineToggle({
       data-testid={`${testIdPrefix}-animated-outline-toggle`}
       disabled={disabled}
       onClick={() => onChange(!enabled)}
-      title={enabled ? t("avatar.outlineOn") : t("avatar.outlineOff")}
+      title={enabled ? "Outline on" : "Outline off"}
       type="button"
     >
       <Icon aria-hidden="true" className="h-4 w-4" />

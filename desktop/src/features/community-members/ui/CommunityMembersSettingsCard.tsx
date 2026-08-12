@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { Crown, MoreHorizontal, Search, Shield } from "lucide-react";
 import { nip19 } from "nostr-tools";
 import * as React from "react";
@@ -18,7 +19,6 @@ import type {
   RelayMemberRole,
   UserProfileSummary,
 } from "@/shared/api/types";
-import { useT, type MessageKey } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
 import {
@@ -31,11 +31,7 @@ import {
 import { VirtualizedList } from "@/shared/ui/VirtualizedList";
 import { CommunityInviteDialog } from "./CommunityInviteDialog";
 
-function formatDisplayName(
-  member: RelayMember,
-  displayName: string | null | undefined,
-  t: (key: MessageKey) => string,
-) {
+function formatDisplayName(member: RelayMember, displayName?: string | null) {
   const trimmedDisplayName = displayName?.trim();
   if (
     trimmedDisplayName &&
@@ -43,20 +39,7 @@ function formatDisplayName(
   ) {
     return trimmedDisplayName;
   }
-  return member.role === "owner"
-    ? t("settings.invites.communityOwner")
-    : t("settings.invites.unnamedMember");
-}
-
-function roleLabel(role: RelayMemberRole, t: (key: MessageKey) => string) {
-  switch (role) {
-    case "owner":
-      return t("settings.invites.role.owner");
-    case "admin":
-      return t("settings.invites.role.admin");
-    default:
-      return t("settings.invites.role.member");
-  }
+  return member.role === "owner" ? "Community owner" : "Unnamed member";
 }
 
 function npubFromPubkey(pubkey: string): string | null {
@@ -126,7 +109,7 @@ function RelayMemberRow({
   const canPromote = currentRole === "owner" && member.role === "member";
   const canDemote = currentRole === "owner" && member.role === "admin";
   const hasActions = canRemove || canPromote || canDemote;
-  const displayName = formatDisplayName(member, profile?.displayName, t);
+  const displayName = formatDisplayName(member, profile?.displayName);
 
   async function mutateWithToast(
     action: () => Promise<unknown>,
@@ -139,7 +122,7 @@ function RelayMemberRow({
       toast.error(
         error instanceof Error
           ? error.message
-          : t("settings.invites.updateFailed"),
+          : "Couldn’t update this community member.",
       );
     }
   }
@@ -151,9 +134,7 @@ function RelayMemberRow({
     >
       <UserProfilePopover
         pubkey={member.pubkey}
-        triggerAriaLabel={t("settings.invites.openProfileAria", {
-          name: displayName,
-        })}
+        triggerAriaLabel={`Open profile for ${displayName}`}
         triggerElement="span"
       >
         <ProfileAvatar
@@ -175,16 +156,15 @@ function RelayMemberRow({
             <Shield className="h-4 w-4 text-blue-500" />
           ) : null}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="shrink-0">{roleLabel(member.role, t)}</span>
+        <div
+          className="flex items-center gap-1.5 text-xs text-muted-foreground/70"
+          data-settings-subcopy
+        >
+          <span className="shrink-0 capitalize">{member.role}</span>
           <span aria-hidden="true" className="shrink-0">
             ·
           </span>
-          <span className="shrink-0">
-            {t("settings.invites.added", {
-              date: formatDate(member.createdAt),
-            })}
-          </span>
+          <span className="shrink-0">Added {formatDate(member.createdAt)}</span>
           {isSelf ? (
             <>
               <span aria-hidden="true" className="shrink-0">
@@ -200,9 +180,7 @@ function RelayMemberRow({
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button
-              aria-label={t("settings.invites.actionsAria", {
-                name: displayName,
-              })}
+              aria-label={`Actions for ${displayName}`}
               data-testid={`relay-member-actions-${member.pubkey}`}
               disabled={isBusy}
               size="icon"
@@ -221,7 +199,7 @@ function RelayMemberRow({
                         pubkey: member.pubkey,
                         role: "admin",
                       }),
-                    t("settings.invites.madeAdmin"),
+                    "Made community admin",
                   )
                 }
               >
@@ -237,7 +215,7 @@ function RelayMemberRow({
                         pubkey: member.pubkey,
                         role: "member",
                       }),
-                    t("settings.invites.madeMember"),
+                    "Made community member",
                   )
                 }
               >
@@ -253,7 +231,7 @@ function RelayMemberRow({
                 onClick={() =>
                   void mutateWithToast(
                     () => removeMutation.mutateAsync(member.pubkey),
-                    t("settings.invites.removed"),
+                    "Removed community member",
                   )
                 }
               >
@@ -339,19 +317,18 @@ export function CommunityMembersSettingsCard({
         description={t("settings.invites.description")}
       />
 
-      <div className="overflow-hidden rounded-2xl border border-border/70 bg-background/70 shadow-xs">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-background/70 divide-y divide-border/55">
+        <div className="flex min-h-14 items-center px-4 py-3">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Members
+            {members.length > 0 ? (
+              <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                {members.length}
+              </span>
+            ) : null}
+          </h2>
+        </div>
         <div className="space-y-3 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-medium">
-              {t("settings.invites.members")}
-              {members.length > 0 ? (
-                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                  {members.length}
-                </span>
-              ) : null}
-            </h2>
-          </div>
-
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input

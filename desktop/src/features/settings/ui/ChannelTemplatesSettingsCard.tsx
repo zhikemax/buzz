@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import {
   Bot,
   Copy,
@@ -33,8 +34,8 @@ import type {
   CreateChannelTemplateInput,
   UpdateChannelTemplateInput,
 } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
+import { SettingsOptionGroup } from "./SettingsOptionGroup";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 import {
   AlertDialog,
@@ -76,13 +77,11 @@ export function ChannelTemplatesSettingsCard() {
   function handleDuplicate(template: ChannelTemplate) {
     duplicateMutation.mutate(template.id, {
       onSuccess: (created) => {
-        toast.success(t("settings.templates.duplicated", { name: created.name }));
+        toast.success(`Duplicated as "${created.name}"`);
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t("settings.templates.duplicateFailed"),
+          error instanceof Error ? error.message : t("settings.templates.duplicateFailed"),
         );
       },
     });
@@ -92,16 +91,12 @@ export function ChannelTemplatesSettingsCard() {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => {
-        toast.success(
-          t("settings.templates.deleted", { name: deleteTarget.name }),
-        );
+        toast.success(`Deleted "${deleteTarget.name}"`);
         setDeleteTarget(null);
       },
       onError: (error) => {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t("settings.templates.deleteFailed"),
+          error instanceof Error ? error.message : t("settings.templates.deleteFailed"),
         );
       },
     });
@@ -111,7 +106,9 @@ export function ChannelTemplatesSettingsCard() {
     <section className="min-w-0" data-testid="settings-channel-templates">
       <SettingsSectionHeader
         title={t("settings.templates.title")}
-        description={t("settings.templates.description")}
+        description={
+          <>{t("settings.templates.description")}</>
+        }
         action={
           <Button
             onClick={() => setIsCreateOpen(true)}
@@ -126,15 +123,17 @@ export function ChannelTemplatesSettingsCard() {
       />
 
       {templatesQuery.isLoading ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          {t("settings.templates.loading")}
-        </p>
+        <SettingsOptionGroup title={t("settings.templates.groupTitle")}>
+          <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+            Loading templates...
+          </p>
+        </SettingsOptionGroup>
       ) : templates.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border/70 bg-muted/15 px-4 py-8 text-center text-sm text-muted-foreground">
-          {t("settings.templates.empty")}
-        </div>
+        <SettingsOptionGroup title={t("settings.templates.groupTitle")}>
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">{t("settings.templates.empty")}</div>
+        </SettingsOptionGroup>
       ) : (
-        <div className="space-y-1">
+        <SettingsOptionGroup title={t("settings.templates.groupTitle")}>
           {templates.map((template) => (
             <TemplateRow
               key={template.id}
@@ -144,7 +143,7 @@ export function ChannelTemplatesSettingsCard() {
               template={template}
             />
           ))}
-        </div>
+        </SettingsOptionGroup>
       )}
 
       <TemplateFormDialog
@@ -171,13 +170,10 @@ export function ChannelTemplatesSettingsCard() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings.templates.deleteTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("settings.templates.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("settings.templates.deleteBody", {
-                name: deleteTarget?.name ?? "",
-              })}
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -222,31 +218,27 @@ function TemplateRow({
           ) : null}
         </div>
         {template.description ? (
-          <p className="mt-0.5 truncate text-sm font-normal text-muted-foreground">
+          <p
+            className="mt-0.5 truncate text-sm font-normal text-muted-foreground/70"
+            data-settings-subcopy
+          >
             {template.description}
           </p>
         ) : null}
-        <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+        <div
+          className="mt-1 flex items-center gap-3 text-xs text-muted-foreground/70"
+          data-settings-subcopy
+        >
           {personaCount > 0 ? (
             <span className="flex items-center gap-1">
               <Bot className="h-4 w-4" />
-              {t(
-                personaCount === 1
-                  ? "settings.templates.agentOne"
-                  : "settings.templates.agentMany",
-                { count: personaCount },
-              )}
+              {personaCount} {personaCount === 1 ? "agent" : "agents"}
             </span>
           ) : null}
           {teamCount > 0 ? (
             <span className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              {t(
-                teamCount === 1
-                  ? "settings.templates.teamOne"
-                  : "settings.templates.teamMany",
-                { count: teamCount },
-              )}
+              {teamCount} {teamCount === 1 ? "team" : "teams"}
             </span>
           ) : null}
           {template.canvasTemplate ? (
@@ -336,17 +328,17 @@ export function TemplateFormDialog({
       setDescription(template.description ?? "");
       setCanvasTemplate(template.canvasTemplate ?? "");
       setSelectedPersonaIds(template.agents.personas.map((p) => p.personaId));
-      setSelectedTeamIds(template.agents.teams.map((team) => team.teamId));
+      setSelectedTeamIds(template.agents.teams.map((t) => t.teamId));
       const pRuntimes: Record<string, string> = {};
       for (const p of template.agents.personas) {
         if (p.runtime) pRuntimes[p.personaId] = p.runtime;
       }
       setPersonaRuntimes(pRuntimes);
-      const nextTeamRuntimes: Record<string, string> = {};
-      for (const team of template.agents.teams) {
-        if (team.runtime) nextTeamRuntimes[team.teamId] = team.runtime;
+      const tRuntimes: Record<string, string> = {};
+      for (const t of template.agents.teams) {
+        if (t.runtime) tRuntimes[t.teamId] = t.runtime;
       }
-      setTeamRuntimes(nextTeamRuntimes);
+      setTeamRuntimes(tRuntimes);
     } else {
       setName("");
       setDescription("");
@@ -390,16 +382,12 @@ export function TemplateFormDialog({
 
       updateMutation.mutate(input, {
         onSuccess: () => {
-          toast.success(
-            t("settings.templates.updated", { name: trimmedName }),
-          );
+          toast.success(`Updated "${trimmedName}"`);
           onOpenChange(false);
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error
-              ? error.message
-              : t("settings.templates.updateFailed"),
+            error instanceof Error ? error.message : t("settings.templates.updateFailed"),
           );
         },
       });
@@ -413,17 +401,13 @@ export function TemplateFormDialog({
 
       createMutation.mutate(input, {
         onSuccess: (created) => {
-          toast.success(
-            t("settings.templates.created", { name: trimmedName }),
-          );
+          toast.success(`Created "${trimmedName}"`);
           onCreated?.(created);
           onOpenChange(false);
         },
         onError: (error) => {
           toast.error(
-            error instanceof Error
-              ? error.message
-              : t("settings.templates.createFailed"),
+            error instanceof Error ? error.message : t("settings.templates.createFailed"),
           );
         },
       });
@@ -462,15 +446,11 @@ export function TemplateFormDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <ChooserDialogContent
         className="max-w-lg"
-        title={
-          isEditing
-            ? t("settings.templates.editTitle")
-            : t("settings.templates.createTitle")
-        }
+        title={isEditing ? "Edit template" : "Create template"}
         description={
           isEditing
-            ? t("settings.templates.editDescription")
-            : t("settings.templates.createDescription")
+            ? "Update this channel template configuration."
+            : "Save a reusable channel configuration."
         }
         footer={
           <div className="flex w-full items-center justify-end gap-2">
@@ -489,11 +469,11 @@ export function TemplateFormDialog({
             >
               {isPending
                 ? isEditing
-                  ? t("common.saving")
-                  : t("settings.templates.creating")
+                  ? "Saving..."
+                  : "Creating..."
                 : isEditing
-                  ? t("common.save")
-                  : t("common.create")}
+                  ? "Save"
+                  : "Create"}
             </Button>
           </div>
         }
@@ -523,9 +503,9 @@ export function TemplateFormDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="template-description"
             >
-              {t("settings.templates.descriptionLabel")}{" "}
+              Description{" "}
               <span className="font-normal text-muted-foreground">
-                ({t("common.optional")})
+                (optional)
               </span>
             </label>
             <Textarea
@@ -545,9 +525,9 @@ export function TemplateFormDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="template-canvas"
             >
-              {t("settings.templates.canvasLabel")}{" "}
+              Canvas template{" "}
               <span className="font-normal text-muted-foreground">
-                ({t("common.optional")})
+                (optional)
               </span>
             </label>
             <Textarea
@@ -555,12 +535,15 @@ export function TemplateFormDialog({
               disabled={isPending}
               id="template-canvas"
               onChange={(e) => setCanvasTemplate(e.target.value)}
-              placeholder={t("settings.templates.canvasPlaceholder")}
+              placeholder="Canvas content here..."
               rows={4}
               value={canvasTemplate}
             />
-            <p className="text-xs text-muted-foreground">
-              {t("settings.templates.canvasHint")}
+            <p
+              className="text-xs text-muted-foreground/70"
+              data-settings-subcopy
+            >
+              Use {"{channel.name}"} and {"{template.name}"} as placeholders.
             </p>
           </div>
 
@@ -633,10 +616,11 @@ function TemplateTeamSelector({
   return (
     <div className="space-y-3">
       <div>
-        <div className="text-sm font-medium">
-          {t("settings.templates.teamsTitle")}
-        </div>
-        <p className="text-sm font-normal text-muted-foreground">
+        <div className="text-sm font-medium">{t("settings.templates.teamsTitle")}</div>
+        <p
+          className="text-sm font-normal text-muted-foreground/70"
+          data-settings-subcopy
+        >
           {t("settings.templates.teamsHint")}
         </p>
       </div>
@@ -706,25 +690,22 @@ function RuntimeAssignments({
   const selectedPersonas = personas.filter((p) =>
     selectedPersonaIds.includes(p.id),
   );
-  const selectedTeams = teams.filter((team) =>
-    selectedTeamIds.includes(team.id),
-  );
+  const selectedTeams = teams.filter((t) => selectedTeamIds.includes(t.id));
 
   return (
     <div className="space-y-3">
       <div>
-        <div className="text-sm font-medium">
-          {t("settings.templates.runtimesTitle")}
-        </div>
-        <p className="text-sm font-normal text-muted-foreground">
+        <div className="text-sm font-medium">{t("settings.templates.runtimesTitle")}</div>
+        <p
+          className="text-sm font-normal text-muted-foreground/70"
+          data-settings-subcopy
+        >
           {t("settings.templates.runtimesHint")}
         </p>
       </div>
 
       {providersLoading ? (
-        <p className="text-xs text-muted-foreground">
-          {t("settings.templates.discoveringRuntimes")}
-        </p>
+        <p className="text-xs text-muted-foreground">Discovering runtimes...</p>
       ) : providers.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           {t("settings.templates.noRuntimes")}

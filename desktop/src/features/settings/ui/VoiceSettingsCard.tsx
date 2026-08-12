@@ -1,8 +1,8 @@
+import { useT } from "@/shared/i18n";
 import * as React from "react";
 import { ChevronDown, Play, Trash2, Upload, Volume2 } from "lucide-react";
 
 import { invokeTauri } from "@/shared/api/tauri";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
@@ -77,64 +77,58 @@ export function VoiceSettingsCard() {
     return () => {
       disposed = true;
     };
-  }, [t]);
+  }, []);
 
-  const saveEnabled = React.useCallback(
-    async (enabled: boolean) => {
-      setBusy(true);
-      setError(null);
+  const saveEnabled = React.useCallback(async (enabled: boolean) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const saved = await invokeTauri<TtsSettings>("set_tts_enabled", {
+        enabled,
+      });
+      setSettings(saved);
+    } catch (saveError) {
       try {
-        const saved = await invokeTauri<TtsSettings>("set_tts_enabled", {
-          enabled,
-        });
-        setSettings(saved);
-      } catch (saveError) {
-        try {
-          const state = await invokeTauri<{ tts_enabled: boolean }>(
-            "get_huddle_state",
-          );
-          setSettings((current) =>
-            current
-              ? { ...current, agentTextToSpeech: state.tts_enabled }
-              : current,
-          );
-        } catch {
-          // Keep the last confirmed state when native reconciliation is
-          // unavailable; the visible save error makes the failure explicit.
-        }
-        setError(
-          saveError instanceof Error
-            ? saveError.message
-            : t("settings.voice.saveFailed"),
+        const state = await invokeTauri<{ tts_enabled: boolean }>(
+          "get_huddle_state",
         );
-      } finally {
-        setBusy(false);
+        setSettings((current) =>
+          current
+            ? { ...current, agentTextToSpeech: state.tts_enabled }
+            : current,
+        );
+      } catch {
+        // Keep the last confirmed state when native reconciliation is
+        // unavailable; the visible save error makes the failure explicit.
       }
-    },
-    [t],
-  );
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : t("settings.voice.saveFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
-  const savePocketVoice = React.useCallback(
-    async (voiceKey: string) => {
-      setBusy(true);
-      setError(null);
-      try {
-        const saved = await invokeTauri<TtsSettings>("set_pocket_voice", {
-          voiceKey,
-        });
-        setSettings(saved);
-      } catch (saveError) {
-        setError(
-          saveError instanceof Error
-            ? saveError.message
-            : t("settings.voice.saveFailed"),
-        );
-      } finally {
-        setBusy(false);
-      }
-    },
-    [t],
-  );
+  const savePocketVoice = React.useCallback(async (voiceKey: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const saved = await invokeTauri<TtsSettings>("set_pocket_voice", {
+        voiceKey,
+      });
+      setSettings(saved);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : t("settings.voice.saveFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
   const importPocketVoice = React.useCallback(async () => {
     setBusy(true);
@@ -156,32 +150,29 @@ export function VoiceSettingsCard() {
     } finally {
       setBusy(false);
     }
-  }, [t]);
+  }, []);
 
-  const deletePocketVoice = React.useCallback(
-    async (voiceKey: string) => {
-      setBusy(true);
-      setError(null);
-      try {
-        const result = await invokeTauri<TtsVoiceMutation>(
-          "delete_pocket_voice",
-          { voiceKey },
-        );
-        setSettings(result.settings);
-        setRegistry(result.registry);
-        setDeleteCandidate(null);
-      } catch (deleteError) {
-        setError(
-          deleteError instanceof Error
-            ? deleteError.message
-            : t("settings.voice.deleteFailed"),
-        );
-      } finally {
-        setBusy(false);
-      }
-    },
-    [t],
-  );
+  const deletePocketVoice = React.useCallback(async (voiceKey: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await invokeTauri<TtsVoiceMutation>(
+        "delete_pocket_voice",
+        { voiceKey },
+      );
+      setSettings(result.settings);
+      setRegistry(result.registry);
+      setDeleteCandidate(null);
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : t("settings.voice.deleteFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, []);
 
   const voices = voicesForBackend(registry, "pocket");
   const selectedVoice = selectedVoiceForBackend(
@@ -190,7 +181,6 @@ export function VoiceSettingsCard() {
   );
   const enabled = settings?.agentTextToSpeech ?? true;
   const controlsDisabled = !settings || busy || !enabled;
-  const selectedName = selectedVoice?.displayName ?? "Mary";
 
   return (
     <section className="min-w-0" data-testid="settings-voice">
@@ -200,7 +190,7 @@ export function VoiceSettingsCard() {
       />
 
       <div className="flex flex-col gap-4">
-        <SettingsOptionGroup>
+        <SettingsOptionGroup title={t("settings.voice.playback")}>
           <SettingsOptionRow>
             <div className="min-w-0">
               <label
@@ -209,7 +199,10 @@ export function VoiceSettingsCard() {
               >
                 {t("settings.voice.agentTts")}
               </label>
-              <p className="text-sm text-muted-foreground">
+              <p
+                className="text-sm text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {t("settings.voice.agentTtsHint")}
               </p>
             </div>
@@ -233,13 +226,14 @@ export function VoiceSettingsCard() {
           )}
           data-testid="pocket-voice-controls"
         >
-          <SettingsOptionGroup>
+          <SettingsOptionGroup title={t("settings.voice.title")}>
             <SettingsOptionRow>
               <div className="min-w-0">
-                <p className="text-sm font-medium">
-                  {t("settings.voice.pocketVoice")}
-                </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm font-medium">{t("settings.voice.pocketVoice")}</p>
+                <p
+                  className="text-sm text-muted-foreground/70"
+                  data-settings-subcopy
+                >
                   {t("settings.voice.pocketVoiceHint")}
                 </p>
               </div>
@@ -248,9 +242,7 @@ export function VoiceSettingsCard() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      aria-label={t("settings.voice.pocketVoiceAria", {
-                        name: selectedName,
-                      })}
+                      aria-label={`Pocket TTS voice: ${selectedVoice?.displayName ?? "Mary"}`}
                       className="min-w-32 justify-between"
                       data-testid="pocket-voice-selector"
                       disabled={controlsDisabled}
@@ -284,9 +276,7 @@ export function VoiceSettingsCard() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button
-                  aria-label={t("settings.voice.previewAria", {
-                    name: selectedName,
-                  })}
+                  aria-label={`Preview ${selectedVoice?.displayName ?? "Mary"}`}
                   data-testid="pocket-voice-preview"
                   disabled={controlsDisabled || previewing || !selectedVoice}
                   onClick={() => {
@@ -313,7 +303,7 @@ export function VoiceSettingsCard() {
                   ) : (
                     <Play className="h-4 w-4" />
                   )}
-                  {t("settings.voice.preview")}
+                  Preview
                 </Button>
                 <Button
                   data-testid="pocket-voice-import"
@@ -327,9 +317,7 @@ export function VoiceSettingsCard() {
                 </Button>
                 {selectedVoice?.key.startsWith("pocket:imported:") && (
                   <Button
-                    aria-label={t("settings.voice.deleteAria", {
-                      name: selectedVoice.displayName,
-                    })}
+                    aria-label={`Delete ${selectedVoice.displayName}`}
                     data-testid="pocket-voice-delete"
                     disabled={controlsDisabled}
                     onClick={() => setDeleteCandidate(selectedVoice)}
@@ -362,24 +350,17 @@ export function VoiceSettingsCard() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings.voice.deleteTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("settings.voice.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteCandidate
-                ? t("settings.voice.deleteNamed", {
-                    name: deleteCandidate.displayName,
-                  })
-                : t("settings.voice.deleteGeneric")}
-              {selectedVoice?.key === deleteCandidate?.key
-                ? t("settings.voice.deleteFallbackMary")
-                : null}
+                ? `${deleteCandidate.displayName} and its local audio file will be removed.`
+                : "This imported voice and its local audio file will be removed."}
+              {selectedVoice?.key === deleteCandidate?.key &&
+                " Mary will be selected instead."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>
-              {t("common.cancel")}
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               data-testid="confirm-pocket-voice-delete"

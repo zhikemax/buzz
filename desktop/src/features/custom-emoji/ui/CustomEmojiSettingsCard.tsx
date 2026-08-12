@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { ImagePlus, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -13,7 +14,6 @@ import {
   suggestShortcodeFromFilename,
 } from "@/shared/api/customEmoji";
 import { pickAndUploadMedia } from "@/shared/api/tauri";
-import { useT } from "@/shared/i18n";
 import { rewriteRelayUrl } from "@/shared/lib/mediaUrl";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -23,8 +23,8 @@ import { SettingsSectionHeader } from "@/features/settings/ui/SettingsSectionHea
 /**
  * Custom emoji management (NIP-30, kind:30030). Each member owns their own set:
  * adding uploads an image and republishes the caller's own 30030; removing only
- * touches the caller's own set. So this card edits "My emoji" — the only set the
- * caller can publish — and shows the community palette (the read-only union of
+ * touches the caller's own set. So this card edits "My emoji" �?the only set the
+ * caller can publish �?and shows the community palette (the read-only union of
  * every member's set) separately, since a member cannot remove someone else's
  * emoji. When shortcodes collide across members, the palette shows one
  * deterministic winner (see `unionCustomEmoji`).
@@ -46,7 +46,7 @@ export function CustomEmojiSettingsCard() {
 
   const normalized = normalizeShortcode(name);
   const nameInvalid = name.trim().length > 0 && normalized === null;
-  // "Replace" only applies to MY set — that's the set the upload will rewrite.
+  // "Replace" only applies to MY set �?that's the set the upload will rewrite.
   const ownDuplicate =
     normalized !== null && own.some((e) => e.shortcode === normalized);
   const canSubmit =
@@ -64,7 +64,7 @@ export function CustomEmojiSettingsCard() {
         return;
       }
       if (!blob.type.startsWith("image/")) {
-        toast.error(t("settings.emoji.chooseImageFile"));
+        toast.error("Choose an image file for custom emoji.");
         return;
       }
       setPendingUpload({ url: blob.url, filename: blob.filename ?? null });
@@ -83,7 +83,7 @@ export function CustomEmojiSettingsCard() {
     } finally {
       setIsUploading(false);
     }
-  }, [name, t]);
+  }, [name]);
 
   const handleAdd = React.useCallback(async () => {
     if (normalized === null || pendingUpload === null) return;
@@ -94,13 +94,13 @@ export function CustomEmojiSettingsCard() {
       });
       setName("");
       setPendingUpload(null);
-      toast.success(t("settings.emoji.added", { name: stored }));
+      toast.success(`Added :${stored}:`);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : t("settings.emoji.addFailed"),
       );
     }
-  }, [normalized, pendingUpload, setEmoji, t]);
+  }, [normalized, pendingUpload, setEmoji]);
 
   const handleReset = React.useCallback(() => {
     setName("");
@@ -111,16 +111,14 @@ export function CustomEmojiSettingsCard() {
     async (shortcode: string) => {
       try {
         await removeEmoji.mutateAsync(shortcode);
-        toast.success(t("settings.emoji.removed", { name: shortcode }));
+        toast.success(`Removed :${shortcode}:`);
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t("settings.emoji.removeFailed"),
+          error instanceof Error ? error.message : t("settings.emoji.removeFailed"),
         );
       }
     },
-    [removeEmoji, t],
+    [removeEmoji],
   );
 
   // Community emoji owned by someone else (so the caller can't remove them).
@@ -131,7 +129,12 @@ export function CustomEmojiSettingsCard() {
     <section className="min-w-0" data-testid="settings-custom-emoji">
       <SettingsSectionHeader
         title={t("settings.emoji.title")}
-        description={t("settings.emoji.description")}
+        description={
+          <>
+            Add your own custom emoji for everyone on this relay to use. Type{" "}
+            <code>:name:</code> in messages and reactions.
+          </>
+        }
       />
 
       <div className="space-y-6">
@@ -142,15 +145,14 @@ export function CustomEmojiSettingsCard() {
             if (canSubmit) void handleAdd();
           }}
         >
-          <SettingsOptionGroup>
+          <SettingsOptionGroup title={t("settings.emoji.addGroup")}>
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
               <div className="min-w-0 flex-[1_1_22rem]">
-                <h4 className="text-sm font-medium">
-                  {t("settings.emoji.uploadTitle")}
-                </h4>
-                <p className="text-sm font-normal text-muted-foreground">
-                  {t("settings.emoji.uploadHint")}
-                </p>
+                <h4 className="text-sm font-medium">{t("settings.emoji.uploadTitle")}</h4>
+                <p
+                  className="text-sm font-normal text-muted-foreground/70"
+                  data-settings-subcopy
+                >{t("settings.emoji.uploadHint")}</p>
               </div>
               <div className="flex min-w-0 flex-[1_1_16rem] items-center gap-3">
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border bg-background">
@@ -190,10 +192,11 @@ export function CustomEmojiSettingsCard() {
 
             <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 text-sm">
               <div className="min-w-0 flex-[1_1_22rem]">
-                <h4 className="text-sm font-medium">
-                  {t("settings.emoji.nameTitle")}
-                </h4>
-                <p className="text-sm font-normal text-muted-foreground">
+                <h4 className="text-sm font-medium">{t("settings.emoji.nameTitle")}</h4>
+                <p
+                  className="text-sm font-normal text-muted-foreground/70"
+                  data-settings-subcopy
+                >
                   {t("settings.emoji.nameHint")}
                 </p>
               </div>
@@ -222,12 +225,17 @@ export function CustomEmojiSettingsCard() {
                     {t("settings.emoji.nameInvalid")}
                   </p>
                 ) : pendingUpload === null ? (
-                  <p className="text-sm font-normal text-muted-foreground">
-                    {t("settings.emoji.chooseImageFirst")}
-                  </p>
+                  <p
+                    className="text-sm font-normal text-muted-foreground/70"
+                    data-settings-subcopy
+                  >{t("settings.emoji.chooseImageFirst")}</p>
                 ) : ownDuplicate ? (
-                  <p className="text-sm font-normal text-muted-foreground">
-                    {t("settings.emoji.replaceHint", { name: normalized })}
+                  <p
+                    className="text-sm font-normal text-muted-foreground/70"
+                    data-settings-subcopy
+                  >
+                    You already have :{normalized}: �?saving will replace its
+                    image.
                   </p>
                 ) : null}
               </div>
@@ -249,34 +257,27 @@ export function CustomEmojiSettingsCard() {
                 data-testid="custom-emoji-add"
                 disabled={!canSubmit}
               >
-                {setEmoji.isPending
-                  ? t("settings.emoji.saving")
-                  : t("settings.emoji.save")}
+                {setEmoji.isPending ? t("settings.emoji.saving") : t("settings.emoji.save")}
               </Button>
             </div>
           </SettingsOptionGroup>
         </form>
 
-        <div className="space-y-3" data-testid="custom-emoji-mine">
-          <h2 className="text-lg font-semibold tracking-tight">
-            {own.length > 0
-              ? t("settings.emoji.mineCount", { count: own.length })
-              : t("settings.emoji.mine")}
-          </h2>
+        <div data-testid="custom-emoji-mine">
           {ownLoading ? (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={t("settings.emoji.mine")}>
               <div className="px-4 py-3 text-sm font-normal text-muted-foreground">
                 {t("settings.emoji.loading")}
               </div>
             </SettingsOptionGroup>
           ) : own.length === 0 ? (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={t("settings.emoji.mine")}>
               <div className="px-4 py-3 text-sm font-normal text-muted-foreground">
                 {t("settings.emoji.mineEmpty")}
               </div>
             </SettingsOptionGroup>
           ) : (
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={`My emoji (${own.length})`}>
               {own.map((e) => (
                 <div
                   key={e.shortcode}
@@ -292,9 +293,7 @@ export function CustomEmojiSettingsCard() {
                     :{e.shortcode}:
                   </span>
                   <Button
-                    aria-label={t("settings.emoji.removeAria", {
-                      name: e.shortcode,
-                    })}
+                    aria-label={`Remove :${e.shortcode}:`}
                     size="icon"
                     variant="ghost"
                     onClick={() => void handleRemove(e.shortcode)}
@@ -309,14 +308,11 @@ export function CustomEmojiSettingsCard() {
         </div>
 
         {!communityLoading && othersEmoji.length > 0 ? (
-          <div className="space-y-3" data-testid="custom-emoji-community">
-            <h2 className="text-lg font-semibold tracking-tight">
-              {t("settings.emoji.community", { count: othersEmoji.length })}
-            </h2>
-            <p className="text-sm font-normal text-muted-foreground">
-              {t("settings.emoji.communityHint")}
-            </p>
-            <SettingsOptionGroup>
+          <div data-testid="custom-emoji-community">
+            <SettingsOptionGroup
+              description={t("settings.emoji.communityHint")}
+              title={`Community emoji (${othersEmoji.length})`}
+            >
               {othersEmoji.map((e) => (
                 <div
                   key={e.shortcode}

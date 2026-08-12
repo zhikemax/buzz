@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -27,8 +28,8 @@ import type {
   MeshModelOption,
   MeshNodeStatus,
 } from "@/shared/api/tauriMesh";
+import { SettingsOptionGroup } from "@/features/settings/ui/SettingsOptionGroup";
 import { SettingsSectionHeader } from "@/features/settings/ui/SettingsSectionHeader";
-import { useT, type MessageKey } from "@/shared/i18n";
 import { classifyModelRef } from "../classifyModelRef";
 import {
   downloadPercent,
@@ -246,175 +247,175 @@ export function MeshComputeSettingsCard() {
         <DownloadProgressBar progress={downloadProgress} />
       ) : null}
 
-      <div className="space-y-5">
-        <div className="flex min-w-0 items-start justify-between gap-6">
-          <div className="min-w-0">
-            <label
-              className="text-sm font-medium"
-              htmlFor="mesh-share-compute-toggle"
-            >
-              {t("settings.compute.shareThisMachine")}
-            </label>
-            {!isSharing ? (
-              <StatusLine
-                isConsuming={isConsuming}
-                pendingAction={pendingAction}
-                status={status}
-              />
-            ) : null}
-          </div>
-          <Switch
-            checked={isSharing}
-            data-testid="mesh-share-compute-toggle"
-            disabled={
-              // A serve node can always be stopped. An off node or consuming
-              // client can start sharing once a valid local model is selected.
-              // Unknown occupants remain protected from replacement.
-              actionInFlight ||
-              (isSharing
-                ? false
-                : slotOccupied && !isConsuming
-                  ? true
-                  : !canStart)
-            }
-            id="mesh-share-compute-toggle"
-            onCheckedChange={handleToggle}
-          />
-        </div>
-
-        <MeshModelPicker
-          catalog={catalog}
-          disabled={controlsDisabled}
-          installedModels={installedModels}
-          isCustomModelEditing={isCustomModelEditing}
-          model={modelInput}
-          onCustomModelEditingChange={setIsCustomModelEditing}
-          onModelChange={(next) => {
-            setModelInput(next);
-            writeDraft(MODEL_DRAFT_STORAGE_KEY, next);
-          }}
-        />
-
-        <div className="pt-3">
-          <button
-            aria-expanded={advancedOpen}
-            className="inline-flex h-9 items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-            data-testid="mesh-share-compute-advanced-toggle"
-            onClick={() => setAdvancedOpen((current) => !current)}
-            type="button"
-          >
-            <span>{t("settings.compute.advanced")}</span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out",
-                advancedOpen && "rotate-180",
-              )}
-            />
-          </button>
-          {advancedOpen ? (
-            <div className="mt-3 space-y-1.5">
-              <label className="text-sm font-medium" htmlFor="mesh-vram">
-                {t("settings.compute.maxVram")}
+      <SettingsOptionGroup title={t("settings.compute.sharing")}>
+        <div className="space-y-5 px-4 py-3">
+          <div className="flex min-w-0 items-start justify-between gap-6">
+            <div className="min-w-0">
+              <label
+                className="text-sm font-medium"
+                htmlFor="mesh-share-compute-toggle"
+              >
+                {t("settings.compute.shareThisMachine")}
               </label>
-              <AgentConfigTextInput
-                data-testid="mesh-share-compute-vram"
-                disabled={controlsDisabled}
-                id="mesh-vram"
-                inputMode="decimal"
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setMaxVramGb(next);
-                  writeDraft(MAX_VRAM_DRAFT_STORAGE_KEY, next);
-                }}
-                placeholder={t("settings.compute.noLimit")}
-                usePersonaInputStyle
-                value={maxVramGb}
-              />
-              {status?.consoleUrl ? (
-                <p className="text-sm font-normal text-muted-foreground">
-                  {t("settings.compute.debugConsole")}{" "}
-                  <a
-                    className="underline"
-                    href={status.consoleUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {status.consoleUrl}
-                  </a>
-                </p>
+              {!isSharing ? (
+                <StatusLine
+                  isConsuming={isConsuming}
+                  pendingAction={pendingAction}
+                  status={status}
+                />
               ) : null}
             </div>
-          ) : null}
-        </div>
-
-        <AnimatePresence initial={false}>
-          {showSharingControls ? (
-            <motion.div
-              animate={{ height: "auto", opacity: 1 }}
-              className="overflow-hidden"
-              data-testid="mesh-share-compute-options-motion"
-              exit={{ height: 0, opacity: 0 }}
-              initial={{ height: 0, opacity: 0 }}
-              key="mesh-share-compute-options"
-              transition={
-                shouldReduceMotion
-                  ? { duration: 0 }
-                  : SHARE_COMPUTE_REVEAL_TRANSITION
+            <Switch
+              checked={isSharing}
+              data-testid="mesh-share-compute-toggle"
+              disabled={
+                // A serve node can always be stopped. An off node or consuming
+                // client can start sharing once a valid local model is selected.
+                // Unknown occupants remain protected from replacement.
+                actionInFlight ||
+                (isSharing
+                  ? false
+                  : slotOccupied && !isConsuming
+                    ? true
+                    : !canStart)
               }
+              id="mesh-share-compute-toggle"
+              onCheckedChange={handleToggle}
+            />
+          </div>
+
+          <MeshModelPicker
+            catalog={catalog}
+            disabled={controlsDisabled}
+            installedModels={installedModels}
+            isCustomModelEditing={isCustomModelEditing}
+            model={modelInput}
+            onCustomModelEditingChange={setIsCustomModelEditing}
+            onModelChange={(next) => {
+              setModelInput(next);
+              writeDraft(MODEL_DRAFT_STORAGE_KEY, next);
+            }}
+          />
+
+          <div className="pt-3">
+            <button
+              aria-expanded={advancedOpen}
+              className="inline-flex h-9 items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              data-testid="mesh-share-compute-advanced-toggle"
+              onClick={() => setAdvancedOpen((current) => !current)}
+              type="button"
             >
-              <section
-                className="space-y-1"
-                data-testid="mesh-share-compute-sharing-status"
+              <span>{t("settings.compute.advanced")}</span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out",
+                  advancedOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {advancedOpen ? (
+              <div className="mt-3 space-y-1.5">
+                <label className="text-sm font-medium" htmlFor="mesh-vram">
+                  {t("settings.compute.maxVram")}
+                </label>
+                <AgentConfigTextInput
+                  data-testid="mesh-share-compute-vram"
+                  disabled={controlsDisabled}
+                  id="mesh-vram"
+                  inputMode="decimal"
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setMaxVramGb(next);
+                    writeDraft(MAX_VRAM_DRAFT_STORAGE_KEY, next);
+                  }}
+                  placeholder={t("settings.compute.noLimit")}
+                  usePersonaInputStyle
+                  value={maxVramGb}
+                />
+                {status?.consoleUrl ? (
+                  <p className="text-sm font-normal text-muted-foreground">
+                    Debug console:{" "}
+                    <a
+                      className="underline"
+                      href={status.consoleUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {status.consoleUrl}
+                    </a>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showSharingControls ? (
+              <motion.div
+                animate={{ height: "auto", opacity: 1 }}
+                className="overflow-hidden"
+                data-testid="mesh-share-compute-options-motion"
+                exit={{ height: 0, opacity: 0 }}
+                initial={{ height: 0, opacity: 0 }}
+                key="mesh-share-compute-options"
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : SHARE_COMPUTE_REVEAL_TRANSITION
+                }
               >
-                <h3 className="text-sm font-medium">
-                  {t("settings.compute.sharing")}
-                </h3>
-                <div className="space-y-1 rounded-lg bg-muted/30 px-3 py-2">
-                  <StatusLine
-                    isConsuming={isConsuming}
-                    omitSharingVerb
-                    pendingAction={pendingAction}
-                    status={status}
-                  />
-                  {servingIndicator.show && servingIndicator.labelKey ? (
-                    <p
-                      className={
-                        servingIndicator.hasRemoteConsumers
-                          ? "text-2xs text-emerald-600 dark:text-emerald-400"
-                          : "text-2xs text-muted-foreground"
-                      }
-                      data-testid="mesh-serving-usage"
-                      title={
-                        servingIndicator.detailKey
-                          ? t(
+                <section
+                  className="space-y-1"
+                  data-testid="mesh-share-compute-sharing-status"
+                >
+                  <h3 className="text-sm font-medium">Status</h3>
+                  <div className="space-y-1 rounded-lg bg-muted/30 px-3 py-2">
+                    <StatusLine
+                      isConsuming={isConsuming}
+                      omitSharingVerb
+                      pendingAction={pendingAction}
+                      status={status}
+                    />
+                    {servingIndicator.show && servingIndicator.labelKey ? (
+                      <p
+                        className={
+                          servingIndicator.hasRemoteConsumers
+                            ? "text-2xs text-emerald-600 dark:text-emerald-400"
+                            : "text-2xs text-muted-foreground"
+                        }
+                        data-testid="mesh-serving-usage"
+                        title={
+                          servingIndicator.detailKey
+                            ? t(
+                                servingIndicator.detailKey,
+                                servingIndicator.detailParams,
+                              )
+                            : undefined
+                        }
+                      >
+                        {t(
+                          servingIndicator.labelKey,
+                          servingIndicator.labelParams,
+                        )}
+                        {servingIndicator.detailKey ? (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            ·{" "}
+                            {t(
                               servingIndicator.detailKey,
                               servingIndicator.detailParams,
-                            )
-                          : undefined
-                      }
-                    >
-                      {t(
-                        servingIndicator.labelKey,
-                        servingIndicator.labelParams,
-                      )}
-                      {servingIndicator.detailKey ? (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          ·{" "}
-                          {t(
-                            servingIndicator.detailKey,
-                            servingIndicator.detailParams,
-                          )}
-                        </span>
-                      ) : null}
-                    </p>
-                  ) : null}
-                </div>
-              </section>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
+                            )}
+                          </span>
+                        ) : null}
+                      </p>
+                    ) : null}
+                  </div>
+                </section>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      </SettingsOptionGroup>
     </section>
   );
 }
@@ -434,7 +435,6 @@ function DownloadProgressBar({
 }: {
   progress: NonNullable<ReturnType<typeof useMeshDownloadProgress>["progress"]>;
 }) {
-  const t = useT();
   const percent = downloadPercent(progress);
   const bytes = formatDownloadBytes(progress);
   return (
@@ -444,9 +444,7 @@ function DownloadProgressBar({
     >
       <div className="flex items-baseline justify-between gap-2 text-sm">
         <span className="min-w-0 truncate font-medium">
-          {progress.status === "preparing"
-            ? t("settings.compute.preparing")
-            : t("settings.compute.downloading")}{" "}
+          {progress.status === "preparing" ? "Preparing" : "Downloading"}{" "}
           {progress.label}
         </span>
         <span className="shrink-0 text-muted-foreground">
@@ -471,11 +469,11 @@ function DownloadProgressBar({
   );
 }
 
-const FIT_LABEL_KEY: Record<MeshCatalogEntry["fit"], MessageKey> = {
-  comfortable: "settings.compute.fit.comfortable",
-  tight: "settings.compute.fit.tight",
-  tradeoff: "settings.compute.fit.tradeoff",
-  too_large: "settings.compute.fit.tooLarge",
+const FIT_LABEL: Record<MeshCatalogEntry["fit"], string> = {
+  comfortable: "Fits well",
+  tight: "Tight fit",
+  tradeoff: "Trade-off",
+  too_large: "Too large",
 };
 
 const FIT_CLASS: Record<MeshCatalogEntry["fit"], string> = {
@@ -540,12 +538,9 @@ function MeshModelPicker({
     return [
       ...catalogOptions,
       ...localOptions,
-      {
-        label: t("settings.compute.customModel"),
-        value: CUSTOM_MODEL_DROPDOWN_VALUE,
-      },
+      { label: t("settings.compute.customModel"), value: CUSTOM_MODEL_DROPDOWN_VALUE },
     ];
-  }, [catalog?.entries, installedModels, t]);
+  }, [catalog?.entries, installedModels]);
   const knownModel = options.some((option) => option.value === model.trim());
   const showCustomModelInput =
     isCustomModelEditing || (model.trim().length > 0 && !knownModel);
@@ -596,18 +591,14 @@ function MeshModelPicker({
           value={model}
         />
       ) : null}
-      <p className="text-sm font-normal text-muted-foreground">
+      <p
+        className="text-sm font-normal text-muted-foreground/70"
+        data-settings-subcopy
+      >
         {catalog
-          ? t("settings.compute.recommendedForMachine", {
-              gpuDetail: catalog.gpuName
-                ? t("settings.compute.gpuDetail", {
-                    gpuName: catalog.gpuName,
-                    vram: catalog.vramDisplay,
-                  })
-                : "",
-            })
-          : t("settings.compute.chooseModelHint")}{" "}
-        {t("settings.compute.downloadHint")}
+          ? `Recommended for this machine${catalog.gpuName ? ` (${catalog.gpuName}, ${catalog.vramDisplay} AI memory)` : ""}.`
+          : "Choose a model or enter a model reference or local file."}{" "}
+        Buzz downloads remote models when sharing starts.
       </p>
     </div>
   );
@@ -620,7 +611,7 @@ function MeshModelOptionLabel({ entry }: { entry: MeshCatalogEntry }) {
       <span className="min-w-0 flex-1 truncate font-medium">{entry.name}</span>
       <span className="shrink-0 text-muted-foreground">{entry.size}</span>
       <span className={cn("shrink-0", FIT_CLASS[entry.fit])}>
-        {t(FIT_LABEL_KEY[entry.fit])}
+        {FIT_LABEL[entry.fit]}
       </span>
       {entry.recommended ? (
         <span className="shrink-0 rounded bg-primary/15 px-1.5 text-2xs font-medium text-primary">
@@ -656,35 +647,21 @@ function StatusLine({
 }) {
   const t = useT();
   if (pendingAction === "start") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.compute.starting")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("settings.compute.starting")}</p>;
   }
   if (pendingAction === "stop") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.compute.stopping")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("settings.compute.stopping")}</p>;
   }
   // A client-mode runtime owns the single slot: this machine is consuming a
   // peer's compute, not sharing. The switch stays off, but remains available
   // so the member can replace the client with a serving runtime.
   if (isConsuming) {
     return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.compute.consumingHint")}
-      </p>
+      <p className="text-sm text-muted-foreground">{t("settings.compute.consumingHint")}</p>
     );
   }
   if (!status) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.compute.checkingStatus")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("settings.compute.checkingStatus")}</p>;
   }
   const { state, health, modelId, modelName } = status;
   const modelLabel = displayModel ?? modelName ?? modelId ?? "";
@@ -696,58 +673,40 @@ function StatusLine({
     const reason =
       health.status === "degraded" || health.status === "failed"
         ? health.reason
-        : t("settings.compute.starting");
+        : "Starting…";
     return <p className="text-sm text-muted-foreground">{reason}</p>;
   }
   if (state === "running") {
     if (health.status === "failed") {
       return (
         <p className="text-sm text-destructive">
-          {t("settings.compute.loadFailed", { reason: health.reason })}
+          Couldn't load: {health.reason}
         </p>
       );
     }
     if (health.status === "degraded") {
       return (
         <p className="text-sm text-amber-600 dark:text-amber-400">
-          {t("settings.compute.activeDegraded", {
-            modelSuffix: modelLabel
-              ? t("settings.compute.modelSuffix", { model: modelLabel })
-              : "",
-            reason: health.reason,
-          })}
-        </p>
-      );
-    }
-    if (omitSharingVerb) {
-      return (
-        <p className="text-sm text-muted-foreground">
-          {modelLabel
-            ? t("settings.compute.sharingModelOnly", { model: modelLabel })
-            : t("settings.compute.sharingMembersOnly")}
+          Active{modelLabel ? ` — ${modelLabel}` : ""}. {health.reason}
         </p>
       );
     }
     return (
       <p className="text-sm text-muted-foreground">
-        {modelLabel
-          ? t("settings.compute.sharingNamed", { model: modelLabel })
-          : t("settings.compute.sharingUnnamed")}
+        {omitSharingVerb ? "" : "Sharing"}
+        {modelLabel ? `${omitSharingVerb ? "" : " "}${modelLabel}` : ""} with
+        relay members.
       </p>
     );
   }
   if (state === "stopping") {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.compute.stopping")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("settings.compute.stopping")}</p>;
   }
   if (state === "failed") {
     const reason =
       health.status === "failed" || health.status === "degraded"
         ? health.reason
-        : t("settings.compute.startFailed");
+        : "Couldn't start.";
     return <p className="text-sm text-destructive">{reason}</p>;
   }
   return null;

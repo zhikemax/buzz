@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -15,7 +16,6 @@ import {
   confirmPairingSas,
   startPairing,
 } from "@/shared/api/tauri";
-import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { StyledQrCode } from "@/shared/ui/styled-qr-code";
@@ -35,7 +35,7 @@ type PairingStep =
 
 const PAIRING_CODE_DIGIT_POSITIONS = [0, 1, 2, 3, 4, 5] as const;
 
-function pairingErrorMessage(error: unknown, t: TranslateFn) {
+function pairingErrorMessage(error: unknown) {
   const message =
     error instanceof Error
       ? error.message
@@ -44,10 +44,10 @@ function pairingErrorMessage(error: unknown, t: TranslateFn) {
         : "";
 
   if (message.toLowerCase().includes("timeout waiting for eose")) {
-    return t("settings.mobile.timeout");
+    return "Pairing took too long. Try again.";
   }
 
-  return message || t("settings.mobile.startFailed");
+  return message || "We couldn't start pairing. Try again.";
 }
 
 function isPairingSessionTimeout(message: string) {
@@ -123,10 +123,11 @@ function PairingSteps({ step }: { step: PairingStep }) {
           testId="mobile-pairing-scan-step-indicator"
         />
         <div className="min-w-0 pt-0.5">
-          <p className="text-base font-medium">
-            {t("settings.mobile.stepScanTitle")}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground/80">
+          <p className="text-base font-medium">{t("settings.mobile.stepScanTitle")}</p>
+          <p
+            className="mt-1 text-sm text-muted-foreground/70"
+            data-settings-subcopy
+          >
             {t("settings.mobile.stepScanDesc")}
           </p>
         </div>
@@ -139,12 +140,11 @@ function PairingSteps({ step }: { step: PairingStep }) {
           testId="mobile-pairing-confirm-step-indicator"
         />
         <div className="min-w-0 pt-0.5">
-          <p className="text-base font-medium">
-            {t("settings.mobile.stepConfirmTitle")}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground/80">
-            {t("settings.mobile.stepConfirmDesc")}
-          </p>
+          <p className="text-base font-medium">{t("settings.mobile.stepConfirmTitle")}</p>
+          <p
+            className="mt-1 text-sm text-muted-foreground/70"
+            data-settings-subcopy
+          >{t("settings.mobile.stepConfirmDesc")}</p>
         </div>
       </li>
 
@@ -159,14 +159,15 @@ function PairingSteps({ step }: { step: PairingStep }) {
         />
         <div aria-live="polite" className="min-w-0 pt-0.5">
           <p className="text-base font-medium">
-            {isPaired
-              ? t("settings.mobile.stepDoneTitle")
-              : t("settings.mobile.stepFinalTitle")}
+            {isPaired ? "Paired" : "Pair your mobile app"}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground/80">
+          <p
+            className="mt-1 text-sm text-muted-foreground/70"
+            data-settings-subcopy
+          >
             {isPaired
-              ? t("settings.mobile.stepDoneDesc")
-              : t("settings.mobile.stepFinalDesc")}
+              ? "Your mobile app is now connected to this relay."
+              : "Your mobile app will connect after you confirm the code."}
           </p>
         </div>
       </li>
@@ -201,9 +202,7 @@ function PairingCodeConfirmation({
         className="flex w-full self-center justify-center gap-[6px]"
         data-testid="pairing-sas-code"
       >
-        <legend className="sr-only">
-          {t("settings.mobile.confirmationCodeLegend", { code: formattedCode })}
-        </legend>
+        <legend className="sr-only">Confirmation code {formattedCode}</legend>
         {PAIRING_CODE_DIGIT_POSITIONS.map((position) => (
           <span
             aria-hidden="true"
@@ -282,12 +281,12 @@ export function MobilePairingCard({
       (err) => {
         if (requestId === requestIdRef.current) {
           pairingActiveRef.current = false;
-          setError(pairingErrorMessage(err, t));
+          setError(pairingErrorMessage(err));
           setStep("error");
         }
       },
     );
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     ++requestIdRef.current;
@@ -327,9 +326,7 @@ export function MobilePairingCard({
     listen<{ reason: string }>("pairing-aborted", (event) => {
       if (!cancelled && pairingActiveRef.current) {
         pairingActiveRef.current = false;
-        setError(
-          t("settings.mobile.stopped", { reason: event.payload.reason }),
-        );
+        setError(`Pairing stopped: ${event.payload.reason}`);
         setStep("error");
       }
     }).then((fn) => {
@@ -348,7 +345,7 @@ export function MobilePairingCard({
           return;
         }
 
-        setError(pairingErrorMessage(event.payload.message, t));
+        setError(pairingErrorMessage(event.payload.message));
         setStep("error");
       }
     }).then((fn) => {
@@ -365,12 +362,12 @@ export function MobilePairingCard({
         cancelPairing().catch(() => {});
       }
     };
-  }, [currentPubkey, t]);
+  }, [currentPubkey]);
 
   async function handleCopy() {
     if (!qrUri) return;
     await writeTextToClipboard(qrUri);
-    toast.success(t("profile.copiedClipboard"));
+    toast.success("Copied to clipboard");
   }
 
   async function handleConfirmSas() {
@@ -379,7 +376,9 @@ export function MobilePairingCard({
       await confirmPairingSas();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : t("settings.mobile.sendFailed"),
+        err instanceof Error
+          ? err.message
+          : t("settings.mobile.sendFailed"),
       );
       pairingActiveRef.current = false;
       setStep("error");
@@ -389,7 +388,7 @@ export function MobilePairingCard({
   function handleDenySas() {
     pairingActiveRef.current = false;
     cancelPairing().catch(() => {});
-    setError(t("settings.mobile.codesMismatch"));
+    setError("The codes didn't match. Pairing was canceled.");
     setStep("error");
   }
 
@@ -397,12 +396,15 @@ export function MobilePairingCard({
     <section className="min-w-0" data-testid="settings-mobile">
       <SettingsSectionHeader
         title={t("settings.mobile.title")}
-        description={t("settings.mobile.description")}
+        description={
+          <>{t("settings.mobile.description")}</>
+        }
       />
 
       <SettingsOptionGroup
         className="w-full [container-type:inline-size]"
         data-testid="mobile-pairing-card"
+        surface="soft"
       >
         {/* Persistent polite live region. The pairing steps swap the QR view
             for the inline code confirmation asynchronously, and a screen
@@ -412,13 +414,11 @@ export function MobilePairingCard({
             and is visually hidden, so it changes nothing on screen. */}
         <p aria-live="polite" className="sr-only" data-testid="pairing-status">
           {step === "sas" && sasCode
-            ? t("settings.mobile.liveRegionSas", {
-                code: `${sasCode.slice(0, 3)} ${sasCode.slice(3, 6)}`,
-              })
+            ? `Verification code ${sasCode.slice(0, 3)} ${sasCode.slice(3, 6)} ready. Check that it matches on your mobile device, then confirm the codes match.`
             : step === "transferring"
-              ? t("settings.mobile.liveRegionTransferring")
+              ? "Codes confirmed. Pairing your mobile device."
               : step === "done"
-                ? t("settings.mobile.liveRegionDone")
+                ? "Your mobile app is now paired."
                 : ""}
         </p>
         <SettingsOptionRow
@@ -487,7 +487,7 @@ export function MobilePairingCard({
                 <div className="flex max-w-52 flex-col items-center gap-3 text-center">
                   <TriangleAlert className="h-6 w-6 text-destructive" />
                   <p className="text-sm text-destructive">
-                    {error ?? t("settings.mobile.sessionEnded")}
+                    {error ?? "Pairing session ended."}
                   </p>
                   <Button
                     data-testid="retry-pairing-button"
@@ -517,9 +517,7 @@ export function MobilePairingCard({
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
                     <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
-                  <p className="text-base font-medium">
-                    {t("settings.mobile.stepDoneTitle")}
-                  </p>
+                  <p className="text-base font-medium">{t("settings.mobile.stepDoneTitle")}</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center gap-3">

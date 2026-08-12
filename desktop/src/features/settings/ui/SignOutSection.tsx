@@ -1,9 +1,9 @@
+import { useT } from "@/shared/i18n";
 import * as React from "react";
 import { toast } from "sonner";
 
 import { NsecMaskedDisplay } from "@/features/onboarding/ui/NsecMaskedDisplay";
 import { getNsec, signOut } from "@/shared/api/tauriIdentity";
-import { useT } from "@/shared/i18n";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -17,6 +17,7 @@ import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Input } from "@/shared/ui/input";
 import { Spinner } from "@/shared/ui/spinner";
+import { SettingsOptionGroup } from "./SettingsOptionGroup";
 
 /**
  * The exact phrase the user must type before the destructive sign-out button
@@ -117,45 +118,30 @@ export function SignOutSection() {
         setIsPending(false);
         setIsOpen(false);
         resetDialogState();
-        toast.error(
-          err instanceof Error ? err.message : t("settings.signOut.failed"),
-        );
+        toast.error(err instanceof Error ? err.message : t("settings.signOut.failed"));
       });
   }
 
   return (
-    <div
-      className="mt-8 border-t border-border/60 pb-6 pt-5"
-      data-testid="settings-signout"
-    >
-      <div className="flex items-center justify-between gap-4 px-1">
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">
-            {t("settings.signOut.title")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("settings.signOut.description")}
-          </p>
-        </div>
-        <Button
-          className="shrink-0"
-          data-testid="signout-open-dialog"
-          disabled={isPending}
-          onClick={() => void openDialog()}
-          type="button"
-          variant="destructive"
-        >
-          {isPending ? (
-            <Spinner
-              aria-label={t("settings.signOut.signingOutAria")}
-              className="h-4 w-4 border-2"
-            />
-          ) : null}
-          {isPending
-            ? t("settings.signOut.signingOut")
-            : t("settings.signOut.deleteData")}
-        </Button>
-      </div>
+    <div className="mt-12 pb-6" data-testid="settings-signout">
+      <SettingsOptionGroup
+        description={t("settings.signOut.description")}
+        headerAction={
+          <Button
+            data-testid="signout-open-dialog"
+            disabled={isPending}
+            onClick={() => void openDialog()}
+            type="button"
+            variant="destructive"
+          >
+            {isPending ? (
+              <Spinner aria-label={t("settings.signOut.signingOutAria")} className="h-4 w-4 border-2" />
+            ) : null}
+            {isPending ? "Signing out…" : "Delete my data"}
+          </Button>
+        }
+        title={t("settings.signOut.title")}
+      />
       <AlertDialog
         onOpenChange={(open) => {
           if (!open && !isPending) {
@@ -167,20 +153,16 @@ export function SignOutSection() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("settings.signOut.dialogTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("settings.signOut.dialogBody")}
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("settings.signOut.dialogTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("settings.signOut.dialogBody")}</AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-3">
-            <p className="text-sm font-medium">{t("settings.signOut.step1")}</p>
+            <p className="text-sm font-medium">
+              {t("settings.signOut.step1")}
+            </p>
             {isNsecLoading ? (
-              <p className="text-sm text-muted-foreground">
-                {t("settings.signOut.loading")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("settings.signOut.loading")}</p>
             ) : nsecError ? (
               <p
                 className="text-sm text-destructive"
@@ -215,9 +197,9 @@ export function SignOutSection() {
               className="text-sm font-medium"
               htmlFor="signout-confirm-phrase"
             >
-              {t("settings.signOut.step2Before")}
-              <span className="font-semibold">"{SIGNOUT_CONFIRM_PHRASE}"</span>
-              {t("settings.signOut.step2After")}
+              2. Type{" "}
+              <span className="font-semibold">"{SIGNOUT_CONFIRM_PHRASE}"</span>{" "}
+              to confirm
             </label>
             <Input
               autoComplete="off"
@@ -232,9 +214,7 @@ export function SignOutSection() {
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>
-              {t("common.cancel")}
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>{t("common.cancel")}</AlertDialogCancel>
             {/* A plain Button, not AlertDialogAction: Radix's Action closes
                 the dialog on click, which would drop the pending state while
                 the wipe + restart is still in flight. */}
@@ -251,9 +231,7 @@ export function SignOutSection() {
                   className="h-4 w-4 border-2"
                 />
               ) : null}
-              {isPending
-                ? t("settings.signOut.signingOut")
-                : t("settings.signOut.deleteData")}
+              {isPending ? "Signing out…" : "Delete my data"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

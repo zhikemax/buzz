@@ -7,6 +7,10 @@ import {
   reactionsEqual,
   tagsEqual,
 } from "@/features/messages/lib/messageRowEquality";
+import {
+  assertCanSendMessageToChannel,
+  canSendMessageToChannel,
+} from "@/features/messages/lib/canSendToChannel";
 import type { TimelineMessage } from "@/features/messages/types";
 import { useKnownAgentPubkeys } from "@/features/agents/useKnownAgentPubkeys";
 import { HuddleAttachment } from "@/features/huddle/components/HuddleAttachment";
@@ -51,6 +55,7 @@ import { toast } from "sonner";
 import { MessageAgentOwner } from "./MessageAgentOwner";
 import { MessageAuthorText, MessageHeaderRow } from "./MessageHeader";
 import { MessageTimestamp } from "./MessageTimestamp";
+import { SentFromThreadLine } from "./SentFromThreadLine";
 import { WaveMessageAttachment } from "./WaveMessageAttachment";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 
@@ -67,6 +72,7 @@ export type ThreadDepthGuideAction = {
 export const MessageRow = React.memo(
   function MessageRow({
     channelId = null,
+    currentPubkey,
     collapseDepthGuideActions,
     connectDescendants = false,
     depthGuideDepths,
@@ -96,6 +102,7 @@ export const MessageRow = React.memo(
     onMarkRead,
     onToggleReaction,
     onReply,
+    onSendToChannel,
     onEntranceComplete,
     playEntrance = false,
     onUnfollowThread,
@@ -106,6 +113,7 @@ export const MessageRow = React.memo(
     videoReviewContext,
   }: {
     channelId?: string | null;
+    currentPubkey?: string;
     collapseDepthGuideActions?: ReadonlyArray<ThreadDepthGuideAction>;
     connectDescendants?: boolean;
     depthGuideDepths?: ReadonlyArray<number>;
@@ -145,6 +153,7 @@ export const MessageRow = React.memo(
       remove: boolean,
     ) => Promise<void>;
     onReply?: (message: TimelineMessage) => void;
+    onSendToChannel?: (message: TimelineMessage) => Promise<void>;
     onUnfollowThread?: (message: TimelineMessage) => void;
     onEntranceComplete?: (messageId: string) => void;
     playEntrance?: boolean;
@@ -175,6 +184,7 @@ export const MessageRow = React.memo(
                 tags.filter((tag) => tag[0] === "emoji"),
                 undefined,
                 true,
+                tags.filter((tag) => tag[0] === "mention"),
               );
             } catch (error) {
               toast.error(
@@ -217,6 +227,18 @@ export const MessageRow = React.memo(
         });
       },
       [channelId, openReminder],
+    );
+    const sendToChannelAllowed = canSendMessageToChannel(
+      message,
+      currentPubkey,
+      profiles,
+    );
+    const handleSendToChannel = React.useCallback(
+      async (target: TimelineMessage) => {
+        assertCanSendMessageToChannel(target, currentPubkey, profiles);
+        await onSendToChannel?.(target);
+      },
+      [currentPubkey, onSendToChannel, profiles],
     );
     const { mentionNames, mentionPubkeysByName } = React.useMemo(
       () => resolveMentionProps(message.tags, profiles),
@@ -571,6 +593,11 @@ export const MessageRow = React.memo(
           }
           onRemindLater={handleRemindLater}
           onReply={onReply}
+          onSendToChannel={
+            onSendToChannel && sendToChannelAllowed
+              ? handleSendToChannel
+              : undefined
+          }
           onUnfollowThread={onUnfollowThread}
           reactionErrorMessage={reactionErrorMessage}
           reactions={reactions}
@@ -648,6 +675,7 @@ export const MessageRow = React.memo(
 
     const messageBodyNode = (
       <>
+        <SentFromThreadLine channelId={channelId} tags={message.tags} />
         {renderBody()}
         {continuationMetadataNode}
         <MessageReactions
@@ -919,6 +947,7 @@ export const MessageRow = React.memo(
     tagsEqual(prev.message.tags, next.message.tags) &&
     prev.message.role === next.message.role &&
     prev.message.personaDisplayName === next.message.personaDisplayName &&
+    prev.currentPubkey === next.currentPubkey &&
     depthGuideActionsEqual(
       prev.collapseDepthGuideActions,
       next.collapseDepthGuideActions,
@@ -949,6 +978,7 @@ export const MessageRow = React.memo(
       next.onCollapseDescendantsHoverChange &&
     prev.onEntranceComplete === next.onEntranceComplete &&
     prev.playEntrance === next.playEntrance &&
+    prev.onSendToChannel === next.onSendToChannel &&
     prev.profiles === next.profiles &&
     prev.searchQuery === next.searchQuery &&
     prev.videoReviewCommentRootId === next.videoReviewCommentRootId &&

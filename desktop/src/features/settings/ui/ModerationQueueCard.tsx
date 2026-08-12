@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import { AlertTriangle, ChevronDown, ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
@@ -30,7 +31,6 @@ import {
   type ReportType,
   type SeverityTier,
 } from "@/features/settings/lib/moderationQueue";
-import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { truncatePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
@@ -89,12 +89,11 @@ function statusForAction(action: ResolutionAction): "resolved" | "dismissed" {
  */
 async function resolveTargetAuthor(
   group: ModerationQueueGroup,
-  t: TranslateFn,
 ): Promise<string> {
   if (group.targetKind === "pubkey") return group.target;
   const event = await getEventById(group.target);
   if (!event?.pubkey) {
-    throw new Error(t("settings.moderation.errResolveAuthor"));
+    throw new Error("Could not resolve the message author.");
   }
   return event.pubkey;
 }
@@ -112,27 +111,22 @@ async function enforceResolution(
   group: ModerationQueueGroup,
   action: ResolutionAction,
   ban: (input: { pubkey: string; reason?: string }) => Promise<unknown>,
-  t: TranslateFn,
 ): Promise<void> {
   switch (action) {
     case "delete":
       // Gated to event targets with a channel (resolvableActions).
-      if (group.channelId == null) {
-        throw new Error(t("settings.moderation.errNoChannel"));
-      }
+      if (group.channelId == null) throw new Error("Report has no channel.");
       await deleteMessage(group.channelId, group.target);
       return;
     case "ban":
-      await ban({ pubkey: await resolveTargetAuthor(group, t) });
+      await ban({ pubkey: await resolveTargetAuthor(group) });
       return;
     case "kick":
       // Gated to event targets with a channel (resolvableActions).
-      if (group.channelId == null) {
-        throw new Error(t("settings.moderation.errNoChannel"));
-      }
+      if (group.channelId == null) throw new Error("Report has no channel.");
       await removeChannelMember(
         group.channelId,
-        await resolveTargetAuthor(group, t),
+        await resolveTargetAuthor(group),
       );
       return;
     case "escalate":
@@ -140,44 +134,44 @@ async function enforceResolution(
       return;
     case "timeout":
       // Dropped from one-click until the resolve flow collects a duration.
-      throw new Error(t("settings.moderation.errTimeoutUnavailable"));
+      throw new Error("Timeout is not available from the queue yet.");
   }
 }
 
 const RESOLUTION_OPTIONS: {
   action: ResolutionAction;
-  labelKey: MessageKey;
-  descriptionKey: MessageKey;
+  label: string;
+  description: string;
 }[] = [
   {
     action: "delete",
-    labelKey: "settings.moderation.action.delete",
-    descriptionKey: "settings.moderation.action.deleteDesc",
+    label: "Delete content",
+    description: "Remove the reported content and resolve.",
   },
   {
     action: "kick",
-    labelKey: "settings.moderation.action.kick",
-    descriptionKey: "settings.moderation.action.kickDesc",
+    label: "Kick author",
+    description: "Remove the author from the community.",
   },
   {
     action: "ban",
-    labelKey: "settings.moderation.action.ban",
-    descriptionKey: "settings.moderation.action.banDesc",
+    label: "Ban author",
+    description: "Block the author from the community.",
   },
   {
     action: "timeout",
-    labelKey: "settings.moderation.action.timeout",
-    descriptionKey: "settings.moderation.action.timeoutDesc",
+    label: "Time out author",
+    description: "Temporarily mute the author.",
   },
   {
     action: "escalate",
-    labelKey: "settings.moderation.action.escalate",
-    descriptionKey: "settings.moderation.action.escalateDesc",
+    label: "Escalate",
+    description: "Route to the platform-safety lane.",
   },
   {
     action: "dismiss",
-    labelKey: "settings.moderation.action.dismiss",
-    descriptionKey: "settings.moderation.action.dismissDesc",
+    label: "Dismiss",
+    description: "No violation — close without action.",
   },
 ];
 
@@ -198,15 +192,15 @@ const SEVERITY_BADGE: Record<SeverityTier, string> = {
   normal: "bg-muted text-muted-foreground",
 };
 
-function targetLabel(group: ModerationQueueGroup, t: TranslateFn): string {
+function targetLabel(group: ModerationQueueGroup): string {
   const short = truncatePubkey(group.target);
   switch (group.targetKind) {
     case "event":
-      return t("settings.moderation.target.event", { short });
+      return `Message ${short}`;
     case "pubkey":
-      return t("settings.moderation.target.pubkey", { short });
+      return `Member ${short}`;
     case "blob":
-      return t("settings.moderation.target.blob", { short });
+      return `Attachment ${short}`;
   }
 }
 
@@ -217,23 +211,24 @@ function ReporterLine({
   report: ModerationReport;
   displayName?: string | null;
 }) {
-  const t = useT();
   const who = displayName?.trim() || truncatePubkey(report.reporterPubkey);
   return (
     <div className="rounded-md border border-border/50 bg-background/50 px-2.5 py-1.5">
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <span className="font-medium">
-          {t(reportTypeLabel(report.reportType))}
+          {reportTypeLabel(report.reportType)}
         </span>
         <span className="text-muted-foreground">
-          {t("settings.moderation.reportedBy", {
-            who,
-            when: formatTimestamp(report.createdAt),
-          })}
+          reported by {who} · {formatTimestamp(report.createdAt)}
         </span>
       </div>
       {report.note ? (
-        <p className="mt-1 text-xs text-muted-foreground">{report.note}</p>
+        <p
+          className="mt-1 text-xs text-muted-foreground/70"
+          data-settings-subcopy
+        >
+          {report.note}
+        </p>
       ) : null}
     </div>
   );
@@ -266,9 +261,7 @@ function ResolveMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>
-          {t("settings.moderation.resolution")}
-        </DropdownMenuLabel>
+        <DropdownMenuLabel>{t("settings.moderation.resolution")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map((option) => (
           <DropdownMenuItem
@@ -277,11 +270,12 @@ function ResolveMenu({
             onSelect={() => onResolve(option.action)}
           >
             <div className="flex flex-col">
-              <span className="text-sm font-medium">
-                {t(option.labelKey)}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {t(option.descriptionKey)}
+              <span className="text-sm font-medium">{option.label}</span>
+              <span
+                className="text-xs text-muted-foreground/70"
+                data-settings-subcopy
+              >
+                {option.description}
               </span>
             </div>
           </DropdownMenuItem>
@@ -302,18 +296,8 @@ function QueueGroupCard({
   onResolve: (group: ModerationQueueGroup, action: ResolutionAction) => void;
   disabled: boolean;
 }) {
-  const t = useT();
   const topType = groupTopReportType(group);
   const tier = severityTier(topType);
-  const reportCountKey =
-    group.reports.length === 1
-      ? "settings.moderation.reportOne"
-      : "settings.moderation.reportMany";
-  const priorCount = group.priorActions.length;
-  const priorKey =
-    priorCount === 1
-      ? "settings.moderation.priorOne"
-      : "settings.moderation.priorMany";
   return (
     <div
       className="space-y-2.5 rounded-lg border border-border/60 bg-background/60 p-3"
@@ -331,13 +315,14 @@ function QueueGroupCard({
               {tier === "critical" ? (
                 <ShieldAlert className="mr-1 h-3 w-3" />
               ) : null}
-              {t(reportTypeLabel(topType))}
+              {reportTypeLabel(topType)}
             </span>
             <span className="truncate font-mono text-xs text-muted-foreground">
-              {targetLabel(group, t)}
+              {targetLabel(group)}
             </span>
             <span className="text-xs text-muted-foreground">
-              · {t(reportCountKey, { count: group.reports.length })}
+              · {group.reports.length}{" "}
+              {group.reports.length === 1 ? "report" : "reports"}
             </span>
           </div>
         </div>
@@ -363,17 +348,17 @@ function QueueGroupCard({
         ))}
       </div>
 
-      {priorCount > 0 ? (
+      {group.priorActions.length > 0 ? (
         <div className="flex items-start gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            {t(priorKey, {
-              count: priorCount,
-              actions: group.priorActions
-                .slice(0, 3)
-                .map((a) => a.action)
-                .join(", "),
-            })}
+            {group.priorActions.length} prior action
+            {group.priorActions.length === 1 ? "" : "s"} against this target
+            {" — "}
+            {group.priorActions
+              .slice(0, 3)
+              .map((a) => a.action)
+              .join(", ")}
           </span>
         </div>
       ) : null}
@@ -425,7 +410,7 @@ function QueueTab() {
       // on" — if enforcement fails we must not send that lie, and we leave the
       // report open (retryable, no orphan decision row). Only after the paired
       // 9040/9005/9001 lands do we resolve every open report about this target.
-      await enforceResolution(group, action, banMutation.mutateAsync, t);
+      await enforceResolution(group, action, banMutation.mutateAsync);
       await Promise.all(
         openReports.map((report) =>
           resolveMutation.mutateAsync({
@@ -436,15 +421,11 @@ function QueueTab() {
         ),
       );
       toast.success(
-        status === "dismissed"
-          ? t("settings.moderation.reportDismissed")
-          : t("settings.moderation.reportResolved"),
+        status === "dismissed" ? "Report dismissed" : "Report resolved",
       );
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : t("settings.moderation.resolveFailed"),
+        error instanceof Error ? error.message : t("settings.moderation.resolveFailed"),
       );
     }
   }
@@ -457,11 +438,7 @@ function QueueTab() {
     );
   }
   if (reportsQuery.isLoading) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.moderation.loadingReports")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("settings.moderation.loadingReports")}</p>;
   }
   if (groups.length === 0) {
     return (
@@ -492,7 +469,6 @@ function AuditRow({
   action: ModerationAction;
   actorName?: string | null;
 }) {
-  const t = useT();
   const who = actorName?.trim() || truncatePubkey(action.actorPubkey);
   const targetShort = action.targetPubkey
     ? truncatePubkey(action.targetPubkey)
@@ -514,14 +490,13 @@ function AuditRow({
           </span>
         ) : null}
         <span className="text-xs text-muted-foreground">
-          {t("settings.moderation.auditBy", {
-            who,
-            when: formatTimestamp(action.createdAt),
-          })}
+          by {who} · {formatTimestamp(action.createdAt)}
         </span>
       </div>
       {action.publicReason ? (
-        <p className="text-xs text-muted-foreground">{action.publicReason}</p>
+        <p className="text-xs text-muted-foreground/70" data-settings-subcopy>
+          {action.publicReason}
+        </p>
       ) : null}
     </div>
   );
@@ -557,11 +532,7 @@ function AuditTab() {
     );
   }
   if (auditQuery.isLoading) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("settings.moderation.loadingAudit")}
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("settings.moderation.loadingAudit")}</p>;
   }
   if (actions.length === 0) {
     return (
@@ -601,9 +572,7 @@ export function ModerationQueueCard() {
 
       {!isModerator ? (
         membershipQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">
-            {t("settings.moderation.checkingAccess")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("settings.moderation.checkingAccess")}</p>
         ) : (
           <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
             {t("settings.moderation.modOnly")}

@@ -165,6 +165,10 @@ export const en = {
   "search.recentActivity": "Recent activity",
   "search.noRecentActivity": "No recent activity yet.",
   "search.noMatches": "No matches for {query}.",
+  "search.noMatchesIn": "No matches for {query} in {name}.",
+  "search.noMessagesFor": "No messages for {query}.",
+  "search.noMessagesIn": "No messages for {query} in {name}.",
+  "search.searchIn": "Search in {name}",
   "search.prompt.prefix": "Search for",
   "search.prompt.everything": "everything",
   "search.prompt.channel": "a channel",
@@ -199,7 +203,29 @@ export const en = {
   "settings.tryAgain": "Try again",
 
   "settings.appearance.title": "Appearance",
-  "settings.appearance.description": "Choose a theme for Buzz.",
+  "settings.appearance.description": "Choose how Buzz looks and feels.",
+  "settings.appearance.preferences": "Preferences",
+  "settings.appearance.theme": "Theme",
+  "settings.appearance.perCommunity": "(per community)",
+  "settings.appearance.colorMode": "Color mode",
+  "settings.appearance.colorModeHint":
+    "Follow your system or choose a light or dark appearance.",
+  "settings.appearance.themeStyle": "Theme style",
+  "settings.appearance.themeStyleHint":
+    "Choose the colors used throughout Buzz.",
+  "settings.appearance.themeStyleAria": "Theme style, {name}",
+  "settings.appearance.prominentActiveTab": "Prominent active tab",
+  "settings.appearance.prominentActiveTabHint":
+    "Give the selected navigation item a higher-contrast background.",
+  "settings.appearance.glassBackground": "Glass background",
+  "settings.appearance.glassBackgroundHint":
+    "Blur the desktop behind navigation while keeping content solid.",
+  "settings.appearance.glassBackgroundUnsupported":
+    "Available in the macOS desktop app.",
+  "settings.appearance.glassOpacity": "Glass opacity",
+  "settings.appearance.glassOpacityHint":
+    "Lower values reveal more of the desktop blur.",
+  "settings.appearance.glassOpacityReset": "Reset glass opacity",
   "settings.appearance.system": "System",
   "settings.appearance.light": "Light",
   "settings.appearance.dark": "Dark",
@@ -228,6 +254,7 @@ export const en = {
   "settings.agents.title": "Agents",
   "settings.agents.description":
     "Control how agents behave in conversations and run on this machine.",
+  "settings.agents.preferences": "Preferences",
   "settings.agents.keepAddressed": "Keep addressed agents active",
   "settings.agents.keepAddressedHint":
     "Keep agents you address selected for future messages in the same channel or thread. Remove them from the composer at any time.",
@@ -397,6 +424,7 @@ export const en = {
   "settings.agents.custom.installHintPlaceholder": "npm install -g my-harness",
 
   "settings.voice.title": "Voice",
+  "settings.voice.playback": "Playback",
   "settings.voice.description":
     "Choose whether Buzz reads new agent responses aloud during an active huddle.",
   "settings.voice.agentTts": "Agent text to speech",
@@ -568,6 +596,7 @@ export const en = {
   "settings.experimental.title": "Experiments",
   "settings.experimental.description":
     "These features are functional but still being refined. Enable them to try new capabilities early.",
+  "settings.experimental.features": "Features",
   "settings.experimental.workflows.name": "Workflows",
   "settings.experimental.workflows.description":
     "YAML-defined automations with approval gates",
@@ -670,6 +699,7 @@ export const en = {
   "settings.invites.role.member": "member",
 
   "settings.emoji.title": "Custom emoji",
+  "settings.emoji.addGroup": "Add emoji",
   "settings.emoji.description":
     "Add your own custom emoji for everyone on this relay to use. Type :name: in messages and reactions.",
   "settings.emoji.uploadTitle": "Upload an image",
@@ -872,6 +902,7 @@ export const en = {
   "settings.hosted.fallbackName": "Hosted community",
 
   "settings.templates.title": "Channel templates",
+  "settings.templates.groupTitle": "Templates",
   "settings.templates.description":
     "Save reusable channel configurations and apply them when creating new channels.",
   "settings.templates.loading": "Loading templates…",
@@ -1473,6 +1504,9 @@ export const en = {
   "notify.blocked": "Blocked",
   "notify.on": "On",
   "notify.off": "Off",
+  "notify.desktopGroup": "Desktop",
+  "notify.alertSounds": "Alert sounds",
+  "notify.badges": "Badges",
   "notify.desktopAlerts": "Desktop alerts",
   "notify.requesting": "Requesting...",
   "notify.desktopEnabledHint":

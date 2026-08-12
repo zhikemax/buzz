@@ -107,7 +107,7 @@ export function NotificationSettingsCard({
       </span>
 
       <div className="flex flex-col gap-4">
-        <SettingsOptionGroup>
+        <SettingsOptionGroup title={t("notify.desktopGroup")}>
           <SettingsOptionRow>
             <div className="min-w-0">
               <label
@@ -118,7 +118,10 @@ export function NotificationSettingsCard({
                   ? t("notify.requesting")
                   : t("notify.desktopAlerts")}
               </label>
-              <p className="text-sm font-normal text-muted-foreground">
+              <p
+                className="text-sm font-normal text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {notificationSettings.desktopEnabled
                   ? t("notify.desktopEnabledHint")
                   : t("notify.desktopRequestHint")}
@@ -143,7 +146,10 @@ export function NotificationSettingsCard({
               >
                 {t("notify.whileViewing")}
               </label>
-              <p className="text-sm font-normal text-muted-foreground">
+              <p
+                className="text-sm font-normal text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {t("notify.whileViewingHint")}
               </p>
             </div>
@@ -164,7 +170,7 @@ export function NotificationSettingsCard({
 
         {notificationSettings.desktopEnabled ? (
           <>
-            <SettingsOptionGroup>
+            <SettingsOptionGroup title={t("notify.sound")}>
               <SettingsOptionRow>
                 <div className="min-w-0">
                   <label
@@ -173,7 +179,10 @@ export function NotificationSettingsCard({
                   >
                     {t("notify.sound")}
                   </label>
-                  <p className="text-sm font-normal text-muted-foreground">
+                  <p
+                    className="text-sm font-normal text-muted-foreground/70"
+                    data-settings-subcopy
+                  >
                     {t("notify.soundHint")}
                   </p>
                 </div>
@@ -190,7 +199,7 @@ export function NotificationSettingsCard({
 
             {anyAlertsOn ? (
               <>
-                <SettingsOptionGroup>
+                <SettingsOptionGroup title={t("notify.alertSounds")}>
                   {visibleSlots.map((slot) => {
                     const comingSoon = COMING_SOON_SLOTS.has(slot);
                     const alertsOn =
@@ -212,7 +221,10 @@ export function NotificationSettingsCard({
                               </span>
                             ) : null}
                           </span>
-                          <p className="text-sm font-normal text-muted-foreground">
+                          <p
+                            className="text-sm font-normal text-muted-foreground/70"
+                            data-settings-subcopy
+                          >
                             {getSlotHint(slot, t)}
                           </p>
                         </div>
@@ -271,7 +283,7 @@ export function NotificationSettingsCard({
           </>
         ) : null}
 
-        <SettingsOptionGroup>
+        <SettingsOptionGroup title={t("notify.badges")}>
           <SettingsOptionRow>
             <div className="min-w-0">
               <label
@@ -280,7 +292,10 @@ export function NotificationSettingsCard({
               >
                 {t("notify.homeBadge")}
               </label>
-              <p className="text-sm font-normal text-muted-foreground">
+              <p
+                className="text-sm font-normal text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {t("notify.homeBadgeHint")}
               </p>
             </div>

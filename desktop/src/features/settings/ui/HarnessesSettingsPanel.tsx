@@ -1,3 +1,4 @@
+import { useT } from "@/shared/i18n";
 import * as React from "react";
 import { ExternalLink, Plus, RefreshCw } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -7,14 +8,13 @@ import {
   useGitBashPrerequisiteQuery,
 } from "@/features/agents/hooks";
 import type { AcpRuntimeCatalogEntry } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
-import { SectionHeader } from "@/shared/ui/PageHeader";
 
 import { HarnessCatalogDialog } from "./HarnessCatalogDialog";
 import { HarnessRow } from "./HarnessRow";
 import { stableRowOrder, yourHarnessEntries } from "./harnessCatalogLogic";
+import { SettingsOptionGroup } from "./SettingsOptionGroup";
 
 function GitBashCard({
   prerequisite,
@@ -27,10 +27,8 @@ function GitBashCard({
   return (
     <div
       className={cn(
-        "min-h-16 rounded-2xl border px-4 py-4 text-sm",
-        prerequisite.available
-          ? "border-border/60 bg-muted/20"
-          : "border-amber-500/20 bg-amber-500/5",
+        "min-h-16 px-4 py-4 text-sm",
+        !prerequisite.available && "bg-amber-500/5",
       )}
       data-testid="doctor-git-bash"
     >
@@ -49,9 +47,7 @@ function GitBashCard({
                   : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
               )}
             >
-              {prerequisite.available
-                ? t("settings.agents.available")
-                : t("settings.agents.actionNeeded")}
+              {prerequisite.available ? "Available" : "Action needed"}
             </span>
           </div>
           {!prerequisite.available ? (
@@ -60,13 +56,15 @@ function GitBashCard({
               onClick={() => void openUrl(prerequisite.installInstructionsUrl)}
               type="button"
             >
-              <ExternalLink className="h-4 w-4" />{" "}
-              {t("settings.agents.installGit")}
+              <ExternalLink className="h-4 w-4" /> {t("settings.agents.installGit")}
             </button>
           ) : null}
         </div>
         {!prerequisite.available ? (
-          <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+          <div
+            className="mt-3 space-y-1 text-sm text-muted-foreground/70"
+            data-settings-subcopy
+          >
             <p>{t("settings.agents.gitBashRequired")}</p>
             <p>{prerequisite.installHint}</p>
           </div>
@@ -116,39 +114,40 @@ export function HarnessesSettingsPanel() {
   const isRefreshing = runtimesQuery.isFetching;
 
   return (
-    <section className="min-w-0 space-y-4" data-testid="settings-harnesses">
-      <SectionHeader
-        className="items-center"
-        title={t("settings.agents.runtimesTitle")}
-        description={t("settings.agents.runtimesDescription")}
-        action={
-          <Button
-            disabled={isRefreshing}
-            onClick={() => {
-              setResetEpoch((e) => e + 1);
-              void runtimesQuery.refetch();
-              void gitBashQuery.refetch();
-            }}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <RefreshCw
-              className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-            />
-            {t("settings.agents.checkAgain")}
-          </Button>
-        }
-      />
-
-      <div className="space-y-8">
+    <SettingsOptionGroup
+      data-testid="settings-harnesses"
+      description={t("settings.agents.runtimesDescription")}
+      headerAction={
+        <Button
+          disabled={isRefreshing}
+          onClick={() => {
+            setResetEpoch((e) => e + 1);
+            void runtimesQuery.refetch();
+            void gitBashQuery.refetch();
+          }}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <RefreshCw
+            className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+          />
+          {t("settings.agents.checkAgain")}
+        </Button>
+      }
+      title={t("settings.agents.runtimesTitle")}
+    >
+      <div className="divide-y divide-border/55">
         {gitBashQuery.data ? (
           <section>
-            <div className="mb-3 text-sm">
+            <div className="px-4 py-3 text-sm">
               <h2 className="text-lg font-semibold tracking-tight">
                 {t("settings.agents.prerequisites")}
               </h2>
-              <p className="mt-1 text-sm font-normal text-muted-foreground">
+              <p
+                className="mt-1 text-sm font-normal text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {t("settings.agents.prerequisitesHint")}
               </p>
             </div>
@@ -161,24 +160,31 @@ export function HarnessesSettingsPanel() {
               prerequisites, Windows-only) shares the page; otherwise it just
               restates the page header. */}
           {gitBashQuery.data ? (
-            <div className="mb-3 text-sm">
+            <div className="border-b border-border/55 px-4 py-3 text-sm">
               <h2 className="text-lg font-semibold tracking-tight">
                 {t("settings.agents.yourRuntimes")}
               </h2>
-              <p className="mt-1 text-sm font-normal text-muted-foreground">
+              <p
+                className="mt-1 text-sm font-normal text-muted-foreground/70"
+                data-settings-subcopy
+              >
                 {t("settings.agents.yourRuntimesHint")}
               </p>
             </div>
           ) : null}
 
           {runtimesQuery.isLoading ? (
-            <div className="rounded-2xl bg-muted/20 px-4 py-4 text-sm font-normal text-muted-foreground">
+            <div className="px-4 py-4 text-sm font-normal text-muted-foreground">
               {t("settings.agents.checkingRuntimes")}
             </div>
           ) : rows.length > 0 ? (
-            <div className="space-y-3" data-testid="doctor-runtime-list">
+            <div
+              className="divide-y divide-border/55"
+              data-testid="doctor-runtime-list"
+            >
               {rows.map((runtime) => (
                 <HarnessRow
+                  embedded
                   key={runtime.id}
                   resetEpoch={resetEpoch}
                   runtime={runtime}
@@ -186,32 +192,34 @@ export function HarnessesSettingsPanel() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl bg-amber-500/10 px-4 py-4 text-sm text-warning">
+            <div className="bg-amber-500/10 px-4 py-4 text-sm text-warning">
               {t("settings.agents.noRuntimes")}
             </div>
           )}
 
           {runtimesQuery.error instanceof Error ? (
-            <p className="mt-3 rounded-2xl bg-destructive/10 px-4 py-4 text-sm text-destructive">
+            <p className="border-t border-border/55 bg-destructive/10 px-4 py-4 text-sm text-destructive">
               {runtimesQuery.error.message}
             </p>
           ) : null}
 
-          <Button
-            className="mt-3 gap-2"
-            data-testid="harness-add-button"
-            onClick={() => setCatalogOpen(true)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Plus className="h-4 w-4" />
-            {t("settings.agents.addRuntimes")}
-          </Button>
+          <div className="border-t border-border/55 px-4 py-3">
+            <Button
+              className="gap-2"
+              data-testid="harness-add-button"
+              onClick={() => setCatalogOpen(true)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4" />
+              {t("settings.agents.addRuntimes")}
+            </Button>
+          </div>
         </section>
       </div>
 
       <HarnessCatalogDialog onOpenChange={setCatalogOpen} open={catalogOpen} />
-    </section>
+    </SettingsOptionGroup>
   );
 }

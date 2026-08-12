@@ -162,6 +162,10 @@ export const zhCN: Record<MessageKey, string> = {
   "search.recentActivity": "最近动态",
   "search.noRecentActivity": "暂无最近动态。",
   "search.noMatches": "未找到与 {query} 匹配的结果。",
+  "search.noMatchesIn": "在 {name} 中未找到与 {query} 匹配的结果。",
+  "search.noMessagesFor": "未找到与 {query} 匹配的消息。",
+  "search.noMessagesIn": "在 {name} 中未找到与 {query} 匹配的消息。",
+  "search.searchIn": "在 {name} 中搜索",
   "search.prompt.prefix": "搜索",
   "search.prompt.everything": "全部内容",
   "search.prompt.channel": "频道",
@@ -195,7 +199,25 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.tryAgain": "重试",
 
   "settings.appearance.title": "外观",
-  "settings.appearance.description": "为 Buzz 选择主题。",
+  "settings.appearance.description": "选择 Buzz 的外观与体验。",
+  "settings.appearance.preferences": "偏好设置",
+  "settings.appearance.theme": "主题",
+  "settings.appearance.perCommunity": "（按社区）",
+  "settings.appearance.colorMode": "颜色模式",
+  "settings.appearance.colorModeHint": "跟随系统，或选择浅色 / 深色外观。",
+  "settings.appearance.themeStyle": "主题风格",
+  "settings.appearance.themeStyleHint": "选择 Buzz 全局使用的配色。",
+  "settings.appearance.themeStyleAria": "主题风格，{name}",
+  "settings.appearance.prominentActiveTab": "高对比活动标签",
+  "settings.appearance.prominentActiveTabHint":
+    "为选中的导航项使用更高对比度的背景。",
+  "settings.appearance.glassBackground": "玻璃背景",
+  "settings.appearance.glassBackgroundHint":
+    "模糊导航背后的桌面，同时保持内容区域不透明。",
+  "settings.appearance.glassBackgroundUnsupported": "仅在 macOS 桌面应用中可用。",
+  "settings.appearance.glassOpacity": "玻璃不透明度",
+  "settings.appearance.glassOpacityHint": "数值越低，桌面模糊透出越多。",
+  "settings.appearance.glassOpacityReset": "重置玻璃不透明度",
   "settings.appearance.system": "跟随系统",
   "settings.appearance.light": "浅色",
   "settings.appearance.dark": "深色",
@@ -220,6 +242,7 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.agents.title": "智能体",
   "settings.agents.description":
     "控制智能体在对话中的行为，以及在本机上的运行方式。",
+  "settings.agents.preferences": "偏好设置",
   "settings.agents.keepAddressed": "保持已提及的智能体处于活动状态",
   "settings.agents.keepAddressedHint":
     "在同一频道或话题中，保留你提及过的智能体以便后续消息继续选中。可随时从输入框移除。",
@@ -378,6 +401,7 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.agents.custom.installHintPlaceholder": "npm install -g my-harness",
 
   "settings.voice.title": "语音",
+  "settings.voice.playback": "播放",
   "settings.voice.description":
     "选择是否在进行中的 huddle 里朗读新的智能体回复。",
   "settings.voice.agentTts": "智能体文字转语音",
@@ -528,6 +552,7 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.experimental.title": "实验功能",
   "settings.experimental.description":
     "这些功能已可用，但仍在打磨中。开启后可抢先体验新能力。",
+  "settings.experimental.features": "功能",
   "settings.experimental.workflows.name": "工作流",
   "settings.experimental.workflows.description": "带审批门控的 YAML 自动化",
   "settings.experimental.projects.name": "项目",
@@ -622,6 +647,7 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.invites.role.member": "成员",
 
   "settings.emoji.title": "自定义表情",
+  "settings.emoji.addGroup": "添加表情",
   "settings.emoji.description":
     "添加你自己的自定义表情，供此中继上的所有人使用。在消息和回应中输入 :name: 即可。",
   "settings.emoji.uploadTitle": "上传图片",
@@ -813,6 +839,7 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.hosted.fallbackName": "托管社区",
 
   "settings.templates.title": "频道模板",
+  "settings.templates.groupTitle": "模板",
   "settings.templates.description":
     "保存可复用的频道配置，并在创建新频道时应用。",
   "settings.templates.loading": "正在加载模板…",
@@ -1385,6 +1412,9 @@ export const zhCN: Record<MessageKey, string> = {
   "notify.blocked": "已阻止",
   "notify.on": "开",
   "notify.off": "关",
+  "notify.desktopGroup": "桌面",
+  "notify.alertSounds": "提示音",
+  "notify.badges": "徽章",
   "notify.desktopAlerts": "桌面提醒",
   "notify.requesting": "请求中…",
   "notify.desktopEnabledHint": "已为下方启用的类别打开系统桌面提醒。",

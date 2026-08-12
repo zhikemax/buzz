@@ -3,6 +3,7 @@ import { desktopFeatures, useFeatureToggle } from "@/shared/features";
 import type { FeatureDefinition } from "@/shared/features";
 import { useT, type MessageKey } from "@/shared/i18n";
 import { Switch } from "@/shared/ui/switch";
+import { SettingsOptionGroup, SettingsOptionRow } from "./SettingsOptionGroup";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 
 const FEATURE_COPY_KEYS: Record<
@@ -40,12 +41,14 @@ function FeatureRow({ feature }: { feature: FeatureDefinition }) {
   const description = copy ? t(copy.description) : feature.description;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/70 px-4 py-3">
+    <SettingsOptionRow>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium" id={`${switchId}-label`}>
           {name}
         </p>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p className="text-xs text-muted-foreground/70" data-settings-subcopy>
+          {description}
+        </p>
       </div>
       <Switch
         aria-labelledby={`${switchId}-label`}
@@ -63,7 +66,7 @@ function FeatureRow({ feature }: { feature: FeatureDefinition }) {
           }
         }}
       />
-    </div>
+    </SettingsOptionRow>
   );
 }
 
@@ -80,11 +83,11 @@ export function ExperimentalFeaturesCard() {
         description={t("settings.experimental.description")}
       />
 
-      <div className="flex flex-col gap-2">
+      <SettingsOptionGroup title={t("settings.experimental.features")}>
         {previewFeatures.map((f) => (
           <FeatureRow feature={f} key={f.id} />
         ))}
-      </div>
+      </SettingsOptionGroup>
     </section>
   );
 }
