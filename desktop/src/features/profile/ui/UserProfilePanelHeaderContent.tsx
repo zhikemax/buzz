@@ -6,23 +6,13 @@ import {
   PROFILE_PANEL_VIEW_TITLES,
   type ProfilePanelView,
 } from "@/features/profile/ui/UserProfilePanelUtils";
-import type { MessageKey, TranslateFn } from "@/shared/i18n";
 import {
   AuxiliaryPanelHeaderActions,
   AuxiliaryPanelHeaderGroup,
   AuxiliaryPanelHeaderTitleBlock,
 } from "@/shared/layout/AuxiliaryPanel";
-
-const PROFILE_PANEL_VIEW_TITLE_KEYS: Record<ProfilePanelView, MessageKey> = {
-  summary: "profile.title",
-  instructions: "profile.instructions",
-  info: "profile.agentInfo",
-  configuration: "profile.tabRuntime",
-  diagnostics: "profile.harnessLog",
-  memories: "profile.tabMemories",
-  channels: "profile.tabChannels",
-  logs: "profile.harnessLog",
-};
+import { Button } from "@/shared/ui/button";
+import { useT } from "@/shared/i18n";
 
 export function getUserProfilePanelHeaderContent({
   agentSettingsMenu,
@@ -30,7 +20,7 @@ export function getUserProfilePanelHeaderContent({
   logCopyValue,
   logSubtitle,
   onBack,
-  t,
+  onEditAgent,
   view,
   viewerIsOwner,
 }: {
@@ -39,18 +29,19 @@ export function getUserProfilePanelHeaderContent({
   logCopyValue?: string | null;
   logSubtitle?: string | null;
   onBack: () => void;
-  t: TranslateFn;
+  onEditAgent?: () => void;
   view: ProfilePanelView;
   viewerIsOwner: boolean;
 }) {
-  const title =
-    t(PROFILE_PANEL_VIEW_TITLE_KEYS[view]) || PROFILE_PANEL_VIEW_TITLES[view];
+  const t = useT();
+
+  const title = PROFILE_PANEL_VIEW_TITLES[view];
   const shouldShowLogDetails =
     (view === "diagnostics" || view === "logs") && Boolean(logSubtitle);
   const headerLeftContent = (
     <AuxiliaryPanelHeaderGroup
       align={shouldShowLogDetails ? "start" : "center"}
-      backButtonAriaLabel={t("profile.backToProfile")}
+      backButtonAriaLabel="Back to profile"
       backButtonTestId="user-profile-panel-back"
       onBack={view !== "summary" ? onBack : undefined}
     >
@@ -71,6 +62,19 @@ export function getUserProfilePanelHeaderContent({
         />
       ) : null}
       {view === "summary" ? agentSettingsMenu : null}
+      {view === "summary" && onEditAgent ? (
+        <Button
+          aria-label={t("agents.editTitle")}
+          className="text-sm"
+          data-testid="user-profile-header-edit-agent"
+          onClick={onEditAgent}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          Edit
+        </Button>
+      ) : null}
       {shouldShowLogDetails ? (
         <CopyButton
           className="text-muted-foreground hover:text-foreground"

@@ -1,11 +1,11 @@
 import { ChevronRight, MessageSquare } from "lucide-react";
 
 import { Markdown } from "@/shared/ui/markdown";
-import { useT } from "@/shared/i18n";
 import {
   type ProfileField,
   ProfileFieldRows,
 } from "@/features/profile/ui/UserProfilePanelFields";
+import { useT } from "@/shared/i18n";
 
 export const AGENT_DETAILS_FIELD_LABELS = new Set([
   "Runtime",
@@ -118,9 +118,7 @@ export function AgentInstructionRow({
     trimmedInstruction.length > 0 && onOpenInstructions !== undefined;
   const rowContent = (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60">
-        <MessageSquare className="h-4 w-4 text-muted-foreground" />
-      </span>
+      <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1 text-left">
         <div className="text-xs font-medium text-foreground">
           {t("profile.instructions")}

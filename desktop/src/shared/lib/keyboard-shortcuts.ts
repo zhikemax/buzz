@@ -1,6 +1,12 @@
 import type { MessageKey } from "@/shared/i18n";
 import { isMacPlatform } from "@/shared/lib/platform";
 
+export const HUDDLE_SHORTCUT_EVENT = "buzz:huddle-shortcut";
+
+export type HuddleShortcutDetail = {
+  channelId: string;
+};
+
 export type ShortcutCategoryId =
   | "navigation"
   | "messages"
@@ -185,6 +191,14 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     descriptionKey: "settings.shortcuts.closeDialog.description",
     keys: "Escape",
     keysWindows: "Escape",
+    category: "messages",
+  },
+  {
+    id: "toggle-huddle",
+    labelKey: "settings.shortcuts.toggleHuddle.label",
+    descriptionKey: "settings.shortcuts.toggleHuddle.description",
+    keys: "Ctrl+Shift+Space",
+    keysWindows: "Ctrl+Shift+Space",
     category: "messages",
   },
   {

@@ -9,7 +9,6 @@ import {
 } from "@/features/workflows/hooks";
 import { WorkflowRunTrace } from "@/features/workflows/ui/WorkflowRunTrace";
 import type { Workflow } from "@/shared/api/types";
-import { type MessageKey, type TranslateFn, useT } from "@/shared/i18n";
 import { Badge, type BadgeProps } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -18,6 +17,7 @@ import {
   getWorkflowDisplayStatus,
   getWorkflowTriggerSummary,
 } from "./workflowDefinition";
+import { useT } from "@/shared/i18n";
 
 type WorkflowDetailPanelProps = {
   workflowId: string;
@@ -31,6 +31,7 @@ export function WorkflowDetailPanel({
   onEdit,
 }: WorkflowDetailPanelProps) {
   const t = useT();
+
   const workflowQuery = useWorkflowQuery(workflowId);
   const runsQuery = useWorkflowRunsQuery(workflowId);
   const triggerMutation = useTriggerWorkflowMutation(workflowId);
@@ -46,6 +47,16 @@ export function WorkflowDetailPanel({
     ? getWorkflowTriggerSummary(workflow.definition, t)
     : null;
   const workflowStatus = workflow ? getWorkflowDisplayStatus(workflow) : null;
+  const triggerError = errorMessage(
+    triggerMutation.error,
+    "The relay did not create a workflow run.",
+  );
+  const runsError = errorMessage(
+    runsQuery.error,
+    "Run history could not be loaded.",
+  );
+  const selectedRunIsPendingHistory =
+    selectedRunId !== null && !runs.some((run) => run.id === selectedRunId);
 
   async function handleTrigger() {
     try {
@@ -71,9 +82,7 @@ export function WorkflowDetailPanel({
             ) : (
               <Skeleton className="h-4 w-36" />
             )}
-            {workflowStatus ? (
-              <RunStatusBadge status={workflowStatus} t={t} />
-            ) : null}
+            {workflowStatus ? <RunStatusBadge status={workflowStatus} /> : null}
           </div>
           {workflowDescription ? (
             <p className="mt-1 truncate text-xs text-muted-foreground">
@@ -98,7 +107,7 @@ export function WorkflowDetailPanel({
               variant="outline"
             >
               <Pencil className="mr-1 h-4 w-4" />
-              {t("common.edit")}
+              Edit
             </Button>
           ) : null}
           <Button
@@ -108,9 +117,7 @@ export function WorkflowDetailPanel({
             variant="outline"
           >
             <Play className="mr-1 h-4 w-4" />
-            {triggerMutation.isPending
-              ? t("workflows.triggering")
-              : t("workflows.trigger")}
+            {triggerMutation.isPending ? "Triggering..." : t("agents.cliPart.trigger")}
           </Button>
           <Button
             aria-label={t("workflows.detail.closeAria")}
@@ -124,8 +131,14 @@ export function WorkflowDetailPanel({
       </div>
 
       {triggerMutation.isError ? (
-        <div className="border-b px-4 py-2 text-xs text-red-400">
-          {t("workflows.triggerFailed")}
+        <div
+          className="border-b px-4 py-2 text-xs text-destructive"
+          role="alert"
+        >
+          <p className="font-medium">{t("workflows.triggerFailed")}</p>
+          <p className="mt-1 break-words text-muted-foreground">
+            {triggerError}
+          </p>
         </div>
       ) : null}
 
@@ -137,7 +150,7 @@ export function WorkflowDetailPanel({
           <div className="space-y-4 p-4">
             <div>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("workflows.detail.definition")}
+                Definition
               </h4>
               <pre className="max-h-64 overflow-auto rounded-md bg-muted/50 p-3 font-mono text-xs leading-relaxed">
                 {JSON.stringify(workflow.definition, null, 2)}
@@ -146,12 +159,40 @@ export function WorkflowDetailPanel({
 
             <div>
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("workflows.detail.runHistory")}
+                Run History
               </h4>
-              {runs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t("workflows.detail.noRuns")}
-                </p>
+              {runsQuery.isError ? (
+                <div
+                  className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                  role="alert"
+                >
+                  <p className="font-medium">Failed to load run history</p>
+                  <p className="mt-1 break-words">{runsError}</p>
+                </div>
+              ) : runsQuery.isLoading ? (
+                <div
+                  className="space-y-2"
+                  aria-label="Loading run history"
+                  role="status"
+                >
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                </div>
+              ) : selectedRunIsPendingHistory ? (
+                <div
+                  className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs"
+                  data-testid="workflow-run-created"
+                  role="status"
+                >
+                  <p className="font-medium">Run created</p>
+                  <p className="mt-1 break-all font-mono text-muted-foreground">
+                    {selectedRunId}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    Waiting for its persisted trace…
+                  </p>
+                </div>
+              ) : runs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("workflows.detail.noRuns")}</p>
               ) : (
                 <div className="space-y-2">
                   {runs.map((run) => {
@@ -159,6 +200,10 @@ export function WorkflowDetailPanel({
                     const duration = formatRunDuration(
                       run.startedAt,
                       run.completedAt,
+                    );
+                    const failureReason = workflowRunFailureReason(
+                      run.errorCode,
+                      run.errorMessage,
                     );
 
                     return (
@@ -192,7 +237,7 @@ export function WorkflowDetailPanel({
                                 <span className="truncate font-mono text-xs font-medium">
                                   {run.id.slice(0, 8)}
                                 </span>
-                                <RunStatusBadge status={run.status} t={t} />
+                                <RunStatusBadge status={run.status} />
                               </div>
                               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6 text-2xs text-muted-foreground">
                                 <span>
@@ -209,15 +254,13 @@ export function WorkflowDetailPanel({
                                 {duration ? <span>{duration}</span> : null}
                                 {run.currentStep !== null ? (
                                   <span>
-                                    {t("workflows.detail.currentStep", {
-                                      n: run.currentStep + 1,
-                                    })}
+                                    Current step {run.currentStep + 1}
                                   </span>
                                 ) : null}
                               </div>
-                              {run.errorMessage ? (
+                              {failureReason ? (
                                 <p className="mt-2 break-words pl-6 text-xs text-destructive">
-                                  {run.errorMessage}
+                                  {failureReason}
                                 </p>
                               ) : null}
                             </div>
@@ -230,7 +273,7 @@ export function WorkflowDetailPanel({
                               <span>{t("workflows.detail.executionTrace")}</span>
                               {approvalsQuery.isFetching ? (
                                 <span className="text-2xs tracking-[0.12em] text-muted-foreground/80">
-                                  {t("workflows.detail.refreshingApprovals")}
+                                  Refreshing approvals...
                                 </span>
                               ) : null}
                             </div>
@@ -254,9 +297,7 @@ export function WorkflowDetailPanel({
           </div>
         ) : workflowQuery.isError ? (
           <div className="flex h-32 flex-col items-center justify-center gap-2">
-            <p className="text-sm text-red-400">
-              {t("workflows.detail.loadFailed")}
-            </p>
+            <p className="text-sm text-red-400">{t("workflows.detail.loadFailed")}</p>
           </div>
         ) : (
           <div className="space-y-4 p-4">
@@ -278,6 +319,30 @@ export function WorkflowDetailPanel({
   );
 }
 
+function workflowRunFailureReason(
+  errorCode: string | null,
+  diagnostic: string | null,
+) {
+  if (diagnostic?.trim()) return diagnostic;
+  if (!errorCode) return null;
+  const knownReasons: Record<string, string> = {
+    approval_denied: "Approval was denied.",
+    approval_expired: "Approval expired before the workflow could continue.",
+    external_outcome_unknown:
+      "The external action may have completed, but its outcome could not be confirmed.",
+    run_interrupted: "The run was interrupted before it could finish.",
+  };
+  return (
+    knownReasons[errorCode] ?? `Run failed (${errorCode.replace(/_/g, " ")}).`
+  );
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message.trim().length > 0
+    ? error.message
+    : fallback;
+}
+
 function formatRunDuration(
   startedAt: number | null,
   completedAt: number | null,
@@ -288,23 +353,11 @@ function formatRunDuration(
   return `${seconds.toFixed(1)}s`;
 }
 
-function formatStatusFallback(status: string) {
+function formatStatusLabel(status: string) {
   return status.replace(/_/g, " ");
 }
 
-function workflowStatusLabel(t: TranslateFn, status: string) {
-  const key = `workflows.status.${status}` as MessageKey;
-  const translated = t(key);
-  return translated !== key ? translated : formatStatusFallback(status);
-}
-
-function RunStatusBadge({
-  status,
-  t,
-}: {
-  status: string;
-  t: TranslateFn;
-}) {
+function RunStatusBadge({ status }: { status: string }) {
   const variants: Record<string, BadgeProps["variant"]> = {
     active: "success",
     disabled: "secondary",
@@ -319,7 +372,7 @@ function RunStatusBadge({
 
   return (
     <Badge variant={variants[status] ?? "secondary"}>
-      {workflowStatusLabel(t, status)}
+      {formatStatusLabel(status)}
     </Badge>
   );
 }

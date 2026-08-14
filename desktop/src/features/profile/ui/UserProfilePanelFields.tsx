@@ -2,10 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   ArrowUpRight,
-  Copy,
   Cpu,
   Ear,
-  Fingerprint,
   Server,
   Terminal,
   UserRound,
@@ -13,44 +11,19 @@ import {
 import * as React from "react";
 import { AgentStatusBadge } from "@/features/agents/ui/AgentStatusBadge";
 import { truncatePubkey } from "@/shared/lib/pubkey";
-import { copyTextToClipboard } from "@/shared/lib/clipboard";
+import {
+  HoverCopyIndicator,
+  useCopyFeedback,
+} from "@/shared/ui/HoverCopyIndicator";
 import { PubKey } from "@/shared/ui/PubKey";
-import { UserAvatar } from "@/shared/ui/UserAvatar";
+import { PanelSectionGroup } from "@/shared/ui/PanelSectionGroup";
 import type {
   AgentPersona,
   ManagedAgent,
   Profile,
   RelayAgent,
 } from "@/shared/api/types";
-import { useT, type MessageKey, type TranslateFn } from "@/shared/i18n";
-
-const PROFILE_FIELD_LABEL_KEYS: Record<string, MessageKey> = {
-  "Public key": "profile.publicKey",
-  "Managed by": "profile.managedBy",
-  "Agent type": "profile.agentType",
-  Capabilities: "profile.capabilities",
-  "Agent profile": "profile.agentProfile",
-  "Who can send instructions": "profile.whoCanSend",
-  "Start on launch": "profile.startOnLaunch",
-  "Last error": "profile.lastError",
-  Visibility: "profile.visibility",
-  Status: "profile.status",
-  Runtime: "profile.tabRuntime",
-  "ACP command": "profile.acpCommand",
-  "MCP command": "profile.mcpCommand",
-  Backend: "profile.backend",
-};
-
-const PROFILE_FIELD_VALUE_KEYS: Record<string, MessageKey> = {
-  Yes: "common.yes",
-  No: "common.no",
-  "Not deployed": "profile.notDeployed",
-  "Only the owner": "profile.onlyOwner",
-  "Selected people": "profile.selectedPeople",
-  Anyone: "profile.anyone",
-  "Declared owner verified": "profile.declaredOwnerVerified",
-  Archived: "profile.archived",
-};
+import { useT } from "@/shared/i18n";
 
 const RUNTIME_LABELS: Record<string, string> = {
   goose: "Goose",
@@ -67,7 +40,7 @@ export type ProfileField = {
   copyValue?: string;
   displayValue: string;
   displayNode?: React.ReactNode;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   label: string;
   onClick?: () => void;
   testId?: string;
@@ -111,7 +84,6 @@ export function useProfileFieldBuckets({
   isOwner,
   managedAgent,
   onOpenProfile,
-  ownerAvatarUrl,
   ownerDisplayName,
   ownerHandle,
   ownerProfilePubkey,
@@ -127,7 +99,6 @@ export function useProfileFieldBuckets({
   isOwner: boolean | undefined;
   managedAgent: ManagedAgent | undefined;
   onOpenProfile?: (pubkey: string) => void;
-  ownerAvatarUrl: string | null;
   ownerDisplayName: string | null;
   ownerHandle: string | null;
   ownerProfilePubkey: string | null;
@@ -139,7 +110,6 @@ export function useProfileFieldBuckets({
   pubkey: string | null;
   relayAgent: RelayAgent | undefined;
 }) {
-  const t = useT();
   return React.useMemo(() => {
     const metadataFields = [
       ...buildPublicFields({ pubkey, profile, relayAgent, isBot, persona }),
@@ -148,7 +118,6 @@ export function useProfileFieldBuckets({
             includeOperationalFields: isOwner === true,
             managedAgent,
             onOpenProfile,
-            ownerAvatarUrl,
             ownerDisplayName,
             ownerHandle,
             ownerProfilePubkey,
@@ -157,7 +126,6 @@ export function useProfileFieldBuckets({
             presenceLoaded,
             presenceStatus,
             relayAgent,
-            t,
           })
         : []),
     ];
@@ -167,7 +135,6 @@ export function useProfileFieldBuckets({
     isOwner,
     managedAgent,
     onOpenProfile,
-    ownerAvatarUrl,
     ownerDisplayName,
     ownerHandle,
     ownerProfilePubkey,
@@ -178,7 +145,6 @@ export function useProfileFieldBuckets({
     profile,
     pubkey,
     relayAgent,
-    t,
   ]);
 }
 
@@ -195,14 +161,23 @@ export function buildPublicFields({
   pubkey: string | null;
   relayAgent: RelayAgent | undefined;
 }): ProfileField[] {
+  const t = useT();
+
   const fields: ProfileField[] = [];
 
   if (pubkey) {
     fields.push({
+      copyValue: pubkey,
       displayValue: truncatePubkey(pubkey),
-      displayNode: <PubKey pubkey={pubkey} testId="user-profile-copy-pubkey" />,
-      icon: Fingerprint,
-      label: "Public key",
+      displayNode: (
+        <PubKey
+          interactive={false}
+          pubkey={pubkey}
+          testId="user-profile-copy-pubkey"
+        />
+      ),
+      label: t("profile.publicKey"),
+      testId: "user-profile-public-key",
     });
   }
 
@@ -221,16 +196,16 @@ export function buildPublicFields({
       copyValue: relayAgent.agentType,
       displayValue: runtimeLabel(relayAgent.agentType),
       icon: Cpu,
-      label: "Agent type",
+      label: t("profile.agentType"),
       testId: "user-profile-agent-type",
     });
   }
 
   if (!pubkey && persona) {
     fields.push({
-      displayValue: "Not deployed",
+      displayValue: t("profile.notDeployed"),
       icon: Activity,
-      label: "Status",
+      label: t("channel.status"),
       testId: "user-profile-agent-status",
     });
   }
@@ -240,7 +215,7 @@ export function buildPublicFields({
       copyValue: relayAgent.capabilities.join(", "),
       displayValue: relayAgent.capabilities.join(", "),
       icon: Server,
-      label: "Capabilities",
+      label: t("profile.capabilities"),
       testId: "user-profile-capabilities",
     });
   }
@@ -252,7 +227,6 @@ export function buildOwnerFields({
   includeOperationalFields,
   managedAgent,
   onOpenProfile,
-  ownerAvatarUrl,
   ownerDisplayName,
   ownerHandle,
   ownerProfilePubkey,
@@ -261,12 +235,10 @@ export function buildOwnerFields({
   presenceLoaded,
   presenceStatus,
   relayAgent,
-  t,
 }: {
   includeOperationalFields: boolean;
   managedAgent: ManagedAgent | undefined;
   onOpenProfile?: (pubkey: string) => void;
-  ownerAvatarUrl: string | null;
   ownerDisplayName: string | null;
   ownerHandle: string | null;
   ownerProfilePubkey: string | null;
@@ -275,33 +247,22 @@ export function buildOwnerFields({
   presenceLoaded: boolean;
   presenceStatus: "online" | "away" | "offline" | undefined;
   relayAgent: RelayAgent | undefined;
-  t: TranslateFn;
 }): ProfileField[] {
+  const t = useT();
+
   const fields: ProfileField[] = [];
   const respondTo = managedAgent?.respondTo ?? relayAgent?.respondTo ?? null;
   const respondToDisplayValue = respondTo
     ? respondTo === "owner-only"
       ? ownerDisplayName
-        ? t("profile.onlyNamedOwner", { name: ownerDisplayName })
-        : "Only the owner"
+        ? `Only ${ownerDisplayName} (owner)`
+        : t("profile.onlyOwner")
       : respondTo === "allowlist"
-        ? "Selected people"
-        : "Anyone"
+        ? t("agents.respond.selectedPeople")
+        : t("agents.respond.anyone")
     : null;
 
   const ownerClickable = Boolean(onOpenProfile && ownerProfilePubkey);
-  const ownerContent = (
-    <>
-      <UserAvatar
-        avatarUrl={ownerAvatarUrl}
-        className="shrink-0"
-        displayName={ownerHandle ?? ownerDisplayName ?? ""}
-        size="xs"
-        testId="user-profile-owner-avatar"
-      />
-      <span className="truncate">{ownerDisplayName}</span>
-    </>
-  );
 
   if (ownerDisplayName) {
     fields.push({
@@ -309,13 +270,8 @@ export function buildOwnerFields({
         ? undefined
         : (ownerProfilePubkey ?? ownerPubkey ?? ownerHandle ?? undefined),
       displayValue: ownerDisplayName,
-      displayNode: (
-        <span className="inline-flex max-w-full items-center gap-2">
-          {ownerContent}
-        </span>
-      ),
-      icon: UserRound,
-      label: "Managed by",
+      displayNode: <span className="truncate">{ownerDisplayName}</span>,
+      label: t("profile.managedBy"),
       onClick:
         ownerClickable && ownerProfilePubkey
           ? () => onOpenProfile?.(ownerProfilePubkey)
@@ -333,7 +289,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.agentCommand,
       displayValue: runtimeLabel(managedAgent.agentCommand),
       icon: Terminal,
-      label: "Runtime",
+      label: t("profile.tabRuntime"),
       testId: "user-profile-runtime",
     });
   } else if (relayAgent?.agentType) {
@@ -341,7 +297,7 @@ export function buildOwnerFields({
       copyValue: relayAgent.agentType,
       displayValue: runtimeLabel(relayAgent.agentType),
       icon: Terminal,
-      label: "Runtime",
+      label: t("profile.tabRuntime"),
       testId: "user-profile-runtime",
     });
   } else if (persona?.runtime) {
@@ -349,15 +305,15 @@ export function buildOwnerFields({
       copyValue: persona.runtime,
       displayValue: runtimeLabel(persona.runtime),
       icon: Terminal,
-      label: "Runtime",
+      label: t("profile.tabRuntime"),
       testId: "user-profile-runtime",
     });
   } else if (ownerPubkey) {
     fields.push({
       copyValue: ownerPubkey,
-      displayValue: "Declared owner verified",
+      displayValue: t("profile.declaredOwnerVerified"),
       icon: UserRound,
-      label: "Agent profile",
+      label: t("profile.agentProfile"),
       testId: "user-profile-agent-profile",
     });
   }
@@ -369,13 +325,15 @@ export function buildOwnerFields({
         .replace(/\b\w/g, (char: string) => char.toUpperCase()),
       displayNode: (
         <AgentStatusBadge
+          className="normal-case tracking-normal"
           presenceLoaded={presenceLoaded}
           presenceStatus={presenceStatus}
+          sentenceCase
           status={managedAgent.status}
         />
       ),
       icon: Activity,
-      label: "Status",
+      label: t("channel.status"),
       testId: "user-profile-agent-status",
     });
   }
@@ -385,7 +343,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.acpCommand,
       displayValue: managedAgent.acpCommand,
       icon: Terminal,
-      label: "ACP command",
+      label: t("agents.acpCommand"),
       testId: "user-profile-acp",
     });
   }
@@ -395,7 +353,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.mcpCommand,
       displayValue: managedAgent.mcpCommand,
       icon: Terminal,
-      label: "MCP command",
+      label: t("profile.mcpCommand"),
       testId: "user-profile-mcp",
     });
   }
@@ -406,16 +364,16 @@ export function buildOwnerFields({
       copyValue: backendLabel,
       displayValue: backendLabel,
       icon: Server,
-      label: "Backend",
+      label: t("profile.backend"),
       testId: "user-profile-backend",
     });
   }
 
   if (managedAgent) {
     fields.push({
-      displayValue: managedAgent.startOnAppLaunch ? "Yes" : "No",
+      displayValue: managedAgent.startOnAppLaunch ? t("common.yes") : "No",
       icon: Server,
-      label: "Start on launch",
+      label: t("profile.startOnLaunch"),
       testId: "user-profile-start-on-launch",
     });
   }
@@ -424,7 +382,7 @@ export function buildOwnerFields({
     fields.push({
       displayValue: respondToDisplayValue,
       icon: Ear,
-      label: "Who can send instructions",
+      label: t("agents.respond.label"),
       testId: "user-profile-respond-to",
     });
   }
@@ -434,7 +392,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.lastError,
       displayValue: managedAgent.lastError,
       icon: Activity,
-      label: "Last error",
+      label: t("profile.lastError"),
       testId: "user-profile-last-error",
     });
   }
@@ -473,57 +431,114 @@ function orderProfileFields(fields: ProfileField[]) {
   ];
 }
 
-export function ProfileFieldRows({ fields }: { fields: ProfileField[] }) {
+export function ProfileFieldRows({
+  fields,
+  variant = "default",
+}: {
+  fields: ProfileField[];
+  variant?: "default" | "runtime";
+}) {
   return (
     <>
       {orderProfileFields(fields).map((field) => (
-        <ProfileFieldRow field={field} key={field.testId ?? field.label} />
+        <ProfileFieldRow
+          field={field}
+          key={field.testId ?? field.label}
+          variant={variant}
+        />
       ))}
     </>
   );
 }
 
-export function ProfileFieldGroup({ fields }: { fields: ProfileField[] }) {
+export function ProfileSectionGroup({
+  children,
+  headerAction,
+  testId,
+  title,
+}: {
+  children: React.ReactNode;
+  headerAction?: React.ReactNode;
+  testId?: string;
+  title?: string;
+}) {
   return (
-    <section>
-      <div className="overflow-hidden rounded-2xl bg-muted/20">
-        <ProfileFieldRows fields={fields} />
-      </div>
-    </section>
+    <PanelSectionGroup
+      headerAction={headerAction}
+      testId={testId}
+      title={title}
+    >
+      <div className="divide-y divide-border/55">{children}</div>
+    </PanelSectionGroup>
   );
 }
 
-function ProfileFieldRow({ field }: { field: ProfileField }) {
-  const t = useT();
+export function ProfileFieldGroup({
+  fields,
+  title,
+}: {
+  fields: ProfileField[];
+  title?: string;
+}) {
+  return (
+    <ProfileSectionGroup title={title}>
+      <ProfileFieldRows fields={fields} />
+    </ProfileSectionGroup>
+  );
+}
+
+function ProfileFieldRow({
+  field,
+  variant,
+}: {
+  field: ProfileField;
+  variant: "default" | "runtime";
+}) {
   const Icon = field.icon;
   const isCopyable = Boolean(field.copyValue);
   const isActionable = Boolean(field.onClick);
-  const labelKey = PROFILE_FIELD_LABEL_KEYS[field.label];
-  const displayLabel = labelKey ? t(labelKey) : field.label;
-  const valueKey = PROFILE_FIELD_VALUE_KEYS[field.displayValue];
-  const displayValue = valueKey ? t(valueKey) : field.displayValue;
+  const isTrailingDisplay =
+    variant === "runtime" && field.label === "Status" && field.displayNode;
+  const { copied, copy } = useCopyFeedback({
+    label: field.label,
+    value: field.copyValue ?? "",
+  });
 
   const content = (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </span>
+      {variant === "default" && Icon ? (
+        <Icon
+          className="h-4 w-4 shrink-0 text-muted-foreground"
+          data-slot="profile-field-icon"
+        />
+      ) : null}
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-xs font-medium text-foreground">
-          {displayLabel}
+        <span className="block text-sm font-medium text-foreground">
+          {field.label}
         </span>
-        <span
-          className="mt-0.5 block truncate text-sm text-muted-foreground"
-          title={displayValue}
-        >
-          {field.displayNode ?? displayValue}
-        </span>
+        {!isTrailingDisplay ? (
+          <span
+            className="mt-0.5 block truncate text-sm text-muted-foreground/70"
+            title={field.displayValue}
+          >
+            {field.displayNode ?? field.displayValue}
+          </span>
+        ) : null}
       </span>
+      {isTrailingDisplay ? field.displayNode : null}
       {field.trailingNode}
       {isActionable ? (
-        <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <ArrowUpRight
+          className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          data-testid={
+            field.testId ? `${field.testId}-action-indicator` : undefined
+          }
+        />
       ) : isCopyable ? (
-        <Copy className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <HoverCopyIndicator
+          copied={copied}
+          testId={field.testId ? `${field.testId}-copy-status` : undefined}
+        />
       ) : null}
     </>
   );
@@ -531,11 +546,11 @@ function ProfileFieldRow({ field }: { field: ProfileField }) {
   if (isActionable) {
     return (
       <button
-        aria-label={t("profile.openField", { label: displayLabel })}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+        aria-label={`Open ${field.label}`}
+        className="group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         data-testid={field.testId}
         onClick={field.onClick}
-        title={t("profile.openField", { label: displayLabel })}
+        title={`Open ${field.label}`}
         type="button"
       >
         {content}
@@ -546,16 +561,11 @@ function ProfileFieldRow({ field }: { field: ProfileField }) {
   if (isCopyable && field.copyValue) {
     return (
       <button
-        aria-label={t("profile.copyLabel", { label: displayLabel })}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+        aria-label={`Copy ${field.label}`}
+        className="group flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         data-testid={field.testId}
-        onClick={() =>
-          copyTextToClipboard(
-            field.copyValue ?? "",
-            t("channel.copiedField", { label: displayLabel }),
-          )
-        }
-        title={t("profile.copyLabel", { label: displayLabel })}
+        onClick={() => void copy()}
+        title={`Copy ${field.label}`}
         type="button"
       >
         {content}
@@ -565,7 +575,7 @@ function ProfileFieldRow({ field }: { field: ProfileField }) {
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3"
+      className="flex min-h-16 items-center gap-3 px-4 py-3"
       data-testid={field.testId}
     >
       {content}

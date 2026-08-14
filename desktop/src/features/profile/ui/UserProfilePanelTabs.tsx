@@ -1,36 +1,27 @@
 import * as React from "react";
 import type { LucideIcon } from "lucide-react";
-import {
-  Activity,
-  Archive,
-  ChevronRight,
-  Info,
-  RefreshCw,
-  Wrench,
-} from "lucide-react";
+import { Archive, ChevronRight, Info, RefreshCw, Wrench } from "lucide-react";
 
+import type { IdentityArchiveActions } from "@/features/identity-archive/hooks";
 import type { ManagedAgent, RestartDiffEntry } from "@/shared/api/types";
 import {
-  autoRestartBlurb,
+  AUTO_RESTART_OFF_BLURB,
+  AUTO_RESTART_ON_BLURB,
   RestartDiffList,
 } from "@/features/agents/ui/RestartDiffBadge";
-import { useT, type TranslateFn } from "@/shared/i18n";
 import type { ActiveTurnSummary } from "@/features/agents/activeAgentTurnsStore";
 import { ManagedAgentSessionPanel } from "@/features/agents/ui/ManagedAgentSessionPanel";
-import {
-  AgentDetailsRows,
-  AgentInstructionRow,
-} from "@/features/profile/ui/UserProfilePanelAgentDetails";
 import type { ProfileActivityAgent } from "@/features/profile/lib/profileActivityAgent";
 import { resolveActivityChannelId } from "@/features/profile/lib/profileActivityCarousel";
 import {
   type ProfileActivityFeedScope,
   useProfileActivityFeedScope,
 } from "@/features/profile/lib/profileActivityFeedScope";
+import { UserProfileAgentManagementRows } from "@/features/profile/ui/UserProfileAgentManagementRows";
 import {
   type ProfileField,
-  ProfileFieldGroup,
   ProfileFieldRows,
+  ProfileSectionGroup,
 } from "@/features/profile/ui/UserProfilePanelFields";
 import type { ProfilePanelTab } from "@/features/profile/ui/UserProfilePanelUtils";
 import { cn } from "@/shared/lib/cn";
@@ -42,10 +33,16 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/shared/ui/carousel";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { PanelSectionGroup } from "@/shared/ui/PanelSectionGroup";
+import { Switch } from "@/shared/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
+import { useT } from "@/shared/i18n";
 
 export function ProfileIngressRow({
   disabled,
+  disclosureIcon: DisclosureIcon = ChevronRight,
+  grouped = false,
   icon: Icon,
   label,
   onClick,
@@ -53,25 +50,21 @@ export function ProfileIngressRow({
   trailing,
 }: {
   disabled?: boolean;
-  icon: LucideIcon;
+  disclosureIcon?: LucideIcon;
+  grouped?: boolean;
+  icon?: LucideIcon;
   label: string;
-  onClick: () => void;
+  onClick?: () => void;
   testId: string;
   trailing?: React.ReactNode;
 }) {
   const trailingTitle = typeof trailing === "string" ? trailing : undefined;
 
-  return (
-    <button
-      className="flex w-full items-center gap-3 rounded-2xl bg-muted/20 px-4 py-2 text-left transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
-      data-testid={testId}
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </span>
+  const content = (
+    <>
+      {Icon ? (
+        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      ) : null}
       <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
         {label}
       </span>
@@ -83,136 +76,46 @@ export function ProfileIngressRow({
           {trailing}
         </span>
       ) : null}
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-    </button>
+      {onClick ? (
+        <DisclosureIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      ) : null}
+    </>
   );
-}
-
-function useHorizontalDragScroll() {
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-  const didDragRef = React.useRef(false);
-  const momentumFrameRef = React.useRef<number | null>(null);
-  const activeListenersRef = React.useRef<{
-    move: (event: PointerEvent) => void;
-    up: (event: PointerEvent) => void;
-  } | null>(null);
-
-  const stopMomentum = React.useCallback(() => {
-    if (momentumFrameRef.current !== null) {
-      cancelAnimationFrame(momentumFrameRef.current);
-      momentumFrameRef.current = null;
-    }
-  }, []);
-
-  const cleanupListeners = React.useCallback(() => {
-    const active = activeListenersRef.current;
-    if (!active) {
-      return;
-    }
-
-    window.removeEventListener("pointermove", active.move);
-    window.removeEventListener("pointerup", active.up);
-    window.removeEventListener("pointercancel", active.up);
-    activeListenersRef.current = null;
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      cleanupListeners();
-      stopMomentum();
-    };
-  }, [cleanupListeners, stopMomentum]);
-
-  const handlePointerDown = React.useCallback(
-    (event: React.PointerEvent<HTMLDivElement>) => {
-      const element = scrollRef.current;
-      if (!element || event.button !== 0) {
-        return;
-      }
-
-      cleanupListeners();
-      stopMomentum();
-
-      const startX = event.clientX;
-      const startScrollLeft = element.scrollLeft;
-      let lastX = event.clientX;
-      let lastTime = performance.now();
-      let velocity = 0;
-      didDragRef.current = false;
-
-      const handleMove = (moveEvent: PointerEvent) => {
-        const now = performance.now();
-        const deltaX = moveEvent.clientX - startX;
-        if (!didDragRef.current && Math.abs(deltaX) > 4) {
-          didDragRef.current = true;
-        }
-
-        if (didDragRef.current) {
-          moveEvent.preventDefault();
-          element.scrollLeft = startScrollLeft - deltaX;
-
-          const dt = now - lastTime;
-          if (dt > 0) {
-            velocity = -(moveEvent.clientX - lastX) / dt;
-          }
-          lastX = moveEvent.clientX;
-          lastTime = now;
-        }
-      };
-
-      const handleUp = () => {
-        cleanupListeners();
-        window.setTimeout(() => {
-          didDragRef.current = false;
-        }, 0);
-
-        const minVelocity = 0.02;
-        if (!didDragRef.current || Math.abs(velocity) < minVelocity) {
-          return;
-        }
-
-        let frameTime = performance.now();
-        const frictionPerMs = 0.004;
-
-        const step = (now: number) => {
-          const dt = now - frameTime;
-          frameTime = now;
-
-          const maxScroll = element.scrollWidth - element.clientWidth;
-          element.scrollLeft = Math.max(
-            0,
-            Math.min(maxScroll, element.scrollLeft + velocity * dt),
-          );
-
-          if (element.scrollLeft <= 0 || element.scrollLeft >= maxScroll) {
-            momentumFrameRef.current = null;
-            return;
-          }
-
-          velocity *= Math.exp(-frictionPerMs * dt);
-          if (Math.abs(velocity) >= minVelocity) {
-            momentumFrameRef.current = requestAnimationFrame(step);
-          } else {
-            momentumFrameRef.current = null;
-          }
-        };
-
-        momentumFrameRef.current = requestAnimationFrame(step);
-      };
-
-      activeListenersRef.current = { move: handleMove, up: handleUp };
-      window.addEventListener("pointermove", handleMove);
-      window.addEventListener("pointerup", handleUp);
-      window.addEventListener("pointercancel", handleUp);
-    },
-    [cleanupListeners, stopMomentum],
+  const className = cn(
+    "flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left",
+    onClick &&
+      "transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50",
   );
 
-  return {
-    didDragRef,
-    onPointerDown: handlePointerDown,
-    scrollRef,
-  };
+  let row: React.ReactNode;
+  if (!onClick) {
+    row = (
+      <div className={className} data-testid={testId}>
+        {content}
+      </div>
+    );
+  } else {
+    row = (
+      <button
+        className={cn(
+          className,
+          "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+        )}
+        data-testid={testId}
+        disabled={disabled}
+        onClick={onClick}
+        type="button"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return grouped ? (
+    row
+  ) : (
+    <PanelSectionGroup testId={`${testId}-section`}>{row}</PanelSectionGroup>
+  );
 }
 
 export function ProfileTabBar({
@@ -229,57 +132,58 @@ export function ProfileTabBar({
   }>;
 }) {
   const t = useT();
-  const { didDragRef, onPointerDown, scrollRef } = useHorizontalDragScroll();
+
+  if (tabs.length === 0) {
+    return null;
+  }
+
+  const activeIndex = Math.max(
+    0,
+    tabs.findIndex((tab) => tab.id === activeTab),
+  );
 
   return (
-    <div
-      className="-mx-4 cursor-grab select-none overflow-x-auto px-4 scrollbar-none active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
-      onPointerDown={onPointerDown}
-      ref={scrollRef}
+    <Tabs
+      className="w-full"
+      onValueChange={(value) => onTabChange(value as ProfilePanelTab)}
+      value={activeTab}
     >
-      <div
+      <TabsList
         aria-label={t("profile.sectionsAria")}
-        className="flex w-max min-w-full justify-center gap-1.5"
-        role="tablist"
+        className="relative isolate grid h-9 w-full overflow-hidden rounded-lg bg-muted p-0.5"
+        data-testid="user-profile-tab-list"
+        style={{
+          gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
+        }}
       >
+        <div
+          aria-hidden="true"
+          className="absolute bottom-0.5 left-0.5 top-0.5 z-0 rounded-md bg-background shadow-sm transition-transform duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          data-testid="user-profile-tab-indicator"
+          style={{
+            transform: `translateX(${activeIndex * 100}%)`,
+            width: `calc((100% - 4px) / ${tabs.length})`,
+          }}
+        />
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-
           return (
-            <Button
-              aria-selected={isActive}
-              className="shrink-0 rounded-full"
+            <TabsTrigger
+              className="group relative z-10 h-full min-w-0 gap-1 rounded-md bg-transparent px-2 text-xs font-medium shadow-none transition-colors data-[state=active]:bg-transparent data-[state=active]:shadow-none"
               data-testid={`user-profile-tab-${tab.id}`}
               key={tab.id}
-              onClick={() => {
-                if (didDragRef.current) {
-                  return;
-                }
-                onTabChange(tab.id);
-              }}
-              role="tab"
-              size="sm"
-              type="button"
-              variant={isActive ? "secondary" : "ghost"}
+              value={tab.id}
             >
-              {tab.label}
+              <span className="truncate">{tab.label}</span>
               {tab.trailing ? (
-                <span
-                  className={cn(
-                    "inline-flex items-center leading-none text-2xs",
-                    isActive
-                      ? "text-secondary-foreground/80"
-                      : "text-muted-foreground",
-                  )}
-                >
+                <span className="inline-flex shrink-0 items-center leading-none text-2xs text-muted-foreground group-data-[state=active]:text-foreground/70">
                   {tab.trailing}
                 </span>
               ) : null}
-            </Button>
+            </TabsTrigger>
           );
         })}
-      </div>
-    </div>
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -287,52 +191,78 @@ export function ProfileInfoTabContent({
   activeTurns,
   activityAgent,
   agentInfoFields,
+  archiveActions,
+  canArchiveAgent,
+  canDeleteAgent,
   callerChannelId,
   channelIdToName,
-  instances,
   isArchived,
+  isDeleteAgentPending,
+  managedAgent,
+  onDeleteAgent,
+  onDuplicateAgent,
+  onExportAgent,
   onOpenActivity,
-  onOpenInstance,
+  onEditAgent,
   pubkey,
   showActivityIngress,
+  showInstructionBlock,
 }: {
   activeTurns: ActiveTurnSummary[];
   activityAgent: ProfileActivityAgent | null;
   agentInfoFields: ProfileField[];
+  archiveActions: IdentityArchiveActions;
+  canArchiveAgent: boolean;
+  canDeleteAgent: boolean;
   callerChannelId: string | null;
   channelIdToName: Record<string, string>;
-  instances: ManagedAgent[];
   isArchived: boolean;
+  isDeleteAgentPending: boolean;
+  managedAgent?: ManagedAgent;
+  onDeleteAgent: () => void;
+  onDuplicateAgent?: () => void;
+  onExportAgent?: () => void;
+  onEditAgent: () => void;
   onOpenActivity: (channelId?: string | null) => void;
-  onOpenInstance: (pubkey: string) => void;
   pubkey: string | null;
   showActivityIngress: boolean;
+  showInstructionBlock: boolean;
 }) {
   const t = useT();
+
   const infoFields: ProfileField[] = isArchived
     ? [
         ...agentInfoFields,
         {
-          displayValue: "Archived",
+          displayValue: t("browser.filterArchived"),
           icon: Archive,
-          label: "Visibility",
+          label: t("channel.visibility"),
           testId: "user-profile-archived-flair",
           trailingNode: <ArchiveStatusTooltip />,
         },
       ]
     : agentInfoFields;
   const hasInfoFields = infoFields.length > 0;
-  const hasInstances = instances.length > 1;
+  const showArchiveAction =
+    canArchiveAgent && archiveActions.isArchived !== undefined;
   const feedScope = useProfileActivityFeedScope(activityAgent, activeTurns);
   const showLiveActivityEmbed =
     showActivityIngress && (feedScope.isLive || feedScope.hasFeedContent);
 
-  if (!hasInfoFields && !showActivityIngress && !hasInstances) {
+  if (
+    !hasInfoFields &&
+    !showArchiveAction &&
+    !canDeleteAgent &&
+    !onDuplicateAgent &&
+    !onExportAgent &&
+    !showActivityIngress &&
+    !showInstructionBlock
+  ) {
     return null;
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4" data-testid="user-profile-info-sections">
       {showActivityIngress ? (
         showLiveActivityEmbed && activityAgent ? (
           <ProfileLiveActivityEmbed
@@ -346,21 +276,36 @@ export function ProfileInfoTabContent({
         ) : (
           <ProfileIngressRow
             icon={Wrench}
-            label={t("profile.activityLog")}
+            label="Activity log"
             onClick={() => onOpenActivity(null)}
             testId={`user-profile-view-activity-${pubkey}`}
-            trailing={t("common.view")}
+            trailing="View"
           />
         )
       ) : null}
-      {hasInfoFields ? <ProfileFieldGroup fields={infoFields} /> : null}
-      {hasInstances ? (
-        <ProfileInstancesSection
-          currentPubkey={pubkey}
-          instances={instances}
-          onOpenInstance={onOpenInstance}
-        />
+      {hasInfoFields || showInstructionBlock ? (
+        <ProfileSectionGroup testId="user-profile-info-section" title={t("profile.tabInfo")}>
+          {showInstructionBlock ? (
+            <ProfileIngressRow
+              grouped
+              label="Agent instructions"
+              onClick={onEditAgent}
+              testId="user-profile-agent-instruction-row"
+            />
+          ) : null}
+          <ProfileFieldRows fields={infoFields} />
+        </ProfileSectionGroup>
       ) : null}
+      <UserProfileAgentManagementRows
+        archiveActions={archiveActions}
+        canArchiveAgent={showArchiveAction}
+        canDeleteAgent={canDeleteAgent}
+        isDeletePending={isDeleteAgentPending}
+        managedAgent={managedAgent}
+        onDeleteAgent={onDeleteAgent}
+        onDuplicateAgent={onDuplicateAgent}
+        onExportAgent={onExportAgent}
+      />
     </div>
   );
 }
@@ -375,19 +320,22 @@ function ProfileInstancesSection({
   onOpenInstance: (pubkey: string) => void;
 }) {
   const [expanded, setExpanded] = React.useState(false);
+  const instanceCountLabel = `${instances.length} instance${instances.length === 1 ? "" : "s"}`;
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-muted/20">
+    <ProfileSectionGroup
+      testId="user-profile-instances-section"
+      title="Instances"
+    >
       <button
         aria-expanded={expanded}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+        className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         data-testid="user-profile-instances"
         onClick={() => setExpanded((value) => !value)}
         type="button"
       >
-        <span className="min-w-0 flex-1 text-sm font-medium">Instances</span>
-        <span className="text-sm text-muted-foreground">
-          {instances.length}
+        <span className="min-w-0 flex-1 text-sm font-medium">
+          {instanceCountLabel}
         </span>
         <ChevronRight
           className={cn(
@@ -396,13 +344,12 @@ function ProfileInstancesSection({
           )}
         />
       </button>
-      {expanded ? (
-        <div className="border-t border-border/60 px-2 py-2">
-          {instances.map((instance) => {
+      {expanded
+        ? instances.map((instance) => {
             const isCurrent = instance.pubkey === currentPubkey;
             return (
               <button
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-muted/40"
+                className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 data-testid={`user-profile-instance-${instance.pubkey}`}
                 key={instance.pubkey}
                 onClick={() => onOpenInstance(instance.pubkey)}
@@ -417,10 +364,9 @@ function ProfileInstancesSection({
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
             );
-          })}
-        </div>
-      ) : null}
-    </div>
+          })
+        : null}
+    </ProfileSectionGroup>
   );
 }
 
@@ -439,7 +385,6 @@ function ProfileLiveActivityEmbed({
   feedScope: ProfileActivityFeedScope;
   onOpenActivity: (channelId?: string | null) => void;
 }) {
-  const t = useT();
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi>();
   const [selectedChannelId, setSelectedChannelId] = React.useState<
     string | null
@@ -522,11 +467,7 @@ function ProfileLiveActivityEmbed({
     selectedTurn?.anchorAt ??
     null;
   const emptyState = feedScope.isLive ? "loading" : "idle";
-  const emptyDescription = t("profile.liveActivityHint");
-  const lastLiveLabel = formatLastLiveLabel(lastLiveAt, Date.now(), t);
-  const openActivityAria = t("profile.openActivityFeedAria", {
-    when: lastLiveLabel,
-  });
+  const emptyDescription = "Live activity will appear here.";
   const openSelectedActivity = React.useCallback(() => {
     onOpenActivity(activeChannelId);
   }, [activeChannelId, onOpenActivity]);
@@ -545,12 +486,12 @@ function ProfileLiveActivityEmbed({
   if (slides.length === 0) {
     return (
       <section
-        aria-label={openActivityAria}
+        aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
         className="relative flex h-56 cursor-pointer flex-col overflow-hidden rounded-2xl border bg-background text-left shadow-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-testid={`user-profile-live-activity-${activityAgent.pubkey}`}
       >
         <button
-          aria-label={openActivityAria}
+          aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
           className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={openSelectedActivity}
           type="button"
@@ -578,7 +519,7 @@ function ProfileLiveActivityEmbed({
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-start bg-linear-to-t from-background via-background/90 to-transparent px-3 pb-3 pt-24">
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-muted-foreground">
-                {t("profile.latestActivity")}
+                Latest Activity
               </span>
             </div>
           </div>
@@ -590,12 +531,12 @@ function ProfileLiveActivityEmbed({
   return (
     <div>
       <section
-        aria-label={openActivityAria}
+        aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
         className="relative flex h-56 cursor-pointer flex-col overflow-hidden rounded-2xl border bg-background text-left shadow-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-testid={`user-profile-live-activity-${activityAgent.pubkey}`}
       >
         <button
-          aria-label={openActivityAria}
+          aria-label={`Open activity feed. Last live ${formatLastLiveLabel(lastLiveAt, Date.now())}.`}
           className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={openSelectedActivity}
           type="button"
@@ -653,7 +594,7 @@ function ProfileLiveActivityEmbed({
           <div className="absolute inset-x-0 bottom-0 flex flex-col items-start bg-linear-to-t from-background via-background/80 to-transparent px-3 pb-3 pt-16">
             <div className="min-w-0">
               <span className="block text-xs font-semibold text-muted-foreground">
-                {t("profile.latestActivity")}
+                Latest Activity
               </span>
               {activeChannelName ? (
                 <span
@@ -690,6 +631,7 @@ function ActivityCarouselDots({
   slides: string[];
 }) {
   const t = useT();
+
   if (slides.length <= 1) {
     return null;
   }
@@ -706,9 +648,7 @@ function ActivityCarouselDots({
 
         return (
           <button
-            aria-label={t("profile.showChannelActivityAria", {
-              name: channelName,
-            })}
+            aria-label={`Show #${channelName} activity`}
             aria-selected={isSelected}
             className="group relative flex items-center justify-center before:absolute before:-inset-2 before:content-['']"
             data-testid={`user-profile-activity-dot-${channelId}`}
@@ -745,20 +685,19 @@ function LiveActivityOpenButton({
   lastLiveAt: number | null;
   onOpenActivity: (channelId?: string | null) => void;
 }) {
-  const t = useT();
   const now = useNow(15_000);
-  const label = formatLastLiveLabel(lastLiveAt, now, t);
+  const label = formatLastLiveLabel(lastLiveAt, now);
 
   return (
     <Button
-      aria-label={t("profile.openFullActivityAria", { when: label })}
+      aria-label={`Open full activity. Last live ${label}.`}
       className="absolute right-3 top-3 z-40 rounded-full bg-primary px-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
       onClick={(event) => {
         event.stopPropagation();
         onOpenActivity(activeChannelId);
       }}
       size="xs"
-      title={t("profile.lastLiveTitle", { when: label })}
+      title={`Last live ${label}`}
       type="button"
     >
       {label}
@@ -766,11 +705,9 @@ function LiveActivityOpenButton({
   );
 }
 
-function formatLastLiveLabel(
-  timestamp: number | null,
-  now: number,
-  t: TranslateFn,
-): string {
+function formatLastLiveLabel(timestamp: number | null, now: number): string {
+  const t = useT();
+
   if (timestamp === null) {
     return t("profile.noActivityYet");
   }
@@ -783,25 +720,26 @@ function formatLastLiveLabel(
 
   const totalMinutes = Math.floor(totalSeconds / 60);
   if (totalMinutes < 60) {
-    return t("profile.minutesAgo", { count: totalMinutes });
+    return `${totalMinutes}m ago`;
   }
 
   const totalHours = Math.floor(totalMinutes / 60);
   if (totalHours < 24) {
-    return t("profile.hoursAgo", { count: totalHours });
+    return `${totalHours}h ago`;
   }
 
   const totalDays = Math.floor(totalHours / 24);
   if (totalDays < 7) {
-    return t("profile.daysAgo", { count: totalDays });
+    return `${totalDays}d ago`;
   }
 
   const totalWeeks = Math.floor(totalDays / 7);
-  return t("profile.weeksAgo", { count: totalWeeks });
+  return `${totalWeeks}w ago`;
 }
 
 function ArchiveStatusTooltip() {
   const t = useT();
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -815,65 +753,106 @@ function ArchiveStatusTooltip() {
         </button>
       </TooltipTrigger>
       <TooltipContent align="end" className="max-w-72 text-left" side="top">
-        <p className="text-sm">{t("profile.archivedMeansBody")}</p>
+        <p className="text-sm">
+          Archived agents do not appear in search, autocomplete, or member-add
+          flows in this space. You can unarchive them at any time.
+        </p>
       </TooltipContent>
     </Tooltip>
   );
 }
 
 export function ProfileRuntimeTabContent({
-  agentInstruction,
   autoRestartEnabled = false,
+  currentPubkey,
   diagnosticsFields,
   diagnosticsSummary,
+  configurationFields,
+  instances,
+  modelSettings,
   needsRestart = false,
   restartDiff = [],
+  startOnLaunchEnabled,
+  startOnLaunchPending = false,
   onOpenDiagnostics,
-  onOpenInstructions,
-  runtimeConfigurationFields,
-  runtimeSettingsFields,
+  onOpenInstance,
+  onToggleStartOnLaunch,
   showDiagnosticsIngress,
-  showInstructionBlock,
+  showPreviewHarnessLog = false,
 }: {
-  agentInstruction: string | null;
   /** Whether the per-agent auto-restart toggle is ON. */
   autoRestartEnabled?: boolean;
+  currentPubkey: string | null;
   diagnosticsFields: ProfileField[];
   diagnosticsSummary: React.ReactNode;
+  configurationFields: ProfileField[];
+  instances: ManagedAgent[];
+  modelSettings?: React.ReactNode;
   /** True when the running agent's config has drifted from what it was spawned with. */
   needsRestart?: boolean;
   /** The full itemised diff — shown uncapped in the Runtime banner. */
   restartDiff?: RestartDiffEntry[];
+  startOnLaunchEnabled?: boolean;
+  startOnLaunchPending?: boolean;
   onOpenDiagnostics: () => void;
-  onOpenInstructions: () => void;
-  runtimeConfigurationFields: ProfileField[];
-  runtimeSettingsFields: ProfileField[];
+  onOpenInstance: (pubkey: string) => void;
+  onToggleStartOnLaunch?: () => void;
   showDiagnosticsIngress: boolean;
-  showInstructionBlock: boolean;
+  showPreviewHarnessLog?: boolean;
 }) {
   const t = useT();
+
+  const startOnLaunchFieldIndex = configurationFields.findIndex(
+    (field) => field.label === "Start on launch",
+  );
+  const startOnLaunchField = configurationFields[startOnLaunchFieldIndex];
+  const configurationFieldsBeforeStartOnLaunch =
+    startOnLaunchFieldIndex >= 0
+      ? configurationFields.slice(0, startOnLaunchFieldIndex)
+      : configurationFields;
+  const configurationFieldsAfterStartOnLaunch =
+    startOnLaunchFieldIndex >= 0
+      ? configurationFields.slice(startOnLaunchFieldIndex + 1)
+      : [];
+  const [previewStartOnLaunchEnabled, setPreviewStartOnLaunchEnabled] =
+    React.useState(startOnLaunchField?.displayValue === "Yes");
+  const isRuntimePreview =
+    startOnLaunchField !== undefined && startOnLaunchEnabled === undefined;
+  const resolvedStartOnLaunchEnabled =
+    startOnLaunchEnabled ?? previewStartOnLaunchEnabled;
+  const canToggleStartOnLaunch =
+    isRuntimePreview || onToggleStartOnLaunch !== undefined;
+  const handleStartOnLaunchToggle = React.useCallback(() => {
+    if (startOnLaunchPending) return;
+    if (isRuntimePreview) {
+      setPreviewStartOnLaunchEnabled((enabled) => !enabled);
+      return;
+    }
+    onToggleStartOnLaunch?.();
+  }, [isRuntimePreview, onToggleStartOnLaunch, startOnLaunchPending]);
   const statusDiagnosticsFields = diagnosticsFields.filter(
     (field) => field.label === "Status",
   );
-  const detailDiagnosticsFields = diagnosticsFields.filter(
-    (field) => field.label !== "Last error" && field.label !== "Status",
-  );
-  const hasRuntimeRows =
-    runtimeConfigurationFields.length > 0 || runtimeSettingsFields.length > 0;
+  const hasActivityRows =
+    statusDiagnosticsFields.length > 0 ||
+    showDiagnosticsIngress ||
+    showPreviewHarnessLog;
+  const hasConfigurationRows = configurationFields.length > 0;
+  const hasInstances = instances.length > 0;
 
   if (
-    !hasRuntimeRows &&
     statusDiagnosticsFields.length === 0 &&
-    detailDiagnosticsFields.length === 0 &&
-    !showDiagnosticsIngress &&
-    !showInstructionBlock &&
+    !hasActivityRows &&
+    !hasConfigurationRows &&
+    !modelSettings &&
+    !hasInstances &&
     !needsRestart
   ) {
     return null;
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4" data-testid="user-profile-runtime-sections">
       {needsRestart ? (
         <div
           className="flex items-start gap-3 rounded-2xl bg-amber-500/10 px-4 py-3"
@@ -882,10 +861,12 @@ export function ProfileRuntimeTabContent({
           <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="min-w-0 text-sm">
             <p className="font-medium text-amber-600 dark:text-amber-400">
-              {t("agents.restartRequired")}
+              Restart required
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {autoRestartBlurb(autoRestartEnabled, t)}
+              {autoRestartEnabled
+                ? AUTO_RESTART_ON_BLURB
+                : AUTO_RESTART_OFF_BLURB}
             </p>
             {/* Full uncapped diff list — Runtime banner is the only surface
                 where all entries show without truncation. */}
@@ -893,36 +874,90 @@ export function ProfileRuntimeTabContent({
           </div>
         </div>
       ) : null}
-      {showInstructionBlock ? (
-        <div className="overflow-hidden rounded-2xl bg-muted/20">
-          <AgentInstructionRow
-            instruction={agentInstruction}
-            onOpenInstructions={onOpenInstructions}
-          />
-        </div>
-      ) : null}
-      {statusDiagnosticsFields.length > 0 ? (
-        <ProfileFieldGroup fields={statusDiagnosticsFields} />
-      ) : null}
-      {showDiagnosticsIngress ? (
-        <ProfileIngressRow
-          icon={Activity}
-          label={t("profile.harnessLog")}
-          onClick={onOpenDiagnostics}
-          testId="user-profile-diagnostics-ingress"
-          trailing={diagnosticsSummary}
-        />
-      ) : null}
-      {hasRuntimeRows ? (
-        <div className="overflow-hidden rounded-2xl bg-muted/20">
-          <AgentDetailsRows fields={runtimeConfigurationFields} />
-          {runtimeSettingsFields.length > 0 ? (
-            <ProfileFieldRows fields={runtimeSettingsFields} />
+      {hasActivityRows ? (
+        <ProfileSectionGroup
+          testId="user-profile-runtime-activity-section"
+          title={t("inbox.category.activity")}
+        >
+          {statusDiagnosticsFields.length > 0 ? (
+            <ProfileFieldRows
+              fields={statusDiagnosticsFields}
+              variant="runtime"
+            />
           ) : null}
-        </div>
+          {showDiagnosticsIngress ? (
+            <ProfileIngressRow
+              grouped
+              label="Harness log"
+              onClick={onOpenDiagnostics}
+              testId="user-profile-diagnostics-ingress"
+              trailing={diagnosticsSummary}
+            />
+          ) : showPreviewHarnessLog ? (
+            <ProfileIngressRow
+              grouped
+              label="Harness log"
+              testId="user-profile-diagnostics-ingress-preview"
+            />
+          ) : null}
+        </ProfileSectionGroup>
       ) : null}
-      {detailDiagnosticsFields.length > 0 ? (
-        <ProfileFieldGroup fields={detailDiagnosticsFields} />
+      {hasConfigurationRows ? (
+        <ProfileSectionGroup
+          testId="user-profile-agent-configuration-section"
+          title="Agent configuration"
+        >
+          <ProfileFieldRows
+            fields={configurationFieldsBeforeStartOnLaunch}
+            variant="runtime"
+          />
+          {startOnLaunchField ? (
+            <div
+              aria-checked={resolvedStartOnLaunchEnabled}
+              aria-disabled={!canToggleStartOnLaunch || startOnLaunchPending}
+              aria-label={startOnLaunchField.label}
+              className={cn(
+                "flex min-h-16 items-center gap-3 px-4 py-3",
+                canToggleStartOnLaunch &&
+                  "cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+              )}
+              data-testid={startOnLaunchField.testId}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                handleStartOnLaunchToggle();
+              }}
+              onClick={
+                canToggleStartOnLaunch ? handleStartOnLaunchToggle : undefined
+              }
+              role="switch"
+              tabIndex={canToggleStartOnLaunch ? 0 : -1}
+            >
+              <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+                {startOnLaunchField.label}
+              </span>
+              <Switch
+                aria-hidden="true"
+                checked={resolvedStartOnLaunchEnabled}
+                data-testid={`${startOnLaunchField.testId}-toggle`}
+                disabled={!canToggleStartOnLaunch || startOnLaunchPending}
+                tabIndex={-1}
+              />
+            </div>
+          ) : null}
+          <ProfileFieldRows
+            fields={configurationFieldsAfterStartOnLaunch}
+            variant="runtime"
+          />
+        </ProfileSectionGroup>
+      ) : null}
+      {modelSettings}
+      {hasInstances ? (
+        <ProfileInstancesSection
+          currentPubkey={currentPubkey}
+          instances={instances}
+          onOpenInstance={onOpenInstance}
+        />
       ) : null}
     </div>
   );

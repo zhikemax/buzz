@@ -25,7 +25,7 @@ export type ProviderRuntimeCapability = "capable" | "locked" | "unknown";
  * truth for the capable set rather than re-hardcoding it here.
  */
 export function resolveRuntimeProviderCapability(
-  runtimeId: string,
+  _runtimeId: string,
   isProviderCapable: boolean,
 ): ProviderRuntimeCapability {
   if (isProviderCapable) {
