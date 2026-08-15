@@ -99,7 +99,9 @@ UI already exists (sidebar card + Settings → Software Updates). Official
 - CI: `.github/workflows/release-desktop-fork.yml` (Windows + macOS arm64/x64;
   repo gate `zhikemax/buzz`). macOS Build sidecars must include
   `-p buzz-backend-kubernetes` (Windows omits it; `bundle-sidecars.sh`
-  only requires that binary on non-Windows).
+  only requires that binary on non-Windows). After the unsigned Tauri
+  build, macOS must `tar` `Buzz.app` and `pnpm tauri signer sign` — do
+  not rely on `createUpdaterArtifacts` alone under `--no-sign`.
 - Docs: `desktop/docs/FORK_AUTO_UPDATE.md`
 - Local bake helper: `source desktop/scripts/fork-updater-env.sh` then set
   `BUZZ_UPDATER_PUBLIC_KEY` + `TAURI_SIGNING_PRIVATE_KEY`

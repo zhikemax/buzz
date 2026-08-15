@@ -239,6 +239,21 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
 
+      # Fork skips Apple codesign; still pack + Tauri-sign the .app for updater
+      # (createUpdaterArtifacts alone has been unreliable under --no-sign here).
+      - name: Build updater archive and signature
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          APP_DIR="desktop/src-tauri/target/release/bundle/macos"
+          [[ -d "${APP_DIR}/Buzz.app" ]] || { echo "::error::Buzz.app missing in $APP_DIR"; ls -la "$APP_DIR" || true; exit 1; }
+          rm -f "${APP_DIR}/Buzz.app.tar.gz" "${APP_DIR}/Buzz.app.tar.gz.sig"
+          (cd "$APP_DIR" && tar -czf Buzz.app.tar.gz Buzz.app)
+          TARBALL_ABS="$(pwd)/${APP_DIR}/Buzz.app.tar.gz"
+          (cd desktop && pnpm tauri signer sign "$TARBALL_ABS")
+
       - name: Locate macOS build artifacts
         id: artifacts
         run: |
@@ -257,6 +272,7 @@ jobs:
           SIG="${ARCHIVE}.sig"
           if [[ -z "$ARCHIVE" || ! -f "$SIG" ]]; then
             echo "::error::Updater archive or signature not found in $BUNDLE_DIR/macos"
+            ls -la "$BUNDLE_DIR/macos" || true
             exit 1
           fi
 
@@ -352,6 +368,21 @@ jobs:
           CMAKE_OSX_DEPLOYMENT_TARGET: "10.15"
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
 
+      # Fork skips Apple codesign; still pack + Tauri-sign the .app for updater
+      # (createUpdaterArtifacts alone has been unreliable under --no-sign here).
+      - name: Build updater archive and signature
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          APP_DIR="desktop/src-tauri/target/${TARGET}/release/bundle/macos"
+          [[ -d "${APP_DIR}/Buzz.app" ]] || { echo "::error::Buzz.app missing in $APP_DIR"; ls -la "$APP_DIR" || true; exit 1; }
+          rm -f "${APP_DIR}/Buzz.app.tar.gz" "${APP_DIR}/Buzz.app.tar.gz.sig"
+          (cd "$APP_DIR" && tar -czf Buzz.app.tar.gz Buzz.app)
+          TARBALL_ABS="$(pwd)/${APP_DIR}/Buzz.app.tar.gz"
+          (cd desktop && pnpm tauri signer sign "$TARBALL_ABS")
+
       - name: Locate macOS build artifacts
         id: artifacts
         run: |
@@ -370,6 +401,7 @@ jobs:
           SIG="${ARCHIVE}.sig"
           if [[ -z "$ARCHIVE" || ! -f "$SIG" ]]; then
             echo "::error::Updater archive or signature not found in $BUNDLE_DIR/macos"
+            ls -la "$BUNDLE_DIR/macos" || true
             exit 1
           fi
 
