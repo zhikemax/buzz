@@ -2,14 +2,12 @@ import * as React from "react";
 import { Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { useIsManagedAgent } from "@/features/agent-memory/hooks";
 import { useChannelsQuery } from "@/features/channels/hooks";
 import type { Project, Repository } from "@/features/projects/hooks";
-import { useUsersBatchQuery } from "@/features/profile/hooks";
-import { ownsAuthorAgent } from "@/features/profile/lib/identity";
 import { useAddProjectRepositoryMutation } from "@/features/projects/useAddProjectRepository";
 import { useAttachProjectRepositoryMutation } from "@/features/projects/useAttachProjectRepository";
 import { useBindProjectRepositoryChannelMutation } from "@/features/projects/useBindProjectRepositoryChannel";
+import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -35,30 +33,14 @@ export function ProjectRepositoryManagement({
   projects: Project[];
   repository: Repository;
 }) {
+  const t = useT();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [attachOpen, setAttachOpen] = React.useState(false);
   const channelsQuery = useChannelsQuery();
   const createMutation = useAddProjectRepositoryMutation();
   const attachMutation = useAttachProjectRepositoryMutation();
   const repairMutation = useBindProjectRepositoryChannelMutation();
-  const ownerProfileQuery = useUsersBatchQuery([project.owner], {
-    enabled: Boolean(identityPubkey),
-  });
-  const projectOwnerProfile =
-    ownerProfileQuery.data?.profiles[project.owner.toLowerCase()];
-  const projectOwnerIsManaged = useIsManagedAgent(project.owner) === true;
-  const viewerIsProjectOwner =
-    identityPubkey?.toLowerCase() === project.owner.toLowerCase();
-  const viewerOwnsProjectAgent = ownsAuthorAgent(
-    projectOwnerProfile,
-    identityPubkey,
-  );
-  const canEdit =
-    viewerIsProjectOwner || projectOwnerIsManaged || viewerOwnsProjectAgent;
-  const ownerControlAgentPubkey =
-    viewerOwnsProjectAgent && !projectOwnerIsManaged && !viewerIsProjectOwner
-      ? project.owner
-      : undefined;
+  const canEdit = identityPubkey?.toLowerCase() === project.owner.toLowerCase();
   const accessChannels = React.useMemo(
     () =>
       (channelsQuery.data ?? []).filter(
@@ -104,12 +86,11 @@ export function ProjectRepositoryManagement({
         channels={accessChannels}
         isCreating={createMutation.isPending}
         onAdd={async (input) => {
-          const result = await createMutation.mutateAsync({
-            ...input,
-            ownerControlAgentPubkey,
-          });
+          const result = await createMutation.mutateAsync(input);
           onChange(result.repository.id);
-          toast.success(`Repository "${result.repository.name}" created.`);
+          toast.success(
+            t("projects.toast.repoCreated", { name: result.repository.name }),
+          );
         }}
         onOpenChange={setCreateOpen}
         open={createOpen}
@@ -119,12 +100,13 @@ export function ProjectRepositoryManagement({
         isAttaching={attachMutation.isPending}
         onAttach={async (candidate) => {
           const result = await attachMutation.mutateAsync({
-            ownerControlAgentPubkey,
             project,
             repository: candidate,
           });
           onChange(result.repository.id);
-          toast.success(`Repository "${result.repository.name}" added.`);
+          toast.success(
+            t("projects.toast.repoAdded", { name: result.repository.name }),
+          );
         }}
         onOpenChange={setAttachOpen}
         open={attachOpen}
@@ -142,7 +124,7 @@ export function ProjectRepositoryManagement({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              className="h-7 shrink-0 gap-1.5 rounded-md"
+              className="h-8 shrink-0 gap-1.5"
               disabled={repairMutation.isPending}
               size="sm"
               type="button"
@@ -167,14 +149,16 @@ export function ProjectRepositoryManagement({
                     })
                     .then(() => {
                       toast.success(
-                        `Repository access set to #${channel.name}.`,
+                        t("projects.repo.management.accessSet", {
+                          channel: channel.name,
+                        }),
                       );
                     })
                     .catch((error: unknown) => {
                       toast.error(
                         error instanceof Error
                           ? error.message
-                          : "Failed to update repository access.",
+                          : t("projects.repo.management.accessFailed"),
                       );
                     });
                 }}

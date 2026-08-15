@@ -17,6 +17,7 @@ import {
   type UserProfileLookup,
 } from "@/features/profile/lib/identity";
 import { GitBranch } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import { cn } from "@/shared/lib/cn";
 import { CopyCommitHashButton } from "./ProjectCommitCopyButton";
@@ -148,6 +149,7 @@ export function ActivityPanel({
   repoContributors: ProjectRepoContributor[];
   viewerGitIdentity?: ViewerGitIdentity | null;
 }) {
+  const t = useT();
   const commits = snapshot?.commits ?? [];
   const commitAuthorPubkeys = commitAuthorPubkeysFromPullRequests(
     pullRequests ?? [],
@@ -159,7 +161,7 @@ export function ActivityPanel({
         className={PROJECT_DETAIL_PANEL_MESSAGE_CLASS}
         data-project-detail-panel
       >
-        Loading activity…
+        {t("projects.activity.loading")}
       </p>
     );
   }

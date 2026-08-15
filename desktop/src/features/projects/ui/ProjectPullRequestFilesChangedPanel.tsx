@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import {
   type ProjectPullRequest,
@@ -452,6 +453,7 @@ function DiffPreview({
   focusedAnchor?: ProjectPullRequestCommentAnchor | null;
   inlineComments?: InlineCommentControls;
 }) {
+  const t = useT();
   const rows = diffRows(file);
   const focusedRowRef = React.useRef<HTMLDivElement | null>(null);
   const [highlightedAnchor, setHighlightedAnchor] =
@@ -556,7 +558,7 @@ function DiffPreview({
                     )}
                     data-testid="project-diff-add-comment"
                     onClick={() => inlineComments.onStart(anchor)}
-                    title="Add line comment"
+                    title={t("projects.pr.files.addLineComment")}
                     type="button"
                   >
                     <MessageSquarePlus className="h-3.5 w-3.5" />
@@ -773,6 +775,7 @@ export function ProjectDiffFilesPanel({
   inlineComments?: InlineCommentControls;
   subjectLabel: string;
 }) {
+  const t = useT();
   const outerBorderClass = embedded ? "" : PROJECT_DETAIL_PANEL_CLASS;
   const [query, setQuery] = React.useState("");
   const [selectedPath, setSelectedPath] = React.useState<string | null>(null);
@@ -819,7 +822,7 @@ export function ProjectDiffFilesPanel({
         className={cn("p-4 text-sm text-muted-foreground", outerBorderClass)}
         data-project-detail-panel={embedded ? undefined : true}
       >
-        Loading changed files…
+        {t("projects.pr.files.loading")}
       </div>
     );
   }
@@ -877,7 +880,7 @@ export function ProjectDiffFilesPanel({
             <input
               className="min-w-0 flex-1 bg-transparent text-foreground outline-hidden placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Filter files…"
+              placeholder={t("projects.pr.files.filterPlaceholder")}
               value={query}
             />
           </label>
@@ -940,7 +943,7 @@ export function ProjectDiffFilesPanel({
             </article>
           ) : (
             <div className="border border-border/60 bg-background/45 p-4 text-sm text-muted-foreground">
-              No files match this filter.
+              {t("projects.pr.files.noMatch")}
             </div>
           )}
         </div>

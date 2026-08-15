@@ -1,5 +1,6 @@
 import { ChevronRight, FolderGit2 } from "lucide-react";
 import type * as React from "react";
+import { useT } from "@/shared/i18n";
 
 import type { Project } from "@/features/projects/hooks";
 import { projectShareLink } from "@/features/projects/lib/projectShareLinks";
@@ -38,6 +39,7 @@ export function ProjectDetailChrome({
    */
   shareTab?: EntityLinkTab;
 }) {
+  const t = useT();
   return (
     <div
       className={cn(
@@ -52,7 +54,7 @@ export function ProjectDetailChrome({
         data-tauri-drag-region
       >
         <nav
-          aria-label="Project breadcrumb"
+          aria-label={t("projects.detail.breadcrumb")}
           className="-ml-1 flex min-w-0 items-center gap-0.5 text-xs text-muted-foreground"
         >
           <button
@@ -61,7 +63,7 @@ export function ProjectDetailChrome({
             type="button"
           >
             <FolderGit2 className="h-3.5 w-3.5" />
-            Projects
+            {t("projects.overview.projects")}
           </button>
           <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/60" />
           {activeWorkItemCrumb ? (

@@ -8,6 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import * as React from "react";
+import { useT } from "@/shared/i18n";
 
 import {
   resolveUserLabel,
@@ -337,13 +338,14 @@ function RepositoryUnavailableIndicator({
 }
 
 export function EmptyState() {
+  const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center">
       <Folders className="h-10 w-10 text-muted-foreground/40" />
       <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">No projects yet</p>
+        <p className="text-sm font-medium text-foreground">{t("projects.empty.noProjects")}</p>
         <p className="text-sm text-muted-foreground">
-          Projects published to this relay will appear here.
+          {t("projects.empty.noProjectsHint")}
         </p>
       </div>
     </div>
@@ -351,15 +353,16 @@ export function EmptyState() {
 }
 
 export function EmptyFilteredState() {
+  const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 border border-dashed border-border/60 px-4 py-12 text-center">
       <Folders className="h-9 w-9 text-muted-foreground/40" />
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">
-          No matching projects
+          {t("projects.empty.noMatching")}
         </p>
         <p className="text-sm text-muted-foreground">
-          Try another owner filter or sort mode.
+          {t("projects.empty.noMatchingHint")}
         </p>
       </div>
     </div>
@@ -399,6 +402,7 @@ function ProjectActionsMenu({
   onDelete: (project: Project) => Promise<void> | void;
   onOpenTerminal: (project: Project) => Promise<void> | void;
 }) {
+  const t = useT();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   return (
@@ -416,7 +420,7 @@ function ProjectActionsMenu({
           }}
         >
           <TerminalSquare className="h-4 w-4" />
-          {projectTerminalLabel(hasLocal)}
+          {projectTerminalLabel(hasLocal, t)}
         </DropdownMenuItem>
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"
@@ -430,14 +434,14 @@ function ProjectActionsMenu({
           }}
         >
           <Trash2 className="h-4 w-4" />
-          Delete project
+          {t("projects.delete.project.menuAction")}
         </DropdownMenuItem>
       </ProjectListRowMenu>
       <AlertDialogContent
         data-testid={`project-delete-confirm-${project.dtag}`}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete project?</AlertDialogTitle>
+          <AlertDialogTitle>{t("projects.delete.project.title")}</AlertDialogTitle>
           <AlertDialogDescription>
             Delete {project.name} from Projects for everyone. This can only be
             done for projects you own and cannot be undone.
@@ -446,7 +450,7 @@ function ProjectActionsMenu({
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button disabled={disabled} type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>

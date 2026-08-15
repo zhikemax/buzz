@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import * as React from "react";
+import { useT } from "@/shared/i18n";
 
 import type {
   Project,
@@ -182,6 +183,7 @@ export function WorkspaceTabs({
   terminalTitle?: string;
   viewerGitIdentity?: ViewerGitIdentity | null;
 }) {
+  const t = useT();
   const localCheckoutSnapshot = localSnapshot?.snapshot ?? null;
   const displayedSnapshot =
     repoSource === "local" ? localCheckoutSnapshot : snapshot;
@@ -335,7 +337,7 @@ export function WorkspaceTabs({
           onClick: () => setCreateIssueOpen(true),
         }}
         icon={CircleDot}
-        title="Issues"
+        title={t("projects.issue.panel.actionLabel")}
       />
     ) : selectedTab === "prs" ? (
       <ProjectSectionHeader
@@ -349,7 +351,7 @@ export function WorkspaceTabs({
             "New pull request — choose a repository and branches to compare",
         }}
         icon={GitPullRequest}
-        title="Pull Requests"
+        title={t("projects.pr.panel.title")}
       />
     ) : selectedTab === "channels" ? (
       <ProjectSectionHeader icon={Hash} title="Channels" />
@@ -371,7 +373,7 @@ export function WorkspaceTabs({
           <ProjectTabsList prsActive={isPullRequestSelected} />
           {onOpenTerminal ? (
             <Button
-              aria-label="Open terminal"
+              aria-label={t("projects.terminal.openAria")}
               className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
               onClick={() => onOpenTerminal()}
               size="icon"
@@ -387,7 +389,7 @@ export function WorkspaceTabs({
               disabled={updatePullRequestAction.pending}
               onClick={updatePullRequestAction.onUpdate}
               size="sm"
-              title="Publish the pushed commit to this pull request"
+              title={t("projects.sync.updatePrTitle")}
               variant="outline"
             >
               <RefreshCw className="h-4 w-4" />

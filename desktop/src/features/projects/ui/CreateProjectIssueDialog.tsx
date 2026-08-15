@@ -1,5 +1,6 @@
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import type { Project, Repository } from "@/features/projects/hooks";
 import { useCreateProjectIssueMutation } from "@/features/projects/issueMutations";
@@ -26,6 +27,7 @@ export function CreateProjectIssueDialog({
   open: boolean;
   projects: Project[];
 }) {
+  const t = useT();
   const repositoryOptions = React.useMemo(
     () =>
       projects.flatMap((project) =>
@@ -57,7 +59,7 @@ export function CreateProjectIssueDialog({
   async function handleCreate(input: CreateProjectWorkItemDialogInput) {
     if (!project || !repository) throw new Error("Choose a repository.");
     const issueId = await createMutation.mutateAsync(input);
-    toast.success("Issue created.");
+    toast.success(t("projects.toast.issueCreated"));
     await onCreated(project, repository, issueId);
   }
 
@@ -75,11 +77,11 @@ export function CreateProjectIssueDialog({
       onOpenChange={onOpenChange}
       open={open}
       submitDisabled={!repository}
-      title="Create an issue"
+      title={t("projects.issue.create.title")}
       titlePlaceholder="Describe the issue"
     >
       <label className="block space-y-1.5 text-sm font-medium">
-        <span>Repository</span>
+        <span>{t("projects.issue.create.repository")}</span>
         <select
           className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal outline-hidden focus:ring-1 focus:ring-ring"
           data-testid="create-issue-repository"

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import { useIsManagedAgent } from "@/features/agent-memory/hooks";
 import { DiscussedInChannels } from "./DiscussionChannels";
@@ -519,6 +520,7 @@ export function ProjectPullRequestDetail({
   project: Project;
   pullRequest: ProjectPullRequest;
 }) {
+  const t = useT();
   const identityQuery = useIdentityQuery();
   const commentMutation = useCreateProjectPullRequestCommentMutation(project);
   const [
@@ -899,7 +901,7 @@ export function ProjectPullRequestDetail({
               canRequestChanges ? handleChangeRequestSubmit : undefined
             }
             onSubmit={handleCommentSubmit}
-            placeholder="Add a comment…"
+            placeholder={t("projects.pr.panel.addComment")}
             profiles={profiles}
             secondarySubmitLabel="Request changes"
           />
@@ -934,6 +936,7 @@ export function PullRequestsPanel({
   pullRequests: ProjectPullRequest[];
   selectedPullRequestId: string | null;
 }) {
+  const t = useT();
   const selectedPullRequest =
     pullRequests.find((item) => item.id === selectedPullRequestId) ?? null;
 
@@ -949,7 +952,7 @@ export function PullRequestsPanel({
   if (isLoading) {
     return (
       <p className="p-4 text-sm text-muted-foreground">
-        Loading pull requests…
+        {t("projects.pr.panel.loading")}
       </p>
     );
   }

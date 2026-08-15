@@ -1,5 +1,6 @@
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useUsersBatchQuery } from "@/features/profile/hooks";
@@ -93,6 +94,7 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 const MANY_PROJECTS_THRESHOLD = 12;
 
 export function ProjectsView() {
+  const t = useT();
   const { goProject } = useAppNavigation();
   const { activeCommunity } = useCommunities();
   const relayOrigin = useRelayOrigin();
@@ -568,7 +570,7 @@ export function ProjectsView() {
     async (project: Project) => {
       try {
         await deleteProjectMutation.mutateAsync(project);
-        toast.success("Project deleted");
+        toast.success(t("projects.toast.projectDeleted"));
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to delete project",
@@ -585,13 +587,13 @@ export function ProjectsView() {
   if (projectsQuery.isError) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-        <p className="text-sm text-red-400">Failed to load projects</p>
+        <p className="text-sm text-red-400">{t("projects.error.loadProjects")}</p>
         <Button
           onClick={() => void projectsQuery.refetch()}
           size="sm"
           variant="outline"
         >
-          Retry
+          {t("common.retry")}
         </Button>
       </div>
     );
@@ -763,8 +765,8 @@ export function ProjectsView() {
   const projectsHeader = (
     <PageHeader
       className="pointer-events-auto mb-4"
-      description="Set up and manage your projects."
-      title="Projects"
+      description={t("projects.subtitle")}
+      title={t("projects.overview.projects")}
     />
   );
 
@@ -798,7 +800,7 @@ export function ProjectsView() {
         onCreate={async (input) => {
           const result = await createProjectMutation.mutateAsync(input);
           if (result.compatibilityWarning) {
-            toast.warning("Created as a standalone project", {
+            toast.warning(t("projects.toast.createdStandalone"), {
               description: result.compatibilityWarning,
             });
           } else {

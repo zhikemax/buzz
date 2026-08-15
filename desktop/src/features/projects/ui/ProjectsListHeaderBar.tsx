@@ -8,6 +8,7 @@ import type {
 import { ProjectsListScopeDropdown } from "@/features/projects/ui/ProjectsListScopeDropdown";
 import { ProjectsViewModeToggle } from "@/features/projects/ui/ProjectsToolbar";
 import { cn } from "@/shared/lib/cn";
+import { useT } from "@/shared/i18n";
 
 const PROJECT_SCOPE_OPTIONS: Array<{
   label: string;
@@ -83,31 +84,32 @@ export function ProjectsListHeaderBar({
   variant,
   viewMode,
 }: ProjectsListHeaderBarProps) {
+  const t = useT();
   const scopeDropdown =
     filter === "prs" ? (
       <ProjectsListScopeDropdown
-        label="Filter pull requests"
+        label={t("projects.filter.pullRequests")}
         onChange={onPullRequestScopeChange}
         options={PULL_REQUEST_SCOPE_OPTIONS}
         value={pullRequestScope}
       />
     ) : filter === "issues" ? (
       <ProjectsListScopeDropdown
-        label="Filter issues"
+        label={t("projects.filter.issues")}
         onChange={onIssueScopeChange}
         options={ISSUE_SCOPE_OPTIONS}
         value={issueScope}
       />
     ) : filter === "projects" ? (
       <ProjectsListScopeDropdown
-        label="Filter projects"
+        label={t("projects.filter.projects")}
         onChange={onRepositoryScopeChange}
         options={PROJECT_SCOPE_OPTIONS}
         value={repositoryScope}
       />
     ) : (
       <ProjectsListScopeDropdown
-        label="Filter repositories"
+        label={t("projects.filter.repositories")}
         onChange={onRepositoryScopeChange}
         options={REPOSITORY_SCOPE_OPTIONS}
         value={repositoryScope}
@@ -127,7 +129,7 @@ export function ProjectsListHeaderBar({
       {scopeDropdown}
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="sr-only">Sort projects</span>
+          <span className="sr-only">{t("projects.sort.label")}</span>
           <select
             className="h-8 rounded-md bg-transparent px-2 text-xs text-foreground outline-hidden hover:bg-muted/50 focus:ring-1 focus:ring-ring"
             onChange={(event) =>
@@ -135,9 +137,9 @@ export function ProjectsListHeaderBar({
             }
             value={sort}
           >
-            <option value="updated">Recent activity</option>
-            <option value="created">Created date</option>
-            <option value="name">Name</option>
+            <option value="updated">{t("projects.sort.recentActivity")}</option>
+            <option value="created">{t("projects.sort.createdDate")}</option>
+            <option value="name">{t("projects.sort.name")}</option>
           </select>
         </label>
         <ProjectsViewModeToggle

@@ -1,6 +1,7 @@
 import { ArrowLeft, FolderGit2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useOpenDmMutation } from "@/features/channels/hooks";
@@ -81,8 +82,8 @@ import { ProjectDetailChrome } from "./ProjectDetailChrome";
 import { ProjectDetailChromeActions } from "./ProjectDetailChromeActions";
 import { UnavailableProjectRepositories } from "./UnavailableProjectRepositories";
 import {
-  PROJECT_TAB_CRUMB_LABELS,
   projectPeople,
+  projectTabCrumbLabel,
   pushPullTitle,
   snapshotHasContent,
 } from "./projectDetailHelpers";
@@ -111,6 +112,7 @@ const PROJECT_REPOSITORY_SEARCH_KEYS = [
 ] as const;
 
 export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
+  const t = useT();
   const {
     commitHash,
     entityNavigationId,
@@ -383,13 +385,13 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
     ]);
     const error = results.find((result) => result.error)?.error;
     if (error) {
-      toast.error("Could not fetch repository.", {
+      toast.error(t("projects.toast.fetchFailed"), {
         description:
           error instanceof Error ? error.message : "The Git fetch failed.",
       });
       return;
     }
-    toast.success("Remote state refreshed.");
+    toast.success(t("projects.toast.remoteRefreshed"));
   }, [repoSnapshotQuery, repoStateQuery, repoSyncStatusQuery]);
   // Compact branch + remote/local controls shared by the readme and Files
   // tab headers.
@@ -438,7 +440,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
     pushPending: pushLocalRepoMutation.isPending,
     pushTitle:
       repoSyncStatusQuery.data?.pushBlockReason ??
-      pushPullTitle("Push", repoSyncStatusQuery.data?.aheadCount, "local"),
+      pushPullTitle("Push", repoSyncStatusQuery.data?.aheadCount, "local", t),
     canPull: !selectedTag && (repoSyncStatusQuery.data?.canPull ?? false),
     onPull: selectedTag
       ? undefined
@@ -450,7 +452,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
     pullPending: pullLocalRepoMutation.isPending,
     pullTitle:
       repoSyncStatusQuery.data?.pullBlockReason ??
-      pushPullTitle("Pull", repoSyncStatusQuery.data?.behindCount, "remote"),
+      pushPullTitle("Pull", repoSyncStatusQuery.data?.behindCount, "remote", t),
     aheadCount: repoSyncStatusQuery.data?.aheadCount ?? null,
     behindCount: repoSyncStatusQuery.data?.behindCount ?? null,
     onFetch: () => {
@@ -645,7 +647,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
   const handleCreateIssue = React.useCallback(
     async ({ body, title }: CreateIssueDialogInput) => {
       const issueId = await createIssueMutation.mutateAsync({ body, title });
-      toast.success("Issue created.");
+      toast.success(t("projects.toast.issueCreated"));
       await issuesQuery.refetch();
       setSelectedIssueId(issueId);
     },
@@ -734,14 +736,14 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center">
         <FolderGit2 className="h-10 w-10 text-muted-foreground/40" />
-        <p className="text-sm text-red-400">Failed to load project</p>
+        <p className="text-sm text-red-400">{t("projects.error.loadProject")}</p>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => void projectQuery.refetch()}
             size="sm"
             variant="outline"
           >
-            Retry
+            {t("common.retry")}
           </Button>
           <Button
             onClick={() => {
@@ -751,7 +753,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
             variant="ghost"
           >
             <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Back to Projects
+            {t("projects.detail.backToProjects")}
           </Button>
         </div>
       </div>
@@ -762,7 +764,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center">
         <FolderGit2 className="h-10 w-10 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">
-          This project could not be found.
+          {t("projects.error.projectNotFound")}
         </p>
         <Button
           onClick={() => {
@@ -772,7 +774,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
           variant="outline"
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" />
-          Back to Projects
+          {t("projects.detail.backToProjects")}
         </Button>
       </div>
     );
@@ -783,7 +785,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
         <FolderGit2 className="h-10 w-10 text-muted-foreground/40" />
         <p className="text-sm font-medium text-foreground">{project.name}</p>
         <p className="text-sm text-muted-foreground">
-          This project does not have any available repositories yet.
+          {t("projects.error.noRepositoriesYet")}
         </p>
         <UnavailableProjectRepositories project={project} />
       </div>
@@ -811,19 +813,19 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
   // match the workspace tab labels.
   const activeWorkItemCrumb = selectedPullRequest
     ? {
-        category: "Pull Request",
+        category: t("projects.tab.pullRequests"),
         title: selectedPullRequest.title,
         clear: () => setSelectedPullRequestId(null),
       }
     : selectedIssue
       ? {
-          category: "Issues",
+          category: t("projects.tab.issues"),
           title: selectedIssue.title,
           clear: () => setSelectedIssueId(null),
         }
       : selectedCommitHash
         ? {
-            category: "Commits",
+            category: t("projects.tab.commits"),
             title: selectedCommit?.subject ?? selectedCommitHash.slice(0, 7),
             clear: () => setSelectedCommitHash(null),
           }
@@ -831,7 +833,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
   // Sub-tab crumb when no work item is open. Overview (readme) is home.
   const activeTabCrumb = activeWorkItemCrumb
     ? null
-    : (PROJECT_TAB_CRUMB_LABELS[activeTab] ?? null);
+    : projectTabCrumbLabel(activeTab, t) || null;
   const handleGoToProjectHome = () => {
     setSelectedPullRequestId(null);
     setSelectedIssueId(null);
@@ -925,7 +927,7 @@ export function ProjectDetailScreen(props: ProjectDetailScreenProps) {
                 onOpenTerminal={() => {
                   void handleOpenTerminal();
                 }}
-                terminalTitle={projectTerminalLabel(hasLocalCheckout)}
+                terminalTitle={projectTerminalLabel(hasLocalCheckout, t)}
                 onSelectedCommitHashChange={handleSelectedCommitHashChange}
                 onSelectedIssueIdChange={handleSelectedIssueIdChange}
                 onSelectedPullRequestIdChange={

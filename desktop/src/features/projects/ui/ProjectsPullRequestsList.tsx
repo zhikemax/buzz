@@ -1,4 +1,5 @@
 import { GitPullRequest, MessageSquare } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import type {
   Project,
@@ -303,6 +304,7 @@ export function ProjectsPullRequestsList({
   pullRequests,
   viewMode,
 }: ProjectsPullRequestsListProps) {
+  const t = useT();
   if (isLoading) {
     return (
       <div
@@ -340,7 +342,7 @@ export function ProjectsPullRequestsList({
             !embedded && "border border-dashed border-border/60",
           )}
         >
-          No pull requests yet.
+          {t("projects.empty.noPullRequests")}
         </div>
       </div>
     );

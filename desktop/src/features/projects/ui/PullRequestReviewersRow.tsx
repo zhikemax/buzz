@@ -1,6 +1,7 @@
 import { Check, Search, TriangleAlert } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import { useIsArchivedPredicate } from "@/features/identity-archive/hooks";
 import type {
@@ -60,6 +61,7 @@ export function PullRequestReviewersRow({
   pullRequest: ProjectPullRequest;
   signAsManagedOwner: boolean;
 }) {
+  const t = useT();
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [reviewerQuery, setReviewerQuery] = React.useState("");
   const requestInFlightRef = React.useRef(false);
@@ -116,7 +118,7 @@ export function PullRequestReviewersRow({
         });
         setPickerOpen(false);
         setReviewerQuery("");
-        toast.success("Review requested.");
+        toast.success(t("projects.toast.reviewRequested"));
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "Failed to request review.",
@@ -187,14 +189,14 @@ export function PullRequestReviewersRow({
               type="button"
               variant="ghost"
             >
-              Add Reviewer
+              {t("projects.pr.review.reviewer.addButton")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
             <DialogHeader className="border-b border-border/60 px-6 py-5 pr-14">
-              <DialogTitle>Add reviewer</DialogTitle>
+              <DialogTitle>{t("projects.pr.review.reviewer.addTitle")}</DialogTitle>
               <DialogDescription>
-                Choose a person or agent to review this pull request.
+                {t("projects.pr.review.reviewer.addDesc")}
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center gap-2 border-b border-border/60 px-6 py-3">
@@ -204,14 +206,14 @@ export function PullRequestReviewersRow({
                 className="h-8 border-0 px-0 text-sm shadow-none focus-visible:ring-0"
                 data-testid="project-reviewer-search"
                 onChange={(event) => setReviewerQuery(event.target.value)}
-                placeholder="Search people and agents"
+                placeholder={t("projects.pr.review.reviewer.searchPlaceholder")}
                 value={reviewerQuery}
               />
             </div>
             <div className="max-h-72 min-h-28 overflow-y-auto p-2">
               {userSearchQuery.isLoading ? (
                 <p className="px-3 py-4 text-sm text-muted-foreground">
-                  Searching…
+                  {t("invites.add.searching")}
                 </p>
               ) : candidates.length > 0 ? (
                 candidates.map((candidate) => {
@@ -247,7 +249,7 @@ export function PullRequestReviewersRow({
                 })
               ) : (
                 <p className="px-3 py-4 text-sm text-muted-foreground">
-                  No matching people or agents.
+                  {t("projects.empty.noMatchingPeople")}
                 </p>
               )}
             </div>

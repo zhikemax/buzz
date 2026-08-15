@@ -14,6 +14,7 @@ import {
   repositoryDisplayPath,
 } from "@/features/projects/lib/projectRepoHost";
 import { repositoryShareLink } from "@/features/projects/lib/projectShareLinks";
+import { useT } from "@/shared/i18n";
 import {
   formatExactTimestamp,
   relativeTime,
@@ -180,6 +181,7 @@ function RepositoryActionsMenu({
   onOpenTerminal,
   repository,
 }: Pick<RepositoryItemProps, "hasLocal" | "onOpenTerminal" | "repository">) {
+  const t = useT();
   return (
     <ProjectListRowMenu label={`More options for ${repository.name}`}>
       <CopyShareLinkMenuItem
@@ -194,7 +196,7 @@ function RepositoryActionsMenu({
         }}
       >
         <SquareTerminal className="h-4 w-4" />
-        {projectTerminalLabel(hasLocal)}
+        {projectTerminalLabel(hasLocal, t)}
       </DropdownMenuItem>
     </ProjectListRowMenu>
   );

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useT } from "@/shared/i18n";
 
 import { useIsManagedAgent } from "@/features/agent-memory/hooks";
 import type {
@@ -53,6 +54,7 @@ export function PullRequestReviewCard({
   project: Project;
   pullRequest: ProjectPullRequest;
 }) {
+  const t = useT();
   const identityQuery = useIdentityQuery();
   const { isPending: isUpdatingStatus, mutateAsync: updatePullRequestStatus } =
     useUpdateProjectPullRequestStatusMutation(project);
@@ -200,7 +202,7 @@ export function PullRequestReviewCard({
               type="button"
             >
               <Check className="h-3.5 w-3.5" />
-              Approve
+              {t("projects.pr.review.approve")}
             </Button>
           ) : null}
           {canMerge ? (
@@ -222,7 +224,7 @@ export function PullRequestReviewCard({
               variant="secondary"
             >
               <GitPullRequest className="h-3.5 w-3.5" />
-              Ready for review
+              {t("projects.pr.review.readyForReview")}
             </Button>
           ) : null}
           {canReopen ? (
@@ -237,14 +239,14 @@ export function PullRequestReviewCard({
               variant="secondary"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Reopen pull request
+              {t("projects.pr.review.reopen")}
             </Button>
           ) : null}
           {hasOverflowAction ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  aria-label="More pull request actions"
+                  aria-label={t("projects.pr.review.moreActionsAria")}
                   className="ml-auto h-8 w-8"
                   disabled={isUpdatingStatus}
                   size="icon-xs"
@@ -262,7 +264,7 @@ export function PullRequestReviewCard({
                     }}
                   >
                     <GitPullRequestDraft className="h-4 w-4" />
-                    Convert to draft
+                    {t("projects.pr.review.convertToDraft")}
                   </DropdownMenuItem>
                 ) : null}
                 {canClose ? (
@@ -273,7 +275,7 @@ export function PullRequestReviewCard({
                     }}
                   >
                     <X className="h-4 w-4" />
-                    Close pull request
+                    {t("projects.pr.review.close")}
                   </DropdownMenuItem>
                 ) : null}
               </DropdownMenuContent>
@@ -291,16 +293,16 @@ export function PullRequestReviewCard({
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Approve pull request</DialogTitle>
+            <DialogTitle>{t("projects.pr.review.approveTitle")}</DialogTitle>
             <DialogDescription>
-              Add an optional summary for the author and other reviewers.
+              {t("projects.pr.review.approveDesc")}
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            aria-label="Approval summary"
+            aria-label={t("projects.pr.review.approvalSummaryAria")}
             disabled={isApproving}
             onChange={(event) => setApprovalSummary(event.target.value)}
-            placeholder="What looks good?"
+            placeholder={t("projects.pr.review.approvalPlaceholder")}
             value={approvalSummary}
           />
           <DialogFooter>
@@ -310,7 +312,7 @@ export function PullRequestReviewCard({
               type="button"
               variant="ghost"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               className="bg-green-600 text-white hover:bg-green-700"
@@ -321,7 +323,7 @@ export function PullRequestReviewCard({
               type="button"
             >
               <Check className="h-4 w-4" />
-              Approve
+              {t("projects.pr.review.approve")}
             </Button>
           </DialogFooter>
         </DialogContent>

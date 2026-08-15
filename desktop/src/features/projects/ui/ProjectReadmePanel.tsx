@@ -10,6 +10,7 @@ import {
   LockKeyhole,
   RefreshCw,
 } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useChannelsQuery } from "@/features/channels/hooks";
@@ -159,6 +160,7 @@ export function ReadmePanel({
   /** Branch picker + remote/local toggle rendered in the panel header. */
   sourceControls?: RepoSourceHeaderControls;
 }) {
+  const t = useT();
   // Two header rows, mirroring the files panel: controls on top, then the
   // file identity row.
   const header = hideHeader ? null : (
@@ -205,7 +207,7 @@ export function ReadmePanel({
         {header}
         <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading repository…
+          {t("projects.readme.loading")}
         </div>
       </section>
     );

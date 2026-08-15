@@ -1,4 +1,5 @@
 import { Eye, MessageSquare } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import type {
   Project,
@@ -271,6 +272,7 @@ export function ProjectsIssuesList({
   profiles,
   viewMode,
 }: ProjectsIssuesListProps) {
+  const t = useT();
   if (isLoading) {
     return (
       <div
@@ -308,7 +310,7 @@ export function ProjectsIssuesList({
             !embedded && "border border-dashed border-border/60",
           )}
         >
-          No issues yet.
+          {t("projects.empty.noIssues")}
         </div>
       </div>
     );

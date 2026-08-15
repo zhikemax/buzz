@@ -1,5 +1,6 @@
 import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useChannelsQuery } from "@/features/channels/hooks";
+import { useT } from "@/shared/i18n";
 
 export function ProjectOriginReference({
   agentName,
@@ -8,6 +9,7 @@ export function ProjectOriginReference({
   agentName?: string | null;
   channelId?: string | null;
 }) {
+  const t = useT();
   const { goChannel } = useAppNavigation();
   const channelsQuery = useChannelsQuery({ enabled: Boolean(channelId) });
   const channel = channelsQuery.data?.find(
@@ -31,7 +33,7 @@ export function ProjectOriginReference({
           className="shrink-0 whitespace-nowrap"
           data-project-metadata-phrase
         >
-          started from
+          {t("projects.origin.startedFrom")}
         </span>
         {channel ? (
           <button
@@ -49,7 +51,7 @@ export function ProjectOriginReference({
           className="shrink-0 whitespace-nowrap"
           data-project-metadata-phrase
         >
-          (author-claimed)
+          {t("projects.origin.authorClaimed")}
         </span>
       </span>
     );
@@ -59,13 +61,13 @@ export function ProjectOriginReference({
     return (
       <span
         className="inline-flex max-w-full min-w-0 items-center gap-1"
-        title="The private conversation identifier is intentionally omitted."
+        title={t("projects.origin.omittedTitle")}
       >
         <span
           className="shrink-0 whitespace-nowrap"
           data-project-metadata-phrase
         >
-          started privately with
+          {t("projects.origin.startedPrivatelyWith")}
         </span>
         <span className="truncate font-medium text-foreground">
           {agentName}

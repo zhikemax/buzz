@@ -13,6 +13,7 @@ import {
   Trash2,
   UploadCloud,
 } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import { Button } from "@/shared/ui/button";
 import {
@@ -59,6 +60,7 @@ export function RepositoryBranchDropdown({
   onCreateBranch?: () => void;
   onDeleteBranch?: () => void;
 }) {
+  const t = useT();
   const selectableBranches =
     branchOptions.length > 0 ? branchOptions : [branch];
   const selectedValue = selectedTag ? `tag:${selectedTag}` : `branch:${branch}`;
@@ -95,7 +97,7 @@ export function RepositoryBranchDropdown({
           }}
           value={selectedValue}
         >
-          <DropdownMenuLabel>Branches</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("projects.repo.source.branches")}</DropdownMenuLabel>
           {selectableBranches.map((option) => (
             <DropdownMenuRadioItem key={option} value={`branch:${option}`}>
               <GitBranch className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
@@ -105,7 +107,7 @@ export function RepositoryBranchDropdown({
           {tagOptions.length > 0 ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Tags</DropdownMenuLabel>
+              <DropdownMenuLabel>{t("projects.repo.source.tags")}</DropdownMenuLabel>
               {tagOptions.map((option) => (
                 <DropdownMenuRadioItem
                   key={option.name}
@@ -133,7 +135,7 @@ export function RepositoryBranchDropdown({
                   title={createBranchTitle}
                 >
                   <Plus className="h-4 w-4" />
-                  Create branch…
+                  {t("projects.branch.create.menu")}
                 </DropdownMenuItem>
                 {createBranchDisabled && createBranchTitle ? (
                   <p className="max-w-56 px-2 py-1 text-xs text-muted-foreground">

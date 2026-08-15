@@ -1,4 +1,5 @@
 import { FileCode2, MessageSquareText } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import { ForumComposer } from "@/features/forum/ui/ForumComposer";
 import type {
@@ -44,6 +45,7 @@ export function ProjectPullRequestInlineCommentThread({
   ) => Promise<unknown>;
   profiles?: UserProfileLookup;
 }) {
+  const t = useT();
   if (comments.length === 0 && !activeAnchor) return null;
 
   return (
@@ -104,7 +106,7 @@ export function ProjectPullRequestInlineCommentThread({
               : undefined
           }
           onSubmit={onSubmit}
-          placeholder="Leave a comment on this line…"
+          placeholder={t("projects.pr.files.leaveCommentPlaceholder")}
           profiles={profiles}
           secondarySubmitLabel="Request changes"
         />

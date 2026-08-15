@@ -29,6 +29,7 @@ import {
   PROJECT_EVENT_VISUALS,
   type ProjectEventKind,
 } from "./ProjectEventTypeIcon";
+import { useT } from "@/shared/i18n";
 
 type ActivityKind = ProjectEventKind;
 
@@ -428,6 +429,7 @@ function ActivityCard({
 
 /** Mixed GitHub-style workspace activity shown beneath the overview callouts. */
 export function ProjectsActivityFeed(props: ProjectsActivityFeedProps) {
+  const t = useT();
   const items = buildActivityItems(props);
 
   if (props.isLoading && items.length === 0) {
@@ -450,10 +452,10 @@ export function ProjectsActivityFeed(props: ProjectsActivityFeedProps) {
     return (
       <div className="rounded-xl border border-dashed border-border/60 px-4 py-12 text-center">
         <p className="text-sm font-medium text-foreground">
-          No project activity yet
+          {t("projects.activity.emptyTitle")}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Commits, pull requests, reviews, and issues will appear here.
+          {t("projects.activity.emptyHint")}
         </p>
       </div>
     );

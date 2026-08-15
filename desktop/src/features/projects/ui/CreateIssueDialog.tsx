@@ -2,6 +2,7 @@ import {
   CreateProjectWorkItemDialog,
   type CreateProjectWorkItemDialogInput,
 } from "./CreateProjectWorkItemDialog";
+import { useT } from "@/shared/i18n";
 
 export type CreateIssueDialogInput = CreateProjectWorkItemDialogInput;
 
@@ -18,6 +19,7 @@ export function CreateIssueDialog({
   open: boolean;
   projectName: string;
 }) {
+  const t = useT();
   return (
     <CreateProjectWorkItemDialog
       bodyPlaceholder="Add context, expected behavior, or reproduction steps"
@@ -27,7 +29,7 @@ export function CreateIssueDialog({
       onCreate={onCreate}
       onOpenChange={onOpenChange}
       open={open}
-      title="Create an issue"
+      title={t("projects.issue.create.title")}
       titlePlaceholder="Describe the issue"
     />
   );

@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import * as React from "react";
+import { useT } from "@/shared/i18n";
 
 import {
   normalizeProjectBranchName,
@@ -43,6 +44,7 @@ export function CreateProjectBranchDialog({
   sourceBranch: string;
   sourceCommit: string | null;
 }) {
+  const t = useT();
   const [branchName, setBranchName] = React.useState("");
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const validationError = projectBranchNameError(branchName, existingBranches);
@@ -78,7 +80,7 @@ export function CreateProjectBranchDialog({
       <DialogContent data-testid="project-create-branch-dialog">
         <form className="space-y-5" onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create branch</DialogTitle>
+            <DialogTitle>{t("projects.branch.create.title")}</DialogTitle>
             <DialogDescription>
               Create a remote branch from{" "}
               <span className="font-mono text-foreground">{sourceBranch}</span>
@@ -89,14 +91,14 @@ export function CreateProjectBranchDialog({
             className="block space-y-2 text-sm font-medium"
             htmlFor="project-create-branch-name"
           >
-            <span>Branch name</span>
+            <span>{t("projects.branch.create.nameLabel")}</span>
             <Input
               autoFocus
               data-testid="project-create-branch-name"
               disabled={pending}
               id="project-create-branch-name"
               onChange={(event) => setBranchName(event.target.value)}
-              placeholder="feature/my-change"
+              placeholder={t("projects.branch.create.namePlaceholder")}
               value={branchName}
             />
           </label>
@@ -105,7 +107,7 @@ export function CreateProjectBranchDialog({
           ) : null}
           {!sourceCommit ? (
             <p className="text-sm text-destructive">
-              Refresh the repository before creating a branch.
+              {t("projects.branch.create.refreshFirst")}
             </p>
           ) : null}
           {submitError ? (
@@ -118,7 +120,7 @@ export function CreateProjectBranchDialog({
               type="button"
               variant="outline"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               data-testid="project-create-branch-submit"
@@ -148,6 +150,7 @@ export function DeleteProjectBranchDialog({
   open: boolean;
   pending: boolean;
 }) {
+  const t = useT();
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -175,7 +178,7 @@ export function DeleteProjectBranchDialog({
     >
       <AlertDialogContent data-testid="project-delete-branch-dialog">
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete branch?</AlertDialogTitle>
+          <AlertDialogTitle>{t("projects.delete.branch.title")}</AlertDialogTitle>
           <AlertDialogDescription>
             Delete the remote branch{" "}
             <span className="font-mono text-foreground">{branch}</span>. This
@@ -188,7 +191,7 @@ export function DeleteProjectBranchDialog({
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button disabled={pending} type="button" variant="outline">
-              Cancel
+              {t("common.cancel")}
             </Button>
           </AlertDialogCancel>
           <Button
