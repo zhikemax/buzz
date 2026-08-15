@@ -2,6 +2,7 @@ import { useT } from "@/shared/i18n";
 import { AgentDefaultsSettingsCard } from "./AgentDefaultsSettingsCard";
 import { HarnessesSettingsPanel } from "./HarnessesSettingsPanel";
 import { PreventSleepSettingsCard } from "./PreventSleepSettingsCard";
+import { SettingsOptionGroupList } from "./SettingsOptionGroup";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 
 export function AgentsSettingsPanel() {
@@ -13,11 +14,11 @@ export function AgentsSettingsPanel() {
         description={t("settings.agents.description")}
       />
 
-      <div className="flex flex-col gap-4">
+      <SettingsOptionGroupList>
         <PreventSleepSettingsCard />
         <HarnessesSettingsPanel />
         <AgentDefaultsSettingsCard />
-      </div>
+      </SettingsOptionGroupList>
     </section>
   );
 }

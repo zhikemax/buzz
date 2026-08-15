@@ -2,7 +2,6 @@ import * as React from "react";
 
 import { useChannelsQuery } from "@/features/channels/hooks";
 import type { CreateProjectInput } from "@/features/projects/useCreateProject";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
@@ -31,7 +30,6 @@ export function CreateProjectDialog({
   onOpenChange,
   open,
 }: CreateProjectDialogProps) {
-  const t = useT();
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [cloneUrl, setCloneUrl] = React.useState("");
@@ -61,6 +59,7 @@ export function CreateProjectDialog({
     setAccessChannelId(accessChannels[0]?.id ?? "");
     setErrorMessage(null);
 
+    // Small delay to let the dialog animation start before focusing.
     const timerId = globalThis.setTimeout(() => {
       nameInputRef.current?.focus();
     }, 50);
@@ -87,9 +86,7 @@ export function CreateProjectDialog({
       onOpenChange(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : t("projects.create.dialog.failed"),
+        error instanceof Error ? error.message : "Failed to create project.",
       );
     }
   }
@@ -106,7 +103,7 @@ export function CreateProjectDialog({
         className="max-w-lg"
         contentClassName="pt-3"
         data-testid="create-project-dialog"
-        description={t("projects.create.dialog.description")}
+        description="Projects group one or more repositories published to this workspace's relay."
         footer={
           <div className="flex w-full items-center justify-end gap-3">
             <Button
@@ -117,15 +114,13 @@ export function CreateProjectDialog({
               form="create-project-form"
               type="submit"
             >
-              {isCreating
-                ? t("projects.create.dialog.submitting")
-                : t("projects.create.dialog.submit")}
+              {isCreating ? "Creating..." : "Create project"}
             </Button>
           </div>
         }
         footerClassName="border-t-0 pt-0"
         headerClassName="pb-2"
-        title={t("projects.create.dialog.title")}
+        title="Create a new project"
       >
         <form
           className="space-y-5"
@@ -139,7 +134,7 @@ export function CreateProjectDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="create-project-name"
             >
-              {t("channel.fieldName")}
+              Name
             </label>
             <div
               className={cn(
@@ -162,7 +157,7 @@ export function CreateProjectDialog({
                   setName(event.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder={t("projects.create.dialog.namePlaceholder")}
+                placeholder="bee-garden-game"
                 ref={nameInputRef}
                 spellCheck={false}
                 value={name}
@@ -175,7 +170,7 @@ export function CreateProjectDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="create-project-access-channel"
             >
-              {t("projects.create.dialog.accessChannel")}
+              Repository access channel
             </label>
             <div
               className={cn(
@@ -198,7 +193,7 @@ export function CreateProjectDialog({
                 required
                 value={accessChannelId}
               >
-                <option value="">{t("composer.selectChannel")}</option>
+                <option value="">Select a channel</option>
                 {accessChannels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
                     {channel.name}
@@ -207,7 +202,7 @@ export function CreateProjectDialog({
               </select>
             </div>
             <p className="text-xs text-muted-foreground">
-              {t("projects.create.dialog.accessChannelHint")}
+              Members of this channel can access project repositories.
             </p>
           </div>
 
@@ -216,10 +211,8 @@ export function CreateProjectDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="create-project-description"
             >
-              {t("channel.fieldDescription")}
-              <span className={CREATE_LABEL_OPTIONAL_CLASS}>
-                {t("common.optional")}
-              </span>
+              Description
+              <span className={CREATE_LABEL_OPTIONAL_CLASS}>Optional</span>
             </label>
             <div className={CREATE_FIELD_SHELL_CLASS}>
               <Textarea
@@ -234,7 +227,7 @@ export function CreateProjectDialog({
                   setDescription(event.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder={t("projects.create.dialog.descriptionPlaceholder")}
+                placeholder="What this project is about"
                 rows={2}
                 value={description}
               />
@@ -246,10 +239,8 @@ export function CreateProjectDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="create-project-clone-url"
             >
-              {t("projects.create.dialog.cloneUrl")}
-              <span className={CREATE_LABEL_OPTIONAL_CLASS}>
-                {t("common.optional")}
-              </span>
+              Initial repository clone URL
+              <span className={CREATE_LABEL_OPTIONAL_CLASS}>Optional</span>
             </label>
             <div
               className={cn(
@@ -272,7 +263,7 @@ export function CreateProjectDialog({
                   setCloneUrl(event.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder={t("projects.create.dialog.cloneUrlPlaceholder")}
+                placeholder="https://relay.example.com/git/bee-garden-game.git"
                 spellCheck={false}
                 value={cloneUrl}
               />
@@ -284,10 +275,8 @@ export function CreateProjectDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="create-project-web-url"
             >
-              {t("projects.create.dialog.webUrl")}
-              <span className={CREATE_LABEL_OPTIONAL_CLASS}>
-                {t("common.optional")}
-              </span>
+              Initial repository web URL
+              <span className={CREATE_LABEL_OPTIONAL_CLASS}>Optional</span>
             </label>
             <div
               className={cn(
@@ -310,7 +299,7 @@ export function CreateProjectDialog({
                   setWebUrl(event.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder={t("projects.create.dialog.webUrlPlaceholder")}
+                placeholder="https://github.com/owner/repo"
                 spellCheck={false}
                 value={webUrl}
               />

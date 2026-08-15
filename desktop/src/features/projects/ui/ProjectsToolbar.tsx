@@ -5,13 +5,16 @@ import type {
   ProjectsFilter,
   ProjectsViewMode,
 } from "@/features/projects/lib/projectsViewHelpers";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 
 const SELECTED_MENU_ITEM_CLASSES =
   "font-semibold text-foreground after:opacity-100 hover:text-foreground";
 
+// Fade the clipped edge(s) of the scrollable tab row so a cut-off label
+// reads as "scroll for more" instead of a rendering bug. Masking the row
+// itself (rather than overlaying a gradient) keeps the effect correct over
+// the translucent sticky header backdrop.
 const MASK_BOTH =
   "[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]";
 const MASK_LEFT =
@@ -31,13 +34,11 @@ export function ProjectsViewModeToggle({
   viewMode: ProjectsViewMode;
   onViewModeChange: (viewMode: ProjectsViewMode) => void;
 }) {
-  const t = useT();
-
   return (
     <fieldset className="flex items-center rounded-lg bg-muted/30 p-0.5">
-      <legend className="sr-only">{t("projects.layout.legend")}</legend>
+      <legend className="sr-only">Project layout</legend>
       <Button
-        aria-label={t("projects.layout.grid")}
+        aria-label="Grid layout"
         aria-pressed={viewMode === "grid"}
         className="h-7 w-7 px-0"
         onClick={() => onViewModeChange("grid")}
@@ -48,7 +49,7 @@ export function ProjectsViewModeToggle({
         <LayoutGrid className="h-3.5 w-3.5" />
       </Button>
       <Button
-        aria-label={t("projects.layout.list")}
+        aria-label="List layout"
         aria-pressed={viewMode === "list"}
         className="h-7 w-7 px-0"
         onClick={() => onViewModeChange("list")}
@@ -62,6 +63,7 @@ export function ProjectsViewModeToggle({
   );
 }
 
+/** Tracks which edges of a horizontal scroller are currently clipped. */
 function useHorizontalOverflow(ref: React.RefObject<HTMLElement | null>) {
   const [overflow, setOverflow] = React.useState({
     left: false,
@@ -102,10 +104,11 @@ export function ProjectsToolbar({
   filter,
   onFilterChange,
 }: ProjectsToolbarProps) {
-  const t = useT();
   const scrollRef = React.useRef<HTMLFieldSetElement>(null);
   const overflow = useHorizontalOverflow(scrollRef);
 
+  // Keep the active tab visible when it changes (e.g. selected while
+  // partially scrolled out of view, or restored from storage on mount).
   React.useEffect(() => {
     scrollRef.current
       ?.querySelector<HTMLElement>(`[data-testid="projects-section-${filter}"]`)
@@ -116,11 +119,11 @@ export function ProjectsToolbar({
     label: string;
     value: ProjectsFilter;
   }> = [
-    { label: t("projects.tab.activity"), value: "all" },
-    { label: t("nav.projects"), value: "projects" },
-    { label: t("projects.tab.repositories"), value: "repositories" },
-    { label: t("projects.tab.pullRequests"), value: "prs" },
-    { label: t("projects.tab.issues"), value: "issues" },
+    { label: "Activity", value: "all" },
+    { label: "Projects", value: "projects" },
+    { label: "Repositories", value: "repositories" },
+    { label: "Pull Requests", value: "prs" },
+    { label: "Issues", value: "issues" },
   ];
 
   return (
@@ -142,7 +145,7 @@ export function ProjectsToolbar({
           )}
           ref={scrollRef}
         >
-          <legend className="sr-only">{t("projects.layout.ownerFilter")}</legend>
+          <legend className="sr-only">Project owner filter</legend>
           {filterOptions.map((option) => (
             <Button
               aria-label={option.label}

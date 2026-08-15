@@ -10,7 +10,6 @@ import {
   Layers,
   MessageSquare,
   Pencil,
-  PenOff,
   Server,
 } from "lucide-react";
 import { useAgentConfigSurface } from "../hooks";
@@ -25,13 +24,12 @@ import { McpServersSection, shouldRenderMcpServers } from "./McpServersSection";
 import type {
   ConfigField,
   ConfigOrigin,
-  ConfigWriteMechanism,
   NormalizedConfig,
   NormalizedField,
   RuntimeConfigSurface,
 } from "@/shared/api/types";
-import { providerDisplayLabel } from "./agentConfigOptions";
 import { useT, type TranslateFn } from "@/shared/i18n";
+import { providerDisplayLabel } from "./agentConfigOptions";
 
 export type AgentConfigPanelSection = "model" | "mcp" | "advanced";
 
@@ -55,39 +53,10 @@ type AgentConfigSurfaceRowsProps = {
   sections?: readonly AgentConfigPanelSection[];
 };
 
-function isReadOnlyField({
-  origin,
-  writeVia,
-}: {
-  origin: ConfigOrigin;
-  writeVia: ConfigWriteMechanism;
-}) {
-  return writeVia.type === "readOnly" || origin === "harnessConstraint";
-}
-
 function ConfigFieldLabel({ label }: { label: string }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium text-foreground">
       <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function ProvenanceHint({
-  locked,
-  provenance,
-  showLockIcon = true,
-}: {
-  locked: boolean;
-  provenance: string;
-  showLockIcon?: boolean;
-}) {
-  return (
-    <span className="mt-0.5 flex items-center gap-1 text-2xs text-muted-foreground/70">
-      {locked && showLockIcon ? (
-        <PenOff aria-label="Read-only" className="h-3 w-3 shrink-0" />
-      ) : null}
-      <span className="min-w-0 truncate">{provenance}</span>
     </span>
   );
 }
@@ -131,45 +100,6 @@ function shouldOfferCopy({
 
 type RowVariant = "compact" | "profile";
 
-// ── Provenance sentence ──────────────────────────────────────────────────────
-
-function provenanceSentence(
-  origin: ConfigOrigin,
-  writeVia: ConfigWriteMechanism,
-  configFilePath: string | null,
-  t: TranslateFn,
-): string | null {
-  switch (origin) {
-    case "buzzExplicit":
-      return t("agents.configSetInBuzz");
-    case "personaDefault":
-      return null;
-    case "runtimeOverride":
-      return t("agents.configLiveOverride");
-    case "harnessConstraint":
-      return t("agents.configLockedHarness");
-    case "envVar": {
-      if (writeVia.type === "respawnWithEnvVar") {
-        return t("agents.configFromEnvKey", { key: writeVia.envKey });
-      }
-      return t("agents.configFromEnv");
-    }
-    case "configFile":
-      return configFilePath
-        ? t("agents.configFromFilePath", { path: configFilePath })
-        : t("agents.configFromFile");
-    case "acpConfigOption":
-    case "acpNativeRead":
-      return t("agents.configFromAcp");
-    case "globalDefault":
-      return t("agents.configInheritedGlobal");
-    case "harnessDefault":
-      return t("agents.configInheritedHarness");
-  }
-}
-
-// ── Normalized row ────────────────────────────────────────────────────────────
-
 function normalizedLabels(
   t: TranslateFn,
 ): Record<keyof NormalizedConfig, string> {
@@ -183,6 +113,9 @@ function normalizedLabels(
     systemPrompt: t("agents.activitySystemPrompt"),
   };
 }
+
+
+// ── Normalized row ────────────────────────────────────────────────────────────
 
 const NORMALIZED_ICONS: Record<keyof NormalizedConfig, LucideIcon> = {
   model: Cpu,
@@ -198,43 +131,30 @@ function NormalizedRow({
   fieldKey,
   label,
   field,
-  isPreSpawn,
-  configFilePath,
   onEdit,
   variant = "compact",
 }: {
   fieldKey: keyof NormalizedConfig;
   label: string;
   field: NormalizedField;
-  isPreSpawn: boolean;
-  configFilePath: string | null;
   onEdit?: () => void;
   variant?: RowVariant;
 }) {
   const t = useT();
   const Icon = NORMALIZED_ICONS[fieldKey];
-  // ACP-sourced origins only become meaningful post-spawn
-  const isAcpOnly =
-    field.origin === "acpNativeRead" || field.origin === "acpConfigOption";
-  const rawDisplayValue =
-    isPreSpawn && isAcpOnly
-      ? t("agents.configAvailableAfterStart")
-      : (field.value ?? "—");
+  const rawDisplayValue = field.value ?? "—";
   const displayValue =
     fieldKey === "provider"
       ? providerDisplayLabel(rawDisplayValue, t)
       : rawDisplayValue;
-  const provenance = field.value
-    ? provenanceSentence(field.origin, field.writeVia, configFilePath, t)
-    : null;
-  const locked = isReadOnlyField(field);
   const isEditable = variant === "profile" && onEdit !== undefined;
 
   const content = (
     <>
-      {variant === "compact" ? (
-        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      ) : null}
+      <Icon
+        className="h-4 w-4 shrink-0 text-muted-foreground"
+        data-slot="agent-config-field-icon"
+      />
       <span className="min-w-0 flex-1 text-left">
         {variant === "profile" ? (
           <ConfigFieldLabel label={label} />
@@ -248,25 +168,7 @@ function NormalizedRow({
           title={field.value ?? undefined}
         >
           {displayValue}
-          {!(isPreSpawn && isAcpOnly) && field.overriddenValue ? (
-            <span
-              className={cn(
-                "ml-2 text-xs text-muted-foreground/60",
-                field.origin !== "runtimeOverride" && "line-through",
-              )}
-              title={field.overriddenValue ?? undefined}
-            >
-              {field.overriddenValue}
-            </span>
-          ) : null}
         </span>
-        {provenance ? (
-          <ProvenanceHint
-            locked={locked}
-            provenance={provenance}
-            showLockIcon={variant === "compact"}
-          />
-        ) : null}
       </span>
       {isEditable ? (
         <Pencil
@@ -307,18 +209,11 @@ function NormalizedRow({
 
 function AdvancedRow({
   field,
-  configFilePath,
   variant = "compact",
 }: {
   field: ConfigField;
-  configFilePath: string | null;
   variant?: RowVariant;
 }) {
-  const t = useT();
-  const provenance = field.value
-    ? provenanceSentence(field.origin, field.writeVia, configFilePath, t)
-    : null;
-  const locked = isReadOnlyField(field);
   const { copied, copy } = useCopyFeedback({
     label: field.label,
     value: field.value ?? "",
@@ -336,11 +231,6 @@ function AdvancedRow({
             <span className="font-sans text-muted-foreground">—</span>
           )}
         </div>
-        {provenance ? (
-          <div className="mt-0.5 text-2xs text-muted-foreground/70">
-            {provenance}
-          </div>
-        ) : null}
       </div>
     );
   }
@@ -359,13 +249,6 @@ function AdvancedRow({
         >
           {field.value ?? "—"}
         </span>
-        {provenance ? (
-          <ProvenanceHint
-            locked={locked}
-            provenance={provenance}
-            showLockIcon={false}
-          />
-        ) : null}
       </span>
       {isCopyable ? (
         <HoverCopyIndicator
@@ -419,19 +302,18 @@ export function AgentConfigPanel({
   pubkey,
   sections = ALL_AGENT_CONFIG_SECTIONS,
 }: Props) {
-  const t = useT();
   const { data, isLoading, error } = useAgentConfigSurface(pubkey);
   const flatStateTitle = sections.includes("model")
-    ? t("agents.modelSettings")
+    ? "Model settings"
     : sections.includes("mcp")
-      ? t("agents.mcpServers")
-      : t("agents.advanced");
+      ? "MCP servers"
+      : "Advanced";
 
   if (isLoading) {
     const loading = (
       <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
         <Spinner className="h-3.5 w-3.5" />
-        {t("agents.configLoading")}
+        Loading configuration…
       </div>
     );
     if (advancedMode === "flat") {
@@ -449,7 +331,7 @@ export function AgentConfigPanel({
       <p className="px-4 py-3 text-sm text-destructive">
         {error instanceof Error
           ? error.message
-          : t("agents.configLoadFailed")}
+          : "Couldn't load agent configuration."}
       </p>
     );
     if (advancedMode === "flat") {
@@ -479,11 +361,10 @@ export function AgentConfigSurfaceRows({
   sections = ALL_AGENT_CONFIG_SECTIONS,
 }: AgentConfigSurfaceRowsProps) {
   const t = useT();
+  const labels = normalizedLabels(t);
   const [advancedOpen, setAdvancedOpen] = React.useState(false);
 
-  const { normalized, advanced, extensions, runtimeId, sources, isPreSpawn } =
-    data;
-  const configFilePath = sources.configFilePath;
+  const { normalized, advanced, extensions, runtimeId } = data;
 
   const normalizedEntries = (
     Object.entries(normalized) as [
@@ -520,20 +401,13 @@ export function AgentConfigSurfaceRows({
             testId="user-profile-model-settings-section"
             title={t("agents.modelSettings")}
           >
-            <div
-              className={cn(
-                "divide-y divide-border/55",
-                isPreSpawn && "opacity-60",
-              )}
-            >
+            <div className="divide-y divide-border/55">
               {normalizedEntries.map(([key, field]) => (
                 <NormalizedRow
-                  configFilePath={configFilePath}
                   field={field}
                   fieldKey={key}
-                  isPreSpawn={isPreSpawn}
                   key={key}
-                  label={normalizedLabels(t)[key]}
+                  label={labels[key]}
                   onEdit={onEdit}
                   variant="profile"
                 />
@@ -561,12 +435,7 @@ export function AgentConfigSurfaceRows({
             title={t("agents.advanced")}
           >
             {advanced.map((field) => (
-              <AdvancedRow
-                configFilePath={configFilePath}
-                field={field}
-                key={field.key}
-                variant="profile"
-              />
+              <AdvancedRow field={field} key={field.key} variant="profile" />
             ))}
           </ProfileConfigSection>
         ) : null}
@@ -577,22 +446,18 @@ export function AgentConfigSurfaceRows({
   return (
     <div className="space-y-0.5">
       {/* Normalized section */}
-      <div
-        className={cn("divide-y divide-border/50", isPreSpawn && "opacity-60")}
-      >
+      <div className="divide-y divide-border/50">
         {normalizedEntries.length === 0 ? (
           <p className="py-2 text-xs text-muted-foreground">
-            No config fields available.
+            {t("agents.noConfigFields")}
           </p>
         ) : (
           normalizedEntries.map(([key, field]) => (
             <NormalizedRow
-              key={key}
               fieldKey={key}
-              label={normalizedLabels(t)[key]}
+              label={labels[key]}
               field={field}
-              isPreSpawn={isPreSpawn}
-              configFilePath={configFilePath}
+              key={key}
               variant="compact"
             />
           ))
@@ -623,11 +488,7 @@ export function AgentConfigSurfaceRows({
           {advancedOpen ? (
             <div className="mt-1 divide-y divide-border/50">
               {advanced.map((field) => (
-                <AdvancedRow
-                  key={field.key}
-                  field={field}
-                  configFilePath={configFilePath}
-                />
+                <AdvancedRow field={field} key={field.key} />
               ))}
             </div>
           ) : null}

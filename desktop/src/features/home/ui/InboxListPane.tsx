@@ -9,6 +9,8 @@ import {
   type InboxTypeLabel,
 } from "@/features/home/lib/inbox";
 import { buildInboxListRows } from "@/features/home/lib/inboxListRows";
+import { hasRenderedVideoAttachment } from "@/features/messages/lib/videoReviewContext";
+import { getThreadReference } from "@/features/messages/lib/threading";
 import { InboxFilterMenu } from "@/features/home/ui/InboxFilterMenu";
 import {
   DraftsPanel,
@@ -21,11 +23,7 @@ import {
   RemindersPanel,
   useReminderSources,
 } from "@/features/reminders/ui/RemindersPanel";
-import {
-  useT,
-  type MessageKey,
-  type TranslateFn,
-} from "@/shared/i18n";
+import { useT } from "@/shared/i18n";
 import { TopChromeInsetHeader } from "@/shared/layout/TopChromeInsetHeader";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
@@ -36,7 +34,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/shared/ui/context-menu";
-import { Markdown } from "@/shared/ui/markdown";
+import { VideoReviewCommentMarkdown } from "@/shared/ui/VideoReviewCommentMarkdown";
 import {
   MENTION_CHIP_BASE_CLASSES,
   MESSAGE_MARKDOWN_CLASS,
@@ -48,26 +46,26 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 import { VirtualizedList } from "@/shared/ui/VirtualizedList";
 
-const INBOX_EMPTY_STATE_TITLES: Record<InboxFilter, MessageKey> = {
-  all: "inbox.empty.all",
-  project: "inbox.empty.project",
-  mention: "inbox.empty.mention",
-  thread: "inbox.empty.thread",
-  needs_action: "inbox.empty.needsAction",
-  agent_activity: "inbox.empty.agentActivity",
-  reminders: "inbox.empty.reminders",
-  drafts: "inbox.empty.drafts",
+const INBOX_EMPTY_STATE_TITLES: Record<InboxFilter, string> = {
+  all: "No activity yet",
+  project: "No project work found",
+  mention: "No mentions found",
+  thread: "No threads found",
+  needs_action: "Nothing needs action",
+  agent_activity: "No agent updates found",
+  reminders: "No reminders",
+  drafts: "No drafts",
 };
 
-const INBOX_UNREAD_EMPTY_STATE_TITLES: Record<InboxFilter, MessageKey> = {
-  all: "inbox.emptyUnread.all",
-  project: "inbox.emptyUnread.project",
-  mention: "inbox.emptyUnread.mention",
-  thread: "inbox.emptyUnread.thread",
-  needs_action: "inbox.emptyUnread.needsAction",
-  agent_activity: "inbox.emptyUnread.agentActivity",
-  reminders: "inbox.emptyUnread.reminders",
-  drafts: "inbox.emptyUnread.drafts",
+const INBOX_UNREAD_EMPTY_STATE_TITLES: Record<InboxFilter, string> = {
+  all: "No unread activity",
+  project: "No unread project work",
+  mention: "No unread mentions",
+  thread: "No unread threads",
+  needs_action: "No unread items needing action",
+  agent_activity: "No unread agent updates",
+  reminders: "No unread reminders",
+  drafts: "No unread drafts",
 };
 
 const INBOX_HEADER_ICON_BUTTON_CLASS =
@@ -114,27 +112,46 @@ function InboxLabel({
   );
 }
 
-function formatReminderStatus(
-  notBefore: number | undefined,
-  t: TranslateFn,
-) {
-  if (notBefore === undefined) return t("inbox.reminder.pending");
+function formatReminderStatus(notBefore: number | undefined) {
+  if (notBefore === undefined) return "Pending";
   const secondsUntil = notBefore - Math.floor(Date.now() / 1_000);
-  if (secondsUntil <= 0) return t("inbox.reminder.due");
-  if (secondsUntil < 60) return t("inbox.reminder.lt1m");
+  if (secondsUntil <= 0) return "Reminder due";
+  if (secondsUntil < 60) return "Reminder in less than a minute";
   if (secondsUntil < 3_600) {
-    return t("inbox.reminder.inMinutes", {
-      count: Math.floor(secondsUntil / 60),
-    });
+    return `Reminder in ${Math.floor(secondsUntil / 60)}m`;
   }
   if (secondsUntil < 86_400) {
-    return t("inbox.reminder.inHours", {
-      count: Math.floor(secondsUntil / 3_600),
-    });
+    return `Reminder in ${Math.floor(secondsUntil / 3_600)}h`;
   }
-  return t("inbox.reminder.inDays", {
-    count: Math.floor(secondsUntil / 86_400),
-  });
+  return `Reminder in ${Math.floor(secondsUntil / 86_400)}d`;
+}
+
+function getInboxVideoReviewCommentRootId(item: InboxItem) {
+  const feedItems = [item.item, ...item.groupItems];
+  const feedItemById = new Map(
+    feedItems.map((feedItem) => [feedItem.id, feedItem]),
+  );
+  const videoMessageIds = new Set(
+    feedItems
+      .filter((feedItem) =>
+        hasRenderedVideoAttachment({
+          body: feedItem.content,
+          tags: feedItem.tags,
+        }),
+      )
+      .map((feedItem) => feedItem.id),
+  );
+  const visited = new Set<string>();
+  let ancestorId = getThreadReference(item.item.tags).parentId;
+
+  while (ancestorId && !visited.has(ancestorId)) {
+    if (videoMessageIds.has(ancestorId)) return ancestorId;
+    visited.add(ancestorId);
+    const ancestor = feedItemById.get(ancestorId);
+    ancestorId = ancestor ? getThreadReference(ancestor.tags).parentId : null;
+  }
+
+  return undefined;
 }
 
 function PersonalItemRow({
@@ -152,7 +169,6 @@ function PersonalItemRow({
   selected: boolean;
   status: string;
 }) {
-  const t = useT();
   return (
     <button
       aria-current={selected ? "true" : undefined}
@@ -169,7 +185,7 @@ function PersonalItemRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-foreground">
-          {t("inbox.type.reminder")}
+          Reminder
         </span>
         {location ? (
           <InboxLabel
@@ -292,22 +308,13 @@ export function InboxListPane({
       );
     const hasChannelTarget = Boolean(item.item.channelId);
     const typeLabel = getInboxTypeLabel(item);
+    const videoReviewCommentRootId = getInboxVideoReviewCommentRootId(item);
     const isSenderAgent =
       agentPubkeys?.has(normalizePubkey(item.item.pubkey)) === true;
     const profileRole = isSenderAgent ? "bot" : undefined;
     const rowHighlightColor = isSelected
       ? "color-mix(in srgb, hsl(var(--background)) 70%, hsl(var(--muted)) 30%)"
       : "color-mix(in srgb, hsl(var(--background)) 75%, hsl(var(--muted)) 25%)";
-    const markUnreadLabel = t("inbox.markUnread");
-    const markAsReadLabel = t("inbox.markAsRead");
-    const openInChannelLabel = hasChannelTarget
-      ? t("inbox.openInChannel")
-      : t("inbox.noChannelLink");
-    const remindLabel = hasChannelTarget
-      ? hasActiveReminder
-        ? t("inbox.reminderSet")
-        : t("inbox.remindLater")
-      : t("inbox.cannotRemind");
     const handleRowContentClick = (event: React.MouseEvent<HTMLElement>) => {
       const target = event.target;
       if (
@@ -330,7 +337,7 @@ export function InboxListPane({
         }
       >
         <button
-          aria-label={t("inbox.openItemFrom", { name: item.senderLabel })}
+          aria-label={`Open inbox item from ${item.senderLabel}`}
           className="absolute inset-0 z-0 block w-full border-l border-l-transparent text-left"
           onClick={() => onSelect(item.id)}
           type="button"
@@ -407,7 +414,7 @@ export function InboxListPane({
                   ) : null}
                   {item.unreadCount > 1 ? (
                     <span data-testid="home-inbox-unread-count">
-                      {t("sidebar.unreadCount", { count: item.unreadCount })}
+                      {item.unreadCount} unread
                     </span>
                   ) : null}
                   {item.timestampLabel}
@@ -424,7 +431,7 @@ export function InboxListPane({
                   data-testid="home-inbox-reminder-due"
                 >
                   <Bell className="h-3 w-3" />
-                  {t("inbox.reminder.due")}
+                  Reminder due
                 </div>
               ) : null}
 
@@ -436,11 +443,12 @@ export function InboxListPane({
                     : "font-semibold text-foreground",
                 )}
               >
-                <Markdown
+                <VideoReviewCommentMarkdown
                   className="inbox-preview-markdown text-inherit leading-5"
                   content={item.preview}
                   interactive={false}
                   mentionNames={item.mentionNames}
+                  videoReviewCommentRootId={videoReviewCommentRootId}
                 />
               </div>
             </div>
@@ -450,14 +458,14 @@ export function InboxListPane({
         <div className="pointer-events-none absolute right-3 top-2 z-10 flex items-center gap-0.5 rounded-full bg-[var(--inbox-row-highlight-bg)] p-1 opacity-0 transition-opacity duration-150 ease-out group-hover/inbox-item:pointer-events-auto group-hover/inbox-item:opacity-100 group-focus-within/inbox-item:pointer-events-auto group-focus-within/inbox-item:opacity-100">
           {isDone ? (
             <InboxRowActionButton
-              label={markUnreadLabel}
+              label="Mark unread"
               onClick={() => onMarkUnread(item.id)}
             >
               <MailOpen className="!h-4 !w-4" />
             </InboxRowActionButton>
           ) : (
             <InboxRowActionButton
-              label={markAsReadLabel}
+              label="Mark as read"
               onClick={() => onMarkRead(item.id)}
             >
               <MailOpen className="!h-4 !w-4" />
@@ -465,7 +473,7 @@ export function InboxListPane({
           )}
           <InboxRowActionButton
             disabled={!hasChannelTarget}
-            label={openInChannelLabel}
+            label={hasChannelTarget ? "Open in channel" : "No channel link"}
             onClick={() => onOpenDirect(item)}
           >
             <ExternalLink className="!h-4 !w-4" />
@@ -473,7 +481,13 @@ export function InboxListPane({
           <InboxRowActionButton
             active={hasActiveReminder}
             disabled={!hasChannelTarget}
-            label={remindLabel}
+            label={
+              hasChannelTarget
+                ? hasActiveReminder
+                  ? "Reminder set"
+                  : "Remind me later"
+                : "Cannot remind without a channel"
+            }
             onClick={() => onRemindLater(item)}
           >
             <Clock className="!h-4 !w-4" />
@@ -489,12 +503,12 @@ export function InboxListPane({
           {isDone ? (
             <ContextMenuItem onClick={() => onMarkUnread(item.id)}>
               <MailOpen className="h-4 w-4" />
-              {markUnreadLabel}
+              Mark unread
             </ContextMenuItem>
           ) : (
             <ContextMenuItem onClick={() => onMarkRead(item.id)}>
               <MailOpen className="h-4 w-4" />
-              {markAsReadLabel}
+              Mark as read
             </ContextMenuItem>
           )}
           <ContextMenuSeparator />
@@ -507,7 +521,7 @@ export function InboxListPane({
             }}
           >
             <ExternalLink className="h-4 w-4" />
-            {openInChannelLabel}
+            {hasChannelTarget ? "Open in channel" : "No channel link"}
           </ContextMenuItem>
           <ContextMenuItem
             disabled={!hasChannelTarget}
@@ -518,9 +532,7 @@ export function InboxListPane({
             }}
           >
             <Clock className="h-4 w-4" />
-            {hasActiveReminder
-              ? t("inbox.reminderSet")
-              : t("inbox.remindLater")}
+            {hasActiveReminder ? "Reminder set" : "Remind me later"}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -541,7 +553,7 @@ export function InboxListPane({
               <Popover>
                 <PopoverTrigger asChild>
                   <button
-                    aria-label={t("inbox.optionsAria")}
+                    aria-label="Inbox options"
                     className={cn(INBOX_HEADER_ICON_BUTTON_CLASS, "-mr-4")}
                     data-testid="inbox-options-trigger"
                     type="button"
@@ -560,7 +572,7 @@ export function InboxListPane({
                       className="text-sm font-medium text-foreground"
                       htmlFor="inbox-unread-only-switch"
                     >
-                      {t("inbox.showUnreadOnly")}
+                      Show unread only
                     </label>
                     <Switch
                       checked={unreadOnly}
@@ -578,7 +590,7 @@ export function InboxListPane({
                     onClick={handleMarkAllRead}
                     type="button"
                   >
-                    <span>{t("sidebar.markAllAsRead")}</span>
+                    <span>Mark all as read</span>
                     {unreadVisibleItemCount > 0 ? (
                       <span className="ml-auto text-xs text-muted-foreground">
                         {unreadVisibleItemCount}
@@ -670,7 +682,7 @@ export function InboxListPane({
                       t("inbox.type.reminder")
                     }
                     selected={selectedReminderId === row.reminder.id}
-                    status={formatReminderStatus(row.reminder.notBefore, t)}
+                    status={formatReminderStatus(row.reminder.notBefore)}
                   />
                 );
               }}
@@ -680,20 +692,16 @@ export function InboxListPane({
             <div className="flex h-full min-h-64 items-center justify-center px-6 text-center">
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  {t(
-                    unreadOnly
-                      ? INBOX_UNREAD_EMPTY_STATE_TITLES[filter]
-                      : INBOX_EMPTY_STATE_TITLES[filter],
-                  )}
+                  {unreadOnly
+                    ? INBOX_UNREAD_EMPTY_STATE_TITLES[filter]
+                    : INBOX_EMPTY_STATE_TITLES[filter]}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {t(
-                    unreadOnly
-                      ? "inbox.emptyHintUnreadOnly"
-                      : filter === "all"
-                        ? "inbox.emptyHintWaiting"
-                        : "inbox.emptyHintSwitchAll",
-                  )}
+                  {unreadOnly
+                    ? "Turn off Show unread only to see read activity."
+                    : filter === "all"
+                      ? "New activity will appear here."
+                      : "Switch back to All to see other activity."}
                 </p>
               </div>
             </div>

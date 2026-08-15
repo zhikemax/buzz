@@ -1,5 +1,4 @@
 import { cn } from "@/shared/lib/cn";
-import { useT } from "@/shared/i18n";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 
 const WEEK_COUNT = 26;
@@ -99,7 +98,6 @@ export function ProjectsContributionGraph({
   className?: string;
   compact?: boolean;
 }) {
-  const t = useT();
   const today = new Date();
   const weeks = buildWeeks(today, compact ? 18 : WEEK_COUNT);
   const labels = monthLabels(weeks);
@@ -160,7 +158,7 @@ export function ProjectsContributionGraph({
                 <TooltipContent>
                   {count > 0
                     ? `${count} ${count === 1 ? "event" : "events"} · ${dateLabel}`
-                    : `${t("projects.empty.noActivity")} · ${dateLabel}`}
+                    : `No activity · ${dateLabel}`}
                 </TooltipContent>
               </Tooltip>
             );

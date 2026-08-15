@@ -22,7 +22,6 @@ import {
   topLanguagesFromCounts,
 } from "@/features/projects/lib/projectLanguages";
 import type { ProjectRepoUnavailableReason } from "@/features/projects/lib/projectRepoAvailability";
-import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 import { PROJECT_DETAIL_PANEL_CLASS } from "./projectPanelStyles";
@@ -37,6 +36,8 @@ type ProjectOverviewPanelProps = {
   externalUrl?: string | null;
   files: ProjectRepoFile[];
   gitDataState: GitDataState;
+  /** Hide the readme header rows when the workspace renders them itself. */
+  hideReadmeHeader?: boolean;
   project: Project;
   onViewContributors: () => void;
   profiles?: UserProfileLookup;
@@ -150,6 +151,7 @@ export function ProjectOverviewPanel({
   externalUrl,
   files,
   gitDataState,
+  hideReadmeHeader,
   onViewContributors,
   project,
   profiles,
@@ -159,7 +161,6 @@ export function ProjectOverviewPanel({
   sourceControls,
   unavailableReason,
 }: ProjectOverviewPanelProps) {
-  const t = useT();
   const languages = topLanguages(files);
   const people = projectPeople(project);
   const latestCommit = snapshot?.latestCommit ?? null;
@@ -184,13 +185,14 @@ export function ProjectOverviewPanel({
           externalUrl={externalUrl}
           file={readmeFile}
           gitDataState={gitDataState}
+          hideHeader={hideReadmeHeader}
           sourceControls={sourceControls}
           unavailableReason={unavailableReason}
         />
       </div>
       {!unavailableSplash ? (
         <aside className="space-y-6 border-t border-border/60 p-4 xl:border-l xl:border-t-0">
-          <OverviewRailSection title={t("projects.overview.people")}>
+          <OverviewRailSection title="People">
             <div className="flex items-center justify-between gap-3">
               <PeopleAvatars people={people} profiles={profiles} />
               <button
@@ -198,25 +200,25 @@ export function ProjectOverviewPanel({
                 onClick={onViewContributors}
                 type="button"
               >
-                {t("projects.overview.viewAll")}
+                View all
               </button>
             </div>
           </OverviewRailSection>
-          <OverviewRailSection title={t("projects.overview.topLanguages")}>
+          <OverviewRailSection title="Top Languages">
             {languages.length > 0 ? (
               <LanguageChips languages={languages} />
             ) : (
               <p className="text-sm text-muted-foreground">
-                {t("projects.overview.noLanguageData")}
+                No language data is available yet.
               </p>
             )}
           </OverviewRailSection>
-          <OverviewRailSection title={t("projects.overview.buzzActivity")}>
+          <OverviewRailSection title="Buzz Activity">
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <GitPullRequest className="h-3.5 w-3.5" />
-                  {t("projects.tab.pullRequests")}
+                  Pull Requests
                 </dt>
                 <dd className="font-medium text-foreground">
                   {pullRequests.length}
@@ -224,12 +226,12 @@ export function ProjectOverviewPanel({
               </div>
             </dl>
           </OverviewRailSection>
-          <OverviewRailSection title={t("projects.overview.git")}>
+          <OverviewRailSection title="Git">
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <GitBranch className="h-3.5 w-3.5" />
-                  {t("projects.overview.branch")}
+                  Branch
                 </dt>
                 <dd className="font-medium text-foreground">
                   {project.defaultBranch}
@@ -238,7 +240,7 @@ export function ProjectOverviewPanel({
               <div className="flex items-center justify-between gap-3">
                 <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <GitCommitHorizontal className="h-3.5 w-3.5" />
-                  {t("projects.overview.latest")}
+                  Latest
                 </dt>
                 <dd className="font-mono text-xs text-foreground">
                   {gitDataAvailable && latestCommit
@@ -249,7 +251,7 @@ export function ProjectOverviewPanel({
               <div className="flex items-center justify-between gap-3">
                 <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <FileCode2 className="h-3.5 w-3.5" />
-                  {t("projects.tab.files")}
+                  Files
                 </dt>
                 <dd className="font-medium text-foreground">
                   {gitDataAvailable ? files.length : "—"}
@@ -258,7 +260,7 @@ export function ProjectOverviewPanel({
               <div className="flex items-center justify-between gap-3">
                 <dt className="flex items-center gap-1.5 text-muted-foreground">
                   <Users className="h-3.5 w-3.5" />
-                  {t("projects.tab.contributors")}
+                  Contributors
                 </dt>
                 <dd className="font-medium text-foreground">
                   {gitDataAvailable ? contributors.length : "—"}

@@ -15,7 +15,6 @@ import { useAppNavigation } from "@/app/navigation/useAppNavigation";
 import { useChannelsQuery } from "@/features/channels/hooks";
 import type { ProjectRepoFile } from "@/features/projects/hooks";
 import type { ProjectRepoUnavailableReason } from "@/features/projects/lib/projectRepoAvailability";
-import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Markdown, SyntaxHighlightedCode } from "@/shared/ui/markdown";
 import {
@@ -103,7 +102,6 @@ function AccessRestrictedDescription({
 }: {
   accessChannelId: string;
 }) {
-  const t = useT();
   const { goChannel } = useAppNavigation();
   const channelsQuery = useChannelsQuery();
   const channel = channelsQuery.data?.find(
@@ -111,22 +109,27 @@ function AccessRestrictedDescription({
   );
 
   if (!channel) {
-    return <>{t("projects.readme.accessRestrictedDesc")}</>;
+    return (
+      <>
+        Repository access is granted through a channel you can’t see. Ask the
+        repository owner for an invite.
+      </>
+    );
   }
 
   return (
     <>
-      {t("projects.readme.accessRestrictedDesc")}{" "}
+      Repository access is granted through{" "}
       <button
-        aria-label={t("projects.readme.openChannelAria", {
-          channel: channel.name,
-        })}
+        aria-label={`Open repository access channel #${channel.name}`}
         className="font-medium text-foreground underline-offset-2 hover:underline"
         onClick={() => void goChannel(channel.id)}
         type="button"
       >
         #{channel.name}
       </button>
+      , and you’re not a member. Join the channel or ask the repository owner
+      for an invite.
     </>
   );
 }
@@ -137,6 +140,7 @@ export function ReadmePanel({
   gitDataState,
   externalHost,
   externalUrl,
+  hideHeader,
   sourceControls,
   unavailableReason,
 }: {
@@ -146,14 +150,18 @@ export function ReadmePanel({
   gitDataState: "checking" | "available" | "empty" | "unavailable";
   externalHost?: string;
   externalUrl?: string | null;
+  /**
+   * Skip the header rows entirely — the workspace layout renders the source
+   * controls and last-changed timestamp itself.
+   */
+  hideHeader?: boolean;
   unavailableReason?: ProjectRepoUnavailableReason;
   /** Branch picker + remote/local toggle rendered in the panel header. */
   sourceControls?: RepoSourceHeaderControls;
 }) {
-  const t = useT();
   // Two header rows, mirroring the files panel: controls on top, then the
   // file identity row.
-  const header = (
+  const header = hideHeader ? null : (
     <>
       {sourceControls ? (
         <div className="flex min-h-14 min-w-0 items-center gap-1 border-border/50 border-b px-3 py-3">
@@ -161,7 +169,6 @@ export function ReadmePanel({
           <RepositoryBranchDropdown
             branch={sourceControls.branch}
             branchOptions={sourceControls.branchOptions}
-            compact
             createBranchDisabled={sourceControls.createBranchDisabled}
             createBranchTitle={sourceControls.createBranchTitle}
             deleteBranchDisabled={sourceControls.deleteBranchDisabled}
@@ -181,7 +188,7 @@ export function ReadmePanel({
       <div className="flex min-h-10 items-center gap-2 border-border/50 border-b bg-muted/20 px-4">
         <BookOpen className="h-4 w-4 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-          {file ? baseName(file.path) : t("projects.readme.title")}
+          {file ? baseName(file.path) : "README"}
         </span>
         {file ? (
           <span className="hidden shrink-0 text-2xs text-muted-foreground sm:block">
@@ -198,7 +205,7 @@ export function ReadmePanel({
         {header}
         <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          {t("projects.readme.loading")}
+          Loading repository…
         </div>
       </section>
     );
@@ -208,39 +215,46 @@ export function ReadmePanel({
     const reason = unavailableReason ?? "unknown";
     const unavailableContent = {
       authentication: {
-        description: t("projects.readme.accessFailedDesc"),
+        description:
+          "Buzz could not authenticate with this repository. Check your access and try again.",
         icon: LockKeyhole,
-        title: t("projects.readme.accessFailedTitle"),
+        title: "Repository access failed",
       },
       missing: {
-        description: t("projects.readme.notInitializedDesc"),
+        description:
+          "The project announcement exists, but its git repository was not found on the Buzz relay.",
         icon: CircleAlert,
-        title: t("projects.readme.notInitializedTitle"),
+        title: "Repository not initialized",
       },
       access: {
-        description: t("projects.readme.accessRestrictedDesc"),
+        description:
+          "Repository access is granted through its channel, and you’re not a member of the channel bound to this repository. Ask the repository owner for an invite.",
         icon: LockKeyhole,
-        title: t("projects.readme.accessRestrictedTitle"),
+        title: "Repository access restricted",
       },
       unbound: {
-        description: t("projects.readme.noChannelDesc"),
+        description:
+          "This repository has no access channel binding, so the relay cannot authorize anyone to read it. The repository owner can bind a channel from the Access menu.",
         icon: LockKeyhole,
-        title: t("projects.readme.noChannelTitle"),
+        title: "No access channel bound",
       },
       network: {
-        description: t("projects.readme.unreachableDesc"),
+        description:
+          "The Buzz git service could not be reached. Check your connection and try again.",
         icon: CloudOff,
-        title: t("projects.readme.unreachableTitle"),
+        title: "Couldn’t reach repository",
       },
       ref: {
-        description: t("projects.readme.branchUnavailableDesc"),
+        description:
+          "The selected branch is advertised by the project but is missing from its git remote.",
         icon: GitBranch,
-        title: t("projects.readme.branchUnavailableTitle"),
+        title: "Branch unavailable",
       },
       unknown: {
-        description: t("projects.readme.unavailableDesc"),
+        description:
+          "Buzz could not load this repository. Try again or contact the project owner.",
         icon: CircleAlert,
-        title: t("projects.readme.unavailableTitle"),
+        title: "Repository unavailable",
       },
     } satisfies Record<
       ProjectRepoUnavailableReason,
@@ -267,12 +281,12 @@ export function ReadmePanel({
           </div>
           <h3 className="text-base font-semibold text-foreground">
             {externalHost
-              ? t("projects.readme.codeHostedOn", { host: externalHost })
+              ? `Code hosted on ${externalHost}`
               : unavailable.title}
           </h3>
           <p className="mt-1 max-w-lg text-sm text-muted-foreground">
             {externalHost ? (
-              t("projects.readme.cloneHint")
+              "Clone this repository locally to explore its files, commits, and contributors in Buzz."
             ) : reason === "access" && accessChannelId ? (
               <AccessRestrictedDescription accessChannelId={accessChannelId} />
             ) : (
@@ -302,9 +316,7 @@ export function ReadmePanel({
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                {sourceControls.fetchPending
-                  ? t("projects.readme.retrying")
-                  : t("common.retry")}
+                {sourceControls.fetchPending ? "Retrying…" : "Retry"}
               </Button>
             ) : null}
             {externalHost && sourceControls?.onCloneLocal ? (
@@ -318,18 +330,14 @@ export function ReadmePanel({
                 ) : (
                   <DownloadCloud className="h-4 w-4" />
                 )}
-                {sourceControls.clonePending
-                  ? t("projects.repo.source.cloning")
-                  : t("projects.readme.cloneLocally")}
+                {sourceControls.clonePending ? "Cloning…" : "Clone locally"}
               </Button>
             ) : null}
             {externalUrl ? (
               <Button asChild size="sm" variant="outline">
                 <a href={externalUrl} rel="noreferrer" target="_blank">
                   <ExternalLink className="h-4 w-4" />
-                  {t("projects.readme.openOnHost", {
-                    host: externalHost ?? "",
-                  })}
+                  Open on {externalHost}
                 </a>
               </Button>
             ) : null}
@@ -345,8 +353,8 @@ export function ReadmePanel({
         {header}
         <div className="p-6 text-sm text-muted-foreground">
           {gitDataState === "empty"
-            ? t("projects.readme.noFilesPushed")
-            : t("projects.readme.addReadmeHint")}
+            ? "No files have been pushed to this repository yet."
+            : "Add a README to this repository to describe setup, usage, and project context."}
         </div>
       </section>
     );

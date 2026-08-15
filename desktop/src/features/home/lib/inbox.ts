@@ -19,13 +19,16 @@ import type {
   RelayEvent,
 } from "@/shared/api/types";
 import {
+  formatDayGroupLabel,
+  formatItemTimestamp,
+} from "@/shared/lib/datetime";
+import {
   detectLocale,
-  getDateFormatLocale,
-  intlDateLocale,
   translate,
   type MessageKey,
   type TranslateFn,
 } from "@/shared/i18n";
+import { intlDateLocale } from "@/shared/i18n/dateLocale";
 import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 
 export type InboxFilter =
@@ -100,6 +103,7 @@ export type InboxReply = {
    */
   signerPubkey?: string;
   tags?: string[][];
+  /** Clock time only, for the hover gutter on continuation rows. */
   timeLabel?: string;
 };
 
@@ -117,13 +121,6 @@ export type InboxGroup = {
 
 type InboxChannel = Pick<Channel, "channelType" | "id" | "name">;
 
-function listTimeFormatter() {
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 function fullTimeFormatter() {
   return new Intl.DateTimeFormat(intlDateLocale(), {
     month: "short",
@@ -132,37 +129,6 @@ function fullTimeFormatter() {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function shortDateFormatter() {
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function shortDateWithYearFormatter() {
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function weekdayFormatter() {
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    weekday: "long",
-  });
-}
-
-function startOfDay(value: Date) {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-}
-
-function diffInDays(from: Date, to: Date) {
-  return Math.round(
-    (startOfDay(from).getTime() - startOfDay(to).getTime()) / 86_400_000,
-  );
 }
 
 function tagValue(item: FeedItem, name: string) {
@@ -488,23 +454,7 @@ export function findInboxItemByEventId(
 }
 
 function formatInboxTimestamp(unixSeconds: number) {
-  const date = new Date(unixSeconds * 1_000);
-  const now = new Date();
-  const dayDiff = diffInDays(now, date);
-
-  if (dayDiff === 0) {
-    return listTimeFormatter().format(date);
-  }
-
-  if (dayDiff === 1) {
-    return translate(getDateFormatLocale(), "time.yesterday");
-  }
-
-  if (now.getFullYear() === date.getFullYear()) {
-    return shortDateFormatter().format(date);
-  }
-
-  return shortDateWithYearFormatter().format(date);
+  return formatItemTimestamp(unixSeconds);
 }
 
 export function formatInboxFullTimestamp(unixSeconds: number) {
@@ -523,21 +473,14 @@ export function relayEventFromFeedItem(item: FeedItem): RelayEvent {
   };
 }
 
-export function groupInboxItems(items: InboxItem[]): InboxGroup[] {
+export function groupInboxItems(
+  items: InboxItem[],
+  nowSeconds = Date.now() / 1_000,
+): InboxGroup[] {
   const groups = new Map<string, InboxItem[]>();
-  const now = new Date();
 
   for (const item of items) {
-    const date = new Date(item.latestActivityAt * 1_000);
-    const dayDiff = diffInDays(now, date);
-    const label =
-      dayDiff === 0
-        ? translate(getDateFormatLocale(), "time.today")
-        : dayDiff === 1
-          ? translate(getDateFormatLocale(), "time.yesterday")
-          : dayDiff < 7
-            ? weekdayFormatter().format(date)
-            : shortDateWithYearFormatter().format(date);
+    const label = formatDayGroupLabel(item.latestActivityAt, nowSeconds);
 
     const current = groups.get(label) ?? [];
     current.push(item);

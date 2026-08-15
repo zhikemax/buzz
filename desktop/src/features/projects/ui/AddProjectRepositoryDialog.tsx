@@ -3,7 +3,6 @@ import * as React from "react";
 import type { Project } from "@/features/projects/hooks";
 import type { AddProjectRepositoryInput } from "@/features/projects/useAddProjectRepository";
 import type { Channel } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
@@ -32,7 +31,6 @@ export function AddProjectRepositoryDialog({
   open: boolean;
   project: Project;
 }) {
-  const t = useT();
   const [name, setName] = React.useState("");
   const [cloneUrl, setCloneUrl] = React.useState("");
   const [selectedChannelId, setSelectedChannelId] = React.useState("");
@@ -66,7 +64,7 @@ export function AddProjectRepositoryDialog({
       onOpenChange(false);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : t("projects.repo.add.failed"),
+        error instanceof Error ? error.message : "Failed to add repository.",
       );
     }
   }
@@ -83,7 +81,7 @@ export function AddProjectRepositoryDialog({
         className="max-w-lg"
         contentClassName="pt-3"
         data-testid="add-project-repository-dialog"
-        description={t("projects.repo.add.description", { name: project.name })}
+        description={`Add another repository to ${project.name}.`}
         footer={
           <Button
             data-testid="add-project-repository-submit"
@@ -91,14 +89,12 @@ export function AddProjectRepositoryDialog({
             form="add-project-repository-form"
             type="submit"
           >
-            {isCreating
-              ? t("projects.repo.add.submitting")
-              : t("projects.repo.add.submit")}
+            {isCreating ? "Adding..." : "Add repository"}
           </Button>
         }
         footerClassName="border-t-0 pt-0"
         headerClassName="pb-2"
-        title={t("projects.repo.add.title")}
+        title="Add repository"
       >
         <form
           className="space-y-5"
@@ -110,7 +106,7 @@ export function AddProjectRepositoryDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="add-project-repository-name"
             >
-              {t("channel.fieldName")}
+              Name
             </label>
             <div className={FIELD_SHELL_CLASS}>
               <Input
@@ -125,7 +121,7 @@ export function AddProjectRepositoryDialog({
                   setName(event.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder={t("projects.repo.add.namePlaceholder")}
+                placeholder="mobile-app"
                 ref={nameInputRef}
                 spellCheck={false}
                 value={name}
@@ -137,7 +133,7 @@ export function AddProjectRepositoryDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="add-project-repository-channel"
             >
-              {t("projects.repo.add.accessChannel")}
+              Access channel
             </label>
             <div className={FIELD_SHELL_CLASS}>
               <select
@@ -152,7 +148,7 @@ export function AddProjectRepositoryDialog({
                 required
                 value={selectedChannelId}
               >
-                <option value="">{t("composer.selectChannel")}</option>
+                <option value="">Select a channel</option>
                 {channels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
                     {channel.name}
@@ -161,7 +157,7 @@ export function AddProjectRepositoryDialog({
               </select>
             </div>
             <p className="text-xs text-muted-foreground">
-              {t("projects.repo.add.accessChannelHint")}
+              Members of this channel can access the repository.
             </p>
           </div>
           <div className="space-y-1.5">
@@ -169,9 +165,9 @@ export function AddProjectRepositoryDialog({
               className="text-sm font-medium text-foreground"
               htmlFor="add-project-repository-clone-url"
             >
-              {t("projects.repo.add.cloneUrl")}
+              Clone URL
               <span className="ml-1 text-xs font-normal text-muted-foreground/50">
-                {t("common.optional")}
+                Optional
               </span>
             </label>
             <div className={FIELD_SHELL_CLASS}>
@@ -187,7 +183,7 @@ export function AddProjectRepositoryDialog({
                   setCloneUrl(event.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder={t("projects.repo.add.cloneUrlPlaceholder")}
+                placeholder="https://relay.example.com/git/mobile-app.git"
                 spellCheck={false}
                 value={cloneUrl}
               />

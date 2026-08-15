@@ -1,12 +1,11 @@
 import { BookOpen } from "lucide-react";
 
 import type { ProjectPullRequest } from "@/features/projects/hooks";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 const PROJECT_TAB_TRIGGER_CLASS =
-  "relative h-full shrink-0 rounded-none px-2.5 text-base leading-5 tracking-tight text-muted-foreground shadow-none after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:bg-current after:opacity-0 after:transition-opacity after:content-[''] hover:bg-transparent hover:text-foreground hover:after:opacity-100 data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:opacity-100";
+  "relative h-full shrink-0 rounded-none px-2.5 text-sm leading-5 tracking-tight text-muted-foreground shadow-none after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:bg-current after:opacity-0 after:transition-opacity after:content-[''] hover:bg-transparent hover:text-foreground hover:after:opacity-100 data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:after:opacity-100";
 
 const PROJECT_TAB_SELECTED_CLASS =
   "font-semibold text-foreground after:opacity-100";
@@ -28,25 +27,24 @@ function ProjectTabLabel({ children }: { children: string }) {
 }
 
 export function ProjectTabsList({ prsActive }: { prsActive?: boolean }) {
-  const t = useT();
   return (
     <TabsList className="h-full min-w-0 max-w-full flex-none justify-start gap-1 overflow-x-auto bg-transparent p-0 scrollbar-none">
       <TabsTrigger
-        aria-label={t("projects.tab.overview")}
+        aria-label="Overview"
         className={PROJECT_OVERVIEW_TAB_CLASS}
-        title={t("projects.readme.title")}
+        title="README"
         value="overview"
       >
         <BookOpen className="h-full w-full" strokeWidth={2} />
       </TabsTrigger>
       <TabsTrigger className={PROJECT_TAB_TRIGGER_CLASS} value="files">
-        <ProjectTabLabel>{t("projects.tab.files")}</ProjectTabLabel>
+        <ProjectTabLabel>Files</ProjectTabLabel>
       </TabsTrigger>
       <TabsTrigger className={PROJECT_TAB_TRIGGER_CLASS} value="activity">
-        <ProjectTabLabel>{t("projects.tab.commits")}</ProjectTabLabel>
+        <ProjectTabLabel>Commits</ProjectTabLabel>
       </TabsTrigger>
       <TabsTrigger className={PROJECT_TAB_TRIGGER_CLASS} value="issues">
-        <ProjectTabLabel>{t("projects.tab.issues")}</ProjectTabLabel>
+        <ProjectTabLabel>Issues</ProjectTabLabel>
       </TabsTrigger>
       <TabsTrigger
         aria-current={prsActive ? "page" : undefined}
@@ -56,12 +54,13 @@ export function ProjectTabsList({ prsActive }: { prsActive?: boolean }) {
         )}
         value="prs"
       >
-        <ProjectTabLabel>
-          {t("projects.detail.crumb.pullRequest")}
-        </ProjectTabLabel>
+        <ProjectTabLabel>Pull Request</ProjectTabLabel>
+      </TabsTrigger>
+      <TabsTrigger className={PROJECT_TAB_TRIGGER_CLASS} value="channels">
+        <ProjectTabLabel>Channels</ProjectTabLabel>
       </TabsTrigger>
       <TabsTrigger className={PROJECT_TAB_TRIGGER_CLASS} value="contributors">
-        <ProjectTabLabel>{t("projects.tab.contributors")}</ProjectTabLabel>
+        <ProjectTabLabel>Contributors</ProjectTabLabel>
       </TabsTrigger>
     </TabsList>
   );
@@ -77,28 +76,27 @@ export function PullRequestTabsList({
   filesCount: number;
   pullRequest: ProjectPullRequest;
 }) {
-  const t = useT();
   const commitCount = Math.max(1, pullRequest.updateCount + 1);
   return (
     <TabsList className="h-9 w-fit justify-start gap-6 bg-transparent p-0">
       <TabsTrigger className={PR_TAB_TRIGGER_CLASS} value="pr-conversation">
-        {t("projects.pr.tab.conversation")}
+        Conversation
         <span className="rounded-full bg-muted px-1.5 py-0.5 text-2xs">
           {pullRequest.comments.length}
         </span>
       </TabsTrigger>
       <TabsTrigger className={PR_TAB_TRIGGER_CLASS} value="pr-commits">
-        {t("projects.tab.commits")}
+        Commits
         <span className="rounded-full bg-muted px-1.5 py-0.5 text-2xs">
           {commitCount}
         </span>
       </TabsTrigger>
       <TabsTrigger className={PR_TAB_TRIGGER_CLASS} value="pr-checks">
-        {t("projects.pr.tab.checks")}
+        Checks
         <span className="rounded-full bg-muted px-1.5 py-0.5 text-2xs">0</span>
       </TabsTrigger>
       <TabsTrigger className={PR_TAB_TRIGGER_CLASS} value="pr-files">
-        {t("projects.pr.tab.filesChanged")}
+        Files changed
         <span className="rounded-full bg-muted px-1.5 py-0.5 text-2xs">
           {filesCount}
         </span>

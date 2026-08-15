@@ -15,7 +15,6 @@ import {
   ProjectPullRequestMergeError,
   type ProjectPullRequestMergeRecovery,
 } from "@/shared/api/projectGit";
-import { useT } from "@/shared/i18n";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import {
   AlertDialog,
@@ -45,7 +44,6 @@ export function MergePullRequestButton({
   project: Project;
   pullRequest: ProjectPullRequest;
 }) {
-  const t = useT();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [isPreparingRecovery, setIsPreparingRecovery] = React.useState(false);
   const [conflictRecoveryState, setConflictRecoveryState] = React.useState<{
@@ -112,10 +110,10 @@ export function MergePullRequestButton({
       toast.error(
         error instanceof Error
           ? error.message
-          : t("projects.pr.merge.failed"),
+          : "Failed to merge pull request.",
       );
     }
-  }, [mergeMutation, pullRequest, t]);
+  }, [mergeMutation, pullRequest]);
 
   const recoveryCommands =
     conflictRecovery && preparedRecovery
@@ -143,12 +141,12 @@ export function MergePullRequestButton({
         recoveryRef: result.recoveryRef,
         targetRef: result.targetRef,
       });
-      toast.success(t("projects.toast.recoveryOpened"));
+      toast.success("Recovery commit fetched and terminal opened.");
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : t("projects.toast.recoveryPrepareFailed"),
+          : "Failed to prepare merge recovery.",
       );
     } finally {
       setIsPreparingRecovery(false);
@@ -160,7 +158,6 @@ export function MergePullRequestButton({
     pullRequest.cloneUrls,
     pullRequest.commit,
     pullRequest.id,
-    t,
   ]);
 
   const handlePublishMergedStatus = React.useCallback(async () => {
@@ -170,15 +167,15 @@ export function MergePullRequestButton({
         statusEvent: unpublishedStatusEvent,
       });
       setUnpublishedStatusState(null);
-      toast.success(t("projects.toast.mergeStatusPublished"));
+      toast.success("Published merged pull request status.");
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : t("projects.pr.merge.publishStatusFailed"),
+          : "Failed to publish merged pull request status.",
       );
     }
-  }, [publishMergedMutation, t, unpublishedStatusEvent]);
+  }, [publishMergedMutation, unpublishedStatusEvent]);
 
   return (
     <div className="contents">
@@ -198,26 +195,23 @@ export function MergePullRequestButton({
         >
           <GitMerge className="h-3.5 w-3.5" />
           {publishMergedMutation.isPending
-            ? t("projects.pr.merge.publishing")
+            ? "Publishing…"
             : unpublishedStatusEvent
-              ? t("projects.pr.merge.publishStatus")
-              : t("projects.pr.merge.action")}
+              ? "Publish merged status"
+              : "Merge"}
         </Button>
         <AlertDialogContent data-testid="merge-pull-request-confirm">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("projects.pr.merge.confirmTitle")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Merge pull request?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("projects.pr.merge.confirmDesc", {
-                source: pullRequest.branchName ?? "",
-                target: targetBranch ?? "",
-              })}
+              Merge {pullRequest.branchName} into {targetBranch} and push the
+              result to the repository. The remote will reject the operation if
+              the branch changed or conflicts.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={mergeMutation.isPending}>
-              {t("common.cancel")}
+              Cancel
             </AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button
@@ -229,9 +223,7 @@ export function MergePullRequestButton({
                 }}
                 type="button"
               >
-                {mergeMutation.isPending
-                  ? t("projects.pr.merge.merging")
-                  : t("projects.pr.merge.confirmAction")}
+                {mergeMutation.isPending ? "Merging…" : "Merge pull request"}
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -246,12 +238,13 @@ export function MergePullRequestButton({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground">
-                {t("projects.pr.merge.recoveryTitle")}
+                Resolve conflicts in your local checkout
               </p>
               <p className="text-xs text-muted-foreground">
-                {t("projects.pr.merge.recoveryDesc", {
-                  branch: conflictRecovery.targetBranch,
-                })}
+                Prepare the local checkout, then switch to{" "}
+                {conflictRecovery.targetBranch} with the commands shown. After
+                resolving and committing, push the target branch and retry the
+                merge.
               </p>
             </div>
           </div>
@@ -261,7 +254,8 @@ export function MergePullRequestButton({
             </pre>
           ) : (
             <p className="rounded-md bg-background/80 p-2 text-xs text-muted-foreground">
-              {t("projects.pr.merge.recoveryHint")}
+              Resolve in Terminal securely fetches the target and pull request
+              commits before showing copyable commands.
             </p>
           )}
           <div className="flex flex-wrap gap-2">
@@ -273,16 +267,14 @@ export function MergePullRequestButton({
               variant="outline"
             >
               <SquareTerminal className="h-3.5 w-3.5" />
-              {isPreparingRecovery
-                ? t("projects.pr.merge.preparing")
-                : t("projects.pr.merge.resolveInTerminal")}
+              {isPreparingRecovery ? "Preparing…" : "Resolve in Terminal"}
             </Button>
             <Button
               disabled={!preparedRecovery}
               onClick={() =>
                 copyTextToClipboard(
                   recoveryCommands.join("\n"),
-                  t("projects.pr.merge.recoveryCopied"),
+                  "Recovery commands copied",
                 )
               }
               size="xs"
@@ -290,7 +282,7 @@ export function MergePullRequestButton({
               variant="ghost"
             >
               <Copy className="h-3.5 w-3.5" />
-              {t("projects.pr.merge.copyCommands")}
+              Copy commands
             </Button>
           </div>
         </div>

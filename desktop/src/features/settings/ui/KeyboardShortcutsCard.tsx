@@ -5,7 +5,11 @@ import {
   shortcutCategoryLabelKey,
   type KeyboardShortcut,
 } from "@/shared/lib/keyboard-shortcuts";
-import { SettingsOptionGroup, SettingsOptionRow } from "./SettingsOptionGroup";
+import {
+  SettingsOptionGroup,
+  SettingsOptionGroupList,
+  SettingsOptionRow,
+} from "./SettingsOptionGroup";
 import { SettingsSectionHeader } from "./SettingsSectionHeader";
 
 function KeyCombo({ shortcut }: { shortcut: KeyboardShortcut }) {
@@ -41,7 +45,7 @@ export function KeyboardShortcutsCard() {
         description={t("settings.shortcuts.description")}
       />
 
-      <div className="space-y-4">
+      <SettingsOptionGroupList>
         {[...categories.entries()].map(([category, shortcuts]) => (
           <SettingsOptionGroup
             key={category}
@@ -68,7 +72,7 @@ export function KeyboardShortcutsCard() {
             ))}
           </SettingsOptionGroup>
         ))}
-      </div>
+      </SettingsOptionGroupList>
     </section>
   );
 }

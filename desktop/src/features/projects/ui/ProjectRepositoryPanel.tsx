@@ -30,7 +30,6 @@ import { relativeTime } from "@/features/projects/lib/projectsViewHelpers";
 import { useUserSearchQuery } from "@/features/profile/hooks";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { UserSearchResult } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { SyntaxHighlightedCode } from "@/shared/ui/markdown";
@@ -631,7 +630,6 @@ export function RepositoryFilesPanel({
   sourceControls?: RepoSourceHeaderControls;
   unavailableMessage?: string;
 }) {
-  const t = useT();
   const [currentPath, setCurrentPath] = React.useState("");
   const [selectedFile, setSelectedFile] =
     React.useState<ProjectRepoFile | null>(null);
@@ -686,13 +684,13 @@ export function RepositoryFilesPanel({
   // Loading/error/empty states keep the header controls visible — the
   // remote/local toggle must stay reachable when one source fails to load.
   const stateMessage = isLoading
-    ? t("projects.repo.panel.loadingFiles")
+    ? "Loading repository files…"
     : unavailableMessage
       ? unavailableMessage
       : error
-        ? t("projects.repo.panel.loadTreeFailed")
+        ? "Could not load the repository file tree."
         : files.length === 0
-          ? t("projects.repo.panel.noFilesYet")
+          ? "No files have been pushed yet."
           : null;
   if (stateMessage) {
     if (!sourceControls) {
@@ -712,7 +710,6 @@ export function RepositoryFilesPanel({
           <RepositoryBranchDropdown
             branch={sourceControls.branch}
             branchOptions={sourceControls.branchOptions}
-            compact
             createBranchDisabled={sourceControls.createBranchDisabled}
             createBranchTitle={sourceControls.createBranchTitle}
             deleteBranchDisabled={sourceControls.deleteBranchDisabled}
@@ -747,56 +744,57 @@ export function RepositoryFilesPanel({
 
   return (
     <div className={PROJECT_DETAIL_PANEL_CLASS} data-project-detail-panel>
-      <div className="flex min-h-14 min-w-0 items-center gap-1 border-border/50 border-b px-3 py-3">
-        {sourceControls ? (
-          <>
-            <RepoSourceDropdown controls={sourceControls} />
-            <RepositoryBranchDropdown
-              branch={sourceControls.branch}
-              branchOptions={sourceControls.branchOptions}
-              compact
-              createBranchDisabled={sourceControls.createBranchDisabled}
-              createBranchTitle={sourceControls.createBranchTitle}
-              deleteBranchDisabled={sourceControls.deleteBranchDisabled}
-              deleteBranchTitle={sourceControls.deleteBranchTitle}
-              onBranchChange={sourceControls.onBranchChange}
-              onCreateBranch={sourceControls.onCreateBranch}
-              onDeleteBranch={sourceControls.onDeleteBranch}
-              onTagChange={sourceControls.onTagChange}
-              selectedTag={sourceControls.selectedTag}
-              tagOptions={sourceControls.tagOptions}
-            />
-          </>
-        ) : (
-          <BreadcrumbButton onClick={() => setCurrentPath("")}>
-            Files
-          </BreadcrumbButton>
-        )}
-        {sourceControls && pathSegments.length > 0 ? (
-          <>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+      {sourceControls || pathSegments.length > 0 ? (
+        <div className="flex min-h-14 min-w-0 items-center gap-1 border-border/50 border-b px-3 py-3">
+          {sourceControls ? (
+            <>
+              <RepoSourceDropdown controls={sourceControls} />
+              <RepositoryBranchDropdown
+                branch={sourceControls.branch}
+                branchOptions={sourceControls.branchOptions}
+                createBranchDisabled={sourceControls.createBranchDisabled}
+                createBranchTitle={sourceControls.createBranchTitle}
+                deleteBranchDisabled={sourceControls.deleteBranchDisabled}
+                deleteBranchTitle={sourceControls.deleteBranchTitle}
+                onBranchChange={sourceControls.onBranchChange}
+                onCreateBranch={sourceControls.onCreateBranch}
+                onDeleteBranch={sourceControls.onDeleteBranch}
+                onTagChange={sourceControls.onTagChange}
+                selectedTag={sourceControls.selectedTag}
+                tagOptions={sourceControls.tagOptions}
+              />
+            </>
+          ) : (
             <BreadcrumbButton onClick={() => setCurrentPath("")}>
               Files
             </BreadcrumbButton>
-          </>
-        ) : null}
-        {pathSegments.map((segment, index) => {
-          const nextPath = pathSegments.slice(0, index + 1).join("/");
-          return (
-            <React.Fragment key={nextPath}>
+          )}
+          {sourceControls && pathSegments.length > 0 ? (
+            <>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-              <BreadcrumbButton onClick={() => setCurrentPath(nextPath)}>
-                {segment}
+              <BreadcrumbButton onClick={() => setCurrentPath("")}>
+                Files
               </BreadcrumbButton>
-            </React.Fragment>
-          );
-        })}
-        {sourceControls ? (
-          <div className="ml-auto flex shrink-0 items-center">
-            <RepoSyncActionButton controls={sourceControls} />
-          </div>
-        ) : null}
-      </div>
+            </>
+          ) : null}
+          {pathSegments.map((segment, index) => {
+            const nextPath = pathSegments.slice(0, index + 1).join("/");
+            return (
+              <React.Fragment key={nextPath}>
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                <BreadcrumbButton onClick={() => setCurrentPath(nextPath)}>
+                  {segment}
+                </BreadcrumbButton>
+              </React.Fragment>
+            );
+          })}
+          {sourceControls ? (
+            <div className="ml-auto flex shrink-0 items-center">
+              <RepoSyncActionButton controls={sourceControls} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full caption-bottom text-sm">

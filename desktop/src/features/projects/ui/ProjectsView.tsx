@@ -87,14 +87,12 @@ import { topChromeInset } from "@/shared/layout/chromeLayout";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { useRelayOrigin } from "@/shared/lib/useRelayOrigin";
-import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 const MANY_PROJECTS_THRESHOLD = 12;
 
 export function ProjectsView() {
-  const t = useT();
   const { goProject } = useAppNavigation();
   const { activeCommunity } = useCommunities();
   const relayOrigin = useRelayOrigin();
@@ -226,6 +224,7 @@ export function ProjectsView() {
           ...(projectsWorkItemsQuery.data?.issues.items.flatMap(({ issue }) => [
             issue.author,
             ...issue.recipients,
+            ...issue.assignees,
             ...issue.comments.map((comment) => comment.author),
           ]) ?? []),
         ].map(normalizePubkey),
@@ -469,13 +468,17 @@ export function ProjectsView() {
 
   const visibleIssues = React.useMemo(() => {
     const issues = projectsWorkItemsQuery.data?.issues.items ?? [];
+    const viewer = currentPubkey ? normalizePubkey(currentPubkey) : null;
     const scopedIssues =
-      issueScope === "mine" && currentPubkey
-        ? issues.filter(
-            ({ issue }) =>
-              normalizePubkey(issue.author) === normalizePubkey(currentPubkey),
-          )
-        : issues;
+      issueScope === "mine" && viewer
+        ? issues.filter(({ issue }) => normalizePubkey(issue.author) === viewer)
+        : issueScope === "assigned" && viewer
+          ? issues.filter(({ issue }) =>
+              issue.assignees.some(
+                (assignee) => normalizePubkey(assignee) === viewer,
+              ),
+            )
+          : issues;
     return [...scopedIssues].sort((left, right) => {
       if (sort === "name") {
         return left.issue.title.localeCompare(right.issue.title);
@@ -565,16 +568,14 @@ export function ProjectsView() {
     async (project: Project) => {
       try {
         await deleteProjectMutation.mutateAsync(project);
-        toast.success(t("projects.toast.projectDeleted"));
+        toast.success("Project deleted");
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t("projects.toast.deleteFailed"),
+          error instanceof Error ? error.message : "Failed to delete project",
         );
       }
     },
-    [deleteProjectMutation, t],
+    [deleteProjectMutation],
   );
 
   if (projectsQuery.isLoading) {
@@ -584,15 +585,13 @@ export function ProjectsView() {
   if (projectsQuery.isError) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-        <p className="text-sm text-red-400">
-          {t("projects.error.loadProjects")}
-        </p>
+        <p className="text-sm text-red-400">Failed to load projects</p>
         <Button
           onClick={() => void projectsQuery.refetch()}
           size="sm"
           variant="outline"
         >
-          {t("common.retry")}
+          Retry
         </Button>
       </div>
     );
@@ -763,9 +762,9 @@ export function ProjectsView() {
 
   const projectsHeader = (
     <PageHeader
-      className="pointer-events-auto mb-8"
-      description={t("projects.subtitle")}
-      title={t("projects.overview.projects")}
+      className="pointer-events-auto mb-4"
+      description="Set up and manage your projects."
+      title="Projects"
     />
   );
 
@@ -799,15 +798,11 @@ export function ProjectsView() {
         onCreate={async (input) => {
           const result = await createProjectMutation.mutateAsync(input);
           if (result.compatibilityWarning) {
-            toast.warning(t("projects.toast.createdStandalone"), {
+            toast.warning("Created as a standalone project", {
               description: result.compatibilityWarning,
             });
           } else {
-            toast.success(
-              t("projects.toast.projectCreated", {
-                name: result.project.name,
-              }),
-            );
+            toast.success(`Project "${result.project.name}" created.`);
           }
           // Land on the complete project list after creation.
           handleRepositoryScopeChange("all");

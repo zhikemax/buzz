@@ -46,7 +46,6 @@ import {
 import { useIdentityQuery } from "@/shared/api/hooks";
 import { sendChannelMessage } from "@/shared/api/tauri";
 import type { Channel } from "@/shared/api/types";
-import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
@@ -75,14 +74,12 @@ type ProjectAgentConversation = {
 };
 
 const MAX_CONTEXT_REPOS = 8;
+const REPO_CONTEXT_MARKER = "Workspace repositories:";
 
 /** Compact machine-readable footer so the agent can scope git queries
  * (repo announcements are addressable by these coordinates). Only sent
  * with the first message of a conversation. */
-function repoContextBlock(
-  projects: readonly Project[],
-  marker: string,
-) {
+function repoContextBlock(projects: readonly Project[]) {
   if (projects.length === 0) return "";
   const repositories = projects.flatMap((project) =>
     project.repositories.map((repository) => ({
@@ -97,44 +94,41 @@ function repoContextBlock(
     .slice(0, MAX_CONTEXT_REPOS)
     .map((repository) => `- ${repository.label} (${repository.repoAddress})`);
   const remaining = repositories.length - listed.length;
-  return ["", "---", marker, ...listed]
+  return ["", "---", REPO_CONTEXT_MARKER, ...listed]
     .concat(remaining > 0 ? [`…and ${remaining} more`] : [])
     .join("\n");
 }
 
 /** Hides the machine-readable repo footer when rendering the user's own
  * prompt back in the inline conversation. */
-function stripRepoContext(content: string, marker: string) {
-  const markerIndex = content.indexOf(`---\n${marker}`);
+function stripRepoContext(content: string) {
+  const markerIndex = content.indexOf(`---\n${REPO_CONTEXT_MARKER}`);
   if (markerIndex === -1) return content;
   return content.slice(0, markerIndex).replace(/\n+$/, "");
 }
 
-function buildSuggestions(
-  projects: readonly Project[],
-  t: TranslateFn,
-) {
+function buildSuggestions(projects: readonly Project[]) {
   const firstRepo = projects[0]?.name;
   return [
     {
-      label: t("projects.agent.prompt.prReview"),
-      prompt: t("projects.agent.prompt.prReviewText"),
+      label: "PR review",
+      prompt: "Which pull requests need attention today?",
     },
     {
-      label: t("projects.agent.prompt.releaseCheck"),
+      label: "Release check",
       prompt: firstRepo
-        ? t("projects.agent.prompt.releaseCheckNamed", { repo: firstRepo })
-        : t("projects.agent.prompt.releaseCheckGeneric"),
+        ? `Are we safe to cut a release of ${firstRepo} this week?`
+        : "Are we safe to cut a release this week?",
     },
     {
-      label: t("projects.agent.prompt.issues"),
-      prompt: t("projects.agent.prompt.issuesText"),
+      label: "Issues",
+      prompt: "Summarize the open issues and flag anything urgent.",
     },
     {
-      label: t("projects.agent.prompt.activity"),
+      label: "Activity",
       prompt: firstRepo
-        ? t("projects.agent.prompt.activityNamed", { repo: firstRepo })
-        : t("projects.agent.prompt.activityGeneric"),
+        ? `Summarize recent activity in ${firstRepo}.`
+        : "Summarize recent repository activity.",
     },
   ];
 }
@@ -207,8 +201,6 @@ function ConversationThread({
   selfAvatarUrl: string | null;
   visibleAfter: number;
 }) {
-  const t = useT();
-  const repoContextMarker = t("projects.agent.prompt.repoContextMarker");
   useChannelSubscription(channel);
   const messagesQuery = useChannelMessagesQuery(channel);
   const agentWorking = useAgentWorking(agent.pubkey, channel.id);
@@ -249,9 +241,7 @@ function ConversationThread({
               <Markdown
                 className="text-base text-foreground"
                 content={
-                  isSelf
-                    ? stripRepoContext(event.content, repoContextMarker)
-                    : event.content
+                  isSelf ? stripRepoContext(event.content) : event.content
                 }
               />
             </div>
@@ -281,7 +271,6 @@ export function ProjectsAgentPromptPage({
   onClose: () => void;
   workspaceId: string | null;
 }) {
-  const t = useT();
   const [prompt, setPrompt] = React.useState("");
   const [storedConversation, setStoredConversation] =
     React.useState<StoredProjectsAgentConversation | null>(() =>
@@ -302,7 +291,6 @@ export function ProjectsAgentPromptPage({
     ((info: LinkSelectionInfo | null) => void) | null
   >(null);
   const onLinkShortcutRef = React.useRef<(() => boolean) | null>(null);
-  const repoContextMarker = t("projects.agent.prompt.repoContextMarker");
 
   const identityQuery = useIdentityQuery();
   const profileQuery = useProfileQuery();
@@ -354,10 +342,8 @@ export function ProjectsAgentPromptPage({
     onSubmit: () => submitPromptRef.current(),
     onUpdate: ({ text }) => setPrompt(text),
     placeholder: conversation
-      ? t("projects.agent.prompt.replyPlaceholder", {
-          name: conversation.agent.name,
-        })
-      : t("projects.agent.prompt.defaultPlaceholder"),
+      ? `Reply to ${conversation.agent.name}…`
+      : "Are we safe to release this week?",
   });
   const linkEditor = useLinkEditor(richText);
   onEditLinkRef.current = linkEditor.openFromClick;
@@ -371,8 +357,8 @@ export function ProjectsAgentPromptPage({
   }, [richText.editor, richText.focusPreserve]);
 
   const suggestions = React.useMemo(
-    () => buildSuggestions(projects, t),
-    [projects, t],
+    () => buildSuggestions(projects),
+    [projects],
   );
   const canSubmit = Boolean(prompt.trim() && selectedAgent && !isSending);
 
@@ -398,7 +384,7 @@ export function ProjectsAgentPromptPage({
       // Repo context rides only on the conversation opener.
       const content = conversation
         ? trimmed
-        : `${trimmed}${repoContextBlock(projects, repoContextMarker)}`;
+        : `${trimmed}${repoContextBlock(projects)}`;
       await sendChannelMessage(channel.id, content, undefined, undefined, [
         selectedAgent.pubkey,
       ]);
@@ -421,9 +407,7 @@ export function ProjectsAgentPromptPage({
       richText.clearContent();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : t("projects.agent.prompt.failed"),
+        error instanceof Error ? error.message : "Failed to reach the agent",
       );
     } finally {
       setIsSending(false);
@@ -433,12 +417,10 @@ export function ProjectsAgentPromptPage({
     isSending,
     openDmMutation,
     projects,
-    repoContextMarker,
     richText.clearContent,
     richText.getMarkdown,
     selectedAgent,
     startAgentMutation,
-    t,
     workspaceId,
   ]);
   submitPromptRef.current = () => {
@@ -472,13 +454,13 @@ export function ProjectsAgentPromptPage({
         <div className="flex items-center justify-between gap-2 pt-2">
           <div className="flex min-w-0 items-center gap-1">
             <Button
-              aria-label={t("projects.agent.prompt.formattingAria")}
+              aria-label="Toggle formatting"
               aria-pressed={isFormattingOpen}
               className="h-7 w-7 shrink-0 px-0"
               disabled={isSending}
               onClick={() => setIsFormattingOpen((open) => !open)}
               size="icon"
-              title={t("projects.agent.prompt.formatting")}
+              title="Formatting"
               type="button"
               variant={isFormattingOpen ? "default" : "ghost"}
             >
@@ -513,7 +495,7 @@ export function ProjectsAgentPromptPage({
                       />
                     ) : null}
                     <span className="min-w-0 truncate">
-                      {selectedAgent?.name ?? t("projects.empty.noAgents")}
+                      {selectedAgent?.name ?? "No agents available"}
                     </span>
                     {candidates.length > 0 && conversation === null ? (
                       <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -615,14 +597,15 @@ export function ProjectsAgentPromptPage({
     <div className="flex flex-1 items-center justify-center overflow-y-auto px-4">
       <div className="w-full max-w-xl space-y-6 py-10">
         <h2 className="text-center text-lg font-semibold text-foreground">
-          {t("projects.agent.prompt.pageTitle")}
+          Ask an agent about your projects
         </h2>
 
         {promptBox}
 
         {candidates.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">
-            {t("projects.agent.prompt.emptyHint")}
+            No agents available yet — create or start one from the Agents view
+            to ask about your repositories.
           </p>
         ) : (
           <div className="space-y-1.5">

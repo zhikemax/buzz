@@ -68,9 +68,7 @@ export const zhCN: Record<MessageKey, string> = {
   "section.renameTitle": "重命名分区",
   "section.renameDescription": "为此分区输入新名称。",
   "section.deleteTitle": "删除分区",
-  "section.deleteEmpty": "删除分区「{name}」？其中没有频道。",
-  "section.deleteWithChannels":
-    "删除分区「{name}」？其中的 {channels} 将移回默认「频道」分组。",
+
   "section.channelCountOne": "1 个频道",
   "section.channelCountMany": "{count} 个频道",
   "section.namePlaceholder": "分区名称",
@@ -78,8 +76,7 @@ export const zhCN: Record<MessageKey, string> = {
   "section.clearIcon": "清除分区图标",
 
   "channel.leaveTitle": "离开频道",
-  "channel.leaveDescription":
-    "离开「{name}」？你将不再收到该频道消息，之后仍可重新加入。",
+
   "channel.leaveConfirm": "离开",
   "channel.createTitleChannel": "创建新频道",
   "channel.createTitleForum": "创建新论坛",
@@ -1145,8 +1142,7 @@ export const zhCN: Record<MessageKey, string> = {
   "browser.filterArchived": "已归档",
   "browser.createNewChannel": "创建新频道",
   "browser.createNewForum": "创建新论坛",
-  "browser.createNamedChannel": "创建频道「{query}」",
-  "browser.createNamedForum": "创建论坛「{query}」",
+
   "browser.noMatchChannels": "没有匹配的频道",
   "browser.noMatchForums": "没有匹配的论坛",
   "browser.noArchivedChannels": "没有已归档频道",
@@ -2767,8 +2763,7 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.viewCard": "查看卡片",
   "agents.cardIsReady": "{name} 的卡片已就绪",
   "agents.cardMintFailedGeneric": "卡片铸造失败。",
-  "agents.openaiKeyInvalidExpired":
-    "OpenAI API 密钥无效或已过期。请打开铸造对话框，使用「更新 API 密钥」进行更换。",
+
   "agents.manageOnlySharedChannel":
     "智能体只能从你们共同所属的频道管理其他智能体。",
   "agents.chooseAvailableRuntime": "请为此智能体选择可用的运行时。",
@@ -3221,8 +3216,7 @@ export const zhCN: Record<MessageKey, string> = {
   "workflows.dialog.editingIn": "正在编辑频道中的工作流",
   "workflows.dialog.creatingIn": "此工作流将创建于",
   "workflows.delete.title": "删除工作流？",
-  "workflows.delete.named":
-    "删除「{name}」。这将停止所有未来触发并永久移除此工作流。",
+
   "workflows.delete.generic": "删除此工作流。",
   "workflows.detail.closeAria": "关闭详情面板",
   "workflows.detail.definition": "定义",
@@ -3358,11 +3352,9 @@ export const zhCN: Record<MessageKey, string> = {
   "workflows.trace.error": "错误",
   "workflows.trace.pendingApproval": "待审批",
   "workflows.error.yamlMustBeObject": "YAML 必须是对象",
-  "workflows.error.unsupportedTrigger":
-    "不支持的触发类型「{type}」— 请使用 YAML 编辑器",
+
   "workflows.error.stepsMustBeList": "steps 必须是列表",
-  "workflows.error.unsupportedAction":
-    "不支持的操作类型「{action}」— 请使用 YAML 编辑器",
+
   "workflows.error.invalidYaml": "无效的 YAML",
   "workflows.duplicateSuffix": "（副本）",
 
@@ -3586,6 +3578,7 @@ export const zhCN: Record<MessageKey, string> = {
   "time.dayAgo": "1 天前",
   "time.daysAgo": "{count} 天前",
   "time.onDate": "{date}",
+  "time.atTime": "{day} {time}",
 
   "search.justNow": "刚刚",
   "search.minutesAgo": "{count} 分钟前",
@@ -3726,7 +3719,7 @@ export const zhCN: Record<MessageKey, string> = {
   "reminders.title": "提醒",
   "reminders.unknownChannel": "未知频道",
   "reminders.loading": "正在加载提醒…",
-  "reminders.emptyHint": "在任意消息上使用「稍后提醒」即可创建提醒。",
+
   "reminders.selectReminder": "选择一条提醒",
   "reminders.backToReminders": "返回提醒列表",
   "reminders.note": "备注",
@@ -3821,7 +3814,7 @@ export const zhCN: Record<MessageKey, string> = {
     "https://relay.example.com/git/bee-garden-game.git",
   "projects.create.dialog.webUrlPlaceholder": "https://github.com/owner/repo",
   "projects.create.dialog.failed": "无法创建项目。",
-  "projects.create.alreadyNamed": "你已有名为「{name}」的项目。",
+
   "projects.create.repoTimeout": "创建初始仓库超时。",
   "projects.create.repoFailed": "无法创建初始仓库。",
   "projects.create.timeout": "创建项目超时。",
@@ -3829,7 +3822,7 @@ export const zhCN: Record<MessageKey, string> = {
   "projects.create.compatWarning":
     "仓库已创建，但此中继尚不支持多仓库项目。它将显示为独立项目。",
   "projects.create.readFailed": "项目已创建，但无法读取。",
-  "projects.create.toast.created": "项目「{name}」已创建。",
+
   "projects.create.toast.standaloneTitle": "已作为独立项目创建",
   "projects.repo.add.title": "添加仓库",
   "projects.repo.add.description": "向 {name} 添加另一个仓库。",
@@ -3846,8 +3839,7 @@ export const zhCN: Record<MessageKey, string> = {
   "projects.repo.attach.description": "选择要添加到 {name} 的现有仓库。",
   "projects.repo.attach.empty": "所有可用仓库都已在此项目中。",
   "projects.repo.attach.failed": "无法附加仓库。",
-  "projects.repo.toast.created": "仓库「{name}」已创建。",
-  "projects.repo.toast.added": "仓库「{name}」已添加。",
+
   "projects.repo.host.buzz": "Buzz 托管仓库",
   "projects.repo.host.external": "Git 数据托管于 {host}",
   "projects.repo.host.generic": "仓库托管方",
@@ -4514,4 +4506,26 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.catalog.noShared": "暂无共享智能体",
   "agents.share.noPeopleFound": "未找到人员。",
   "profile.noInstructionSet": "尚未设置说明。",
+
+  // restored keys still present in en.ts
+  "section.deleteEmpty": "删除分区「{name}」？其中没有频道。",
+  "section.deleteWithChannels":
+    "删除分区「{name}」？其中的 {channels} 将移回默认「频道」分组。",
+  "channel.leaveDescription":
+    "离开「{name}」？你将不再收到该频道消息，之后仍可重新加入。",
+  "browser.createNamedChannel": "创建频道「{query}」",
+  "browser.createNamedForum": "创建论坛「{query}」",
+  "agents.openaiKeyInvalidExpired":
+    "OpenAI API 密钥无效或已过期。请打开铸造对话框，使用「更新 API 密钥」进行更换。",
+  "workflows.delete.named":
+    "删除「{name}」。这将停止所有未来触发并永久移除此工作流。",
+  "workflows.error.unsupportedTrigger":
+    "不支持的触发类型「{type}」— 请使用 YAML 编辑器",
+  "workflows.error.unsupportedAction":
+    "不支持的操作类型「{action}」— 请使用 YAML 编辑器",
+  "reminders.emptyHint": "在任意消息上使用「稍后提醒」即可创建提醒。",
+  "projects.create.alreadyNamed": "你已有名为「{name}」的项目。",
+  "projects.create.toast.created": "项目「{name}」已创建。",
+  "projects.repo.toast.created": "仓库「{name}」已创建。",
+  "projects.repo.toast.added": "仓库「{name}」已添加。",
 };

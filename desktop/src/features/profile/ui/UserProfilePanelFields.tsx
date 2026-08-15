@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   Cpu,
   Ear,
+  Fingerprint,
   Server,
   Terminal,
   UserRound,
@@ -23,7 +24,6 @@ import type {
   Profile,
   RelayAgent,
 } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 
 const RUNTIME_LABELS: Record<string, string> = {
   goose: "Goose",
@@ -161,8 +161,6 @@ export function buildPublicFields({
   pubkey: string | null;
   relayAgent: RelayAgent | undefined;
 }): ProfileField[] {
-  const t = useT();
-
   const fields: ProfileField[] = [];
 
   if (pubkey) {
@@ -176,7 +174,8 @@ export function buildPublicFields({
           testId="user-profile-copy-pubkey"
         />
       ),
-      label: t("profile.publicKey"),
+      icon: Fingerprint,
+      label: "Public key",
       testId: "user-profile-public-key",
     });
   }
@@ -196,16 +195,16 @@ export function buildPublicFields({
       copyValue: relayAgent.agentType,
       displayValue: runtimeLabel(relayAgent.agentType),
       icon: Cpu,
-      label: t("profile.agentType"),
+      label: "Agent type",
       testId: "user-profile-agent-type",
     });
   }
 
   if (!pubkey && persona) {
     fields.push({
-      displayValue: t("profile.notDeployed"),
+      displayValue: "Not deployed",
       icon: Activity,
-      label: t("channel.status"),
+      label: "Status",
       testId: "user-profile-agent-status",
     });
   }
@@ -215,7 +214,7 @@ export function buildPublicFields({
       copyValue: relayAgent.capabilities.join(", "),
       displayValue: relayAgent.capabilities.join(", "),
       icon: Server,
-      label: t("profile.capabilities"),
+      label: "Capabilities",
       testId: "user-profile-capabilities",
     });
   }
@@ -248,18 +247,16 @@ export function buildOwnerFields({
   presenceStatus: "online" | "away" | "offline" | undefined;
   relayAgent: RelayAgent | undefined;
 }): ProfileField[] {
-  const t = useT();
-
   const fields: ProfileField[] = [];
   const respondTo = managedAgent?.respondTo ?? relayAgent?.respondTo ?? null;
   const respondToDisplayValue = respondTo
     ? respondTo === "owner-only"
       ? ownerDisplayName
         ? `Only ${ownerDisplayName} (owner)`
-        : t("profile.onlyOwner")
+        : "Only the owner"
       : respondTo === "allowlist"
-        ? t("agents.respond.selectedPeople")
-        : t("agents.respond.anyone")
+        ? "Selected people"
+        : "Anyone"
     : null;
 
   const ownerClickable = Boolean(onOpenProfile && ownerProfilePubkey);
@@ -271,7 +268,8 @@ export function buildOwnerFields({
         : (ownerProfilePubkey ?? ownerPubkey ?? ownerHandle ?? undefined),
       displayValue: ownerDisplayName,
       displayNode: <span className="truncate">{ownerDisplayName}</span>,
-      label: t("profile.managedBy"),
+      icon: UserRound,
+      label: "Managed by",
       onClick:
         ownerClickable && ownerProfilePubkey
           ? () => onOpenProfile?.(ownerProfilePubkey)
@@ -289,7 +287,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.agentCommand,
       displayValue: runtimeLabel(managedAgent.agentCommand),
       icon: Terminal,
-      label: t("profile.tabRuntime"),
+      label: "Runtime",
       testId: "user-profile-runtime",
     });
   } else if (relayAgent?.agentType) {
@@ -297,7 +295,7 @@ export function buildOwnerFields({
       copyValue: relayAgent.agentType,
       displayValue: runtimeLabel(relayAgent.agentType),
       icon: Terminal,
-      label: t("profile.tabRuntime"),
+      label: "Runtime",
       testId: "user-profile-runtime",
     });
   } else if (persona?.runtime) {
@@ -305,15 +303,15 @@ export function buildOwnerFields({
       copyValue: persona.runtime,
       displayValue: runtimeLabel(persona.runtime),
       icon: Terminal,
-      label: t("profile.tabRuntime"),
+      label: "Runtime",
       testId: "user-profile-runtime",
     });
   } else if (ownerPubkey) {
     fields.push({
       copyValue: ownerPubkey,
-      displayValue: t("profile.declaredOwnerVerified"),
+      displayValue: "Declared owner verified",
       icon: UserRound,
-      label: t("profile.agentProfile"),
+      label: "Agent profile",
       testId: "user-profile-agent-profile",
     });
   }
@@ -333,7 +331,7 @@ export function buildOwnerFields({
         />
       ),
       icon: Activity,
-      label: t("channel.status"),
+      label: "Status",
       testId: "user-profile-agent-status",
     });
   }
@@ -343,7 +341,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.acpCommand,
       displayValue: managedAgent.acpCommand,
       icon: Terminal,
-      label: t("agents.acpCommand"),
+      label: "ACP command",
       testId: "user-profile-acp",
     });
   }
@@ -353,7 +351,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.mcpCommand,
       displayValue: managedAgent.mcpCommand,
       icon: Terminal,
-      label: t("profile.mcpCommand"),
+      label: "MCP command",
       testId: "user-profile-mcp",
     });
   }
@@ -364,16 +362,16 @@ export function buildOwnerFields({
       copyValue: backendLabel,
       displayValue: backendLabel,
       icon: Server,
-      label: t("profile.backend"),
+      label: "Backend",
       testId: "user-profile-backend",
     });
   }
 
   if (managedAgent) {
     fields.push({
-      displayValue: managedAgent.startOnAppLaunch ? t("common.yes") : "No",
+      displayValue: managedAgent.startOnAppLaunch ? "Yes" : "No",
       icon: Server,
-      label: t("profile.startOnLaunch"),
+      label: "Start on launch",
       testId: "user-profile-start-on-launch",
     });
   }
@@ -382,7 +380,7 @@ export function buildOwnerFields({
     fields.push({
       displayValue: respondToDisplayValue,
       icon: Ear,
-      label: t("agents.respond.label"),
+      label: "Who can send instructions",
       testId: "user-profile-respond-to",
     });
   }
@@ -392,7 +390,7 @@ export function buildOwnerFields({
       copyValue: managedAgent.lastError,
       displayValue: managedAgent.lastError,
       icon: Activity,
-      label: t("profile.lastError"),
+      label: "Last error",
       testId: "user-profile-last-error",
     });
   }
@@ -506,7 +504,7 @@ function ProfileFieldRow({
 
   const content = (
     <>
-      {variant === "default" && Icon ? (
+      {Icon ? (
         <Icon
           className="h-4 w-4 shrink-0 text-muted-foreground"
           data-slot="profile-field-icon"

@@ -1,4 +1,3 @@
-import { useT } from "@/shared/i18n";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useUpdaterContext } from "./hooks/UpdaterProvider";
 import { Button } from "@/shared/ui/button";
@@ -7,6 +6,7 @@ import {
   SettingsOptionRow,
 } from "./ui/SettingsOptionGroup";
 import { SettingsSectionHeader } from "./ui/SettingsSectionHeader";
+import { useT } from "@/shared/i18n";
 export function UpdateChecker() {
   const t = useT();
   const { status, checkForUpdate, installAndRelaunch } = useUpdaterContext();
@@ -22,7 +22,6 @@ export function UpdateChecker() {
         {status.state === "idle" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -39,7 +38,6 @@ export function UpdateChecker() {
         {status.state === "checking" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -53,7 +51,6 @@ export function UpdateChecker() {
         {status.state === "up-to-date" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -70,11 +67,12 @@ export function UpdateChecker() {
         {status.state === "unavailable" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
-              >{t("settings.updates.unavailable")}</p>
+              >
+                {t("settings.updates.unavailable")}
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={checkForUpdate}>
               {t("settings.updates.checkAgain")}
@@ -86,14 +84,15 @@ export function UpdateChecker() {
           <SettingsOptionRow>
             <div className="min-w-0">
               <p className="text-sm font-medium">
-                Update available — v{status.version}
+                {t("settings.updates.manualAvailable", {
+                  version: status.version,
+                })}
               </p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
               >
-                In-app updates aren't supported on this Linux package. Download
-                the new version from GitHub.{" "}
+                {t("settings.updates.manualHint")}{" "}
                 <span>{t("settings.updates.appImageHint")}</span>
               </p>
             </div>
@@ -106,7 +105,6 @@ export function UpdateChecker() {
         {status.state === "available" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -120,7 +118,6 @@ export function UpdateChecker() {
         {status.state === "downloading" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -134,7 +131,6 @@ export function UpdateChecker() {
         {status.state === "installing" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -148,7 +144,6 @@ export function UpdateChecker() {
         {status.state === "ready" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p
                 className="text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
@@ -165,7 +160,6 @@ export function UpdateChecker() {
         {status.state === "error" && (
           <SettingsOptionRow>
             <div className="min-w-0">
-              <p className="text-sm font-medium">{t("settings.updates.status")}</p>
               <p className="text-sm font-normal text-destructive">
                 {t("settings.updates.failed", { message: status.message })}
               </p>

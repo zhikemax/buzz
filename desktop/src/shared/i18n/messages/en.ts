@@ -3795,6 +3795,7 @@ export const en = {
   "time.dayAgo": "1 day ago",
   "time.daysAgo": "{count} days ago",
   "time.onDate": "on {date}",
+  "time.atTime": "{day} at {time}",
 
   "search.justNow": "just now",
   "search.minutesAgo": "{count}m ago",

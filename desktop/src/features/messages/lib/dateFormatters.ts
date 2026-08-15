@@ -4,11 +4,19 @@
  * - `formatTime` — short clock time ("2:34 PM"), used in message rows.
  * - `formatFullDateTime` — verbose string for tooltips
  *   ("Wednesday, April 2, 2026 at 2:34 PM").
- * - `formatDayHeading` — label for day dividers / sticky headers.
- *   Returns "Today", "Yesterday", or a localized date.
  * - `isSameDay` — compare two unix-second timestamps.
  *
- * Locale follows `setDateFormatLocale` (wired from LocaleProvider).
+ * Relative labels ("Today", "Yesterday", "June 20", "Yesterday at 9:05 AM") are
+ * not here: chat and the Inbox share them from `shared/lib/datetime.ts`. What
+ * stays in this file is the absolute end of the range — a bare clock time, the
+ * verbose tooltip string, and same-day comparison.
+ *
+ * `formatTime` is for places with only enough room for a clock: the hover gutter
+ * that replaces the avatar on continuation rows. A message header uses the
+ * relative ladder instead, because the day divider that supplies its date
+ * scrolls away while the messages under it stay on screen.
+ *
+ * Locale follows `getDateFormatLocale` (wired from LocaleProvider).
  */
 
 import {
@@ -42,21 +50,10 @@ function fullDateTimeFormatter(): Intl.DateTimeFormat {
   });
 }
 
-function weekdayFormatter(): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    weekday: "long",
-  });
-}
-
-function longMonthFormatter(): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    month: "long",
-  });
-}
-
-function shortMonthFormatter(): Intl.DateTimeFormat {
+function shortMonthDayFormatter(): Intl.DateTimeFormat {
   return new Intl.DateTimeFormat(intlDateLocale(), {
     month: "short",
+    day: "numeric",
   });
 }
 
@@ -77,45 +74,6 @@ export function formatFullDateTime(unixSeconds: number): string {
   return fullDateTimeFormatter().format(new Date(unixSeconds * 1_000));
 }
 
-/**
- * Human-friendly day label for dividers and sticky headers.
- * Returns "Today", "Yesterday", or a localized calendar date.
- */
-export function formatDayHeading(unixSeconds: number): string {
-  const date = new Date(unixSeconds * 1_000);
-  const now = new Date();
-
-  if (isSameDayDate(date, now)) {
-    return t("time.today");
-  }
-
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (isSameDayDate(date, yesterday)) {
-    return t("time.yesterday");
-  }
-
-  if (getDateFormatLocale() === "zh-CN") {
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    };
-    if (date.getFullYear() !== now.getFullYear()) {
-      options.year = "numeric";
-    }
-    return new Intl.DateTimeFormat("zh-CN", options).format(date);
-  }
-
-  const dateLabel = `${weekdayFormatter().format(date)}, ${formatMonthDayOrdinal(
-    date,
-    longMonthFormatter(),
-  )}`;
-  return date.getFullYear() === now.getFullYear()
-    ? dateLabel
-    : `${dateLabel}, ${date.getFullYear()}`;
-}
-
 /** True when two unix-second timestamps fall on the same calendar day (local time). */
 export function isSameDay(a: number, b: number): boolean {
   return isSameDayDate(new Date(a * 1_000), new Date(b * 1_000));
@@ -133,46 +91,14 @@ export function startOfLocalDaySeconds(unixSeconds: number): number {
   return Math.floor(date.getTime() / 1_000);
 }
 
-/** Short month + ordinal day, e.g. "May 19th" (en) or "5月19日" (zh-CN). */
-export function formatShortMonthDayOrdinal(unixSeconds: number): string {
-  const date = new Date(unixSeconds * 1_000);
-  if (getDateFormatLocale() === "zh-CN") {
-    return new Intl.DateTimeFormat("zh-CN", {
-      month: "long",
-      day: "numeric",
-    }).format(date);
-  }
-  return formatMonthDayOrdinal(date, shortMonthFormatter());
-}
-
-/**
- * Compact relative time for lists (forum, pulse, search-style): "just now",
- * "3m ago", "2h ago", "5d ago", or a short calendar date for older items.
- */
-export function formatRelativeTimeCompact(unixSeconds: number): string {
-  const nowSeconds = Math.floor(Date.now() / 1_000);
-  const diff = Math.max(0, nowSeconds - unixSeconds);
-
-  if (diff < 60) return t("search.justNow");
-  if (diff < 3_600) {
-    return t("search.minutesAgo", { count: Math.floor(diff / 60) });
-  }
-  if (diff < 86_400) {
-    return t("search.hoursAgo", { count: Math.floor(diff / 3_600) });
-  }
-  if (diff < 604_800) {
-    return t("search.daysAgo", { count: Math.floor(diff / 86_400) });
-  }
-
-  return new Intl.DateTimeFormat(intlDateLocale(), {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(unixSeconds * 1_000));
+/** Short month + day, e.g. "May 19". No ordinal suffix, per the writing standard. */
+export function formatShortMonthDay(unixSeconds: number): string {
+  return shortMonthDayFormatter().format(new Date(unixSeconds * 1_000));
 }
 
 /**
  * Relative thread-summary timestamp with expanded units, e.g. "3 hours ago",
- * falling back to "on May 19th" for older replies.
+ * falling back to "on May 19" for older replies.
  */
 export function formatThreadSummaryLastReplyTime(
   unixSeconds: number,
@@ -183,9 +109,7 @@ export function formatThreadSummaryLastReplyTime(
   if (diff < 60) return t("time.justNow");
   if (diff < 3_600) {
     const count = Math.floor(diff / 60);
-    return count === 1
-      ? t("time.minuteAgo")
-      : t("time.minutesAgo", { count });
+    return count === 1 ? t("time.minuteAgo") : t("time.minutesAgo", { count });
   }
   if (diff < 86_400) {
     const count = Math.floor(diff / 3_600);
@@ -196,7 +120,7 @@ export function formatThreadSummaryLastReplyTime(
     return count === 1 ? t("time.dayAgo") : t("time.daysAgo", { count });
   }
 
-  return t("time.onDate", { date: formatShortMonthDayOrdinal(unixSeconds) });
+  return t("time.onDate", { date: formatShortMonthDay(unixSeconds) });
 }
 
 function isSameDayDate(a: Date, b: Date): boolean {
@@ -207,29 +131,23 @@ function isSameDayDate(a: Date, b: Date): boolean {
   );
 }
 
-function formatMonthDayOrdinal(
-  date: Date,
-  monthFormatter: Intl.DateTimeFormat,
+/** Compact relative time for cards (m/h/d/w). */
+export function formatRelativeTimeCompact(
+  unixSeconds: number,
+  nowSeconds = Date.now() / 1_000,
 ): string {
-  return `${monthFormatter.format(date)} ${date.getDate()}${ordinalSuffix(
-    date.getDate(),
-  )}`;
-}
-
-function ordinalSuffix(day: number): string {
-  const lastTwoDigits = day % 100;
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
-    return "th";
+  const diff = Math.max(0, nowSeconds - unixSeconds);
+  if (diff < 60) return t("time.justNow");
+  if (diff < 3_600) {
+    return t("time.compactMinutesAgo", { count: Math.floor(diff / 60) });
   }
-
-  switch (day % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
+  if (diff < 86_400) {
+    return t("time.compactHoursAgo", { count: Math.floor(diff / 3_600) });
   }
+  if (diff < 604_800) {
+    return t("time.compactDaysAgo", { count: Math.floor(diff / 86_400) });
+  }
+  return t("time.compactWeeksAgo", {
+    count: Math.max(1, Math.floor(diff / 604_800)),
+  });
 }

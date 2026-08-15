@@ -22,7 +22,6 @@ import {
   projectPullRequestEffectiveReviewDecision,
 } from "@/features/projects/projectPullRequests.mjs";
 import { cn } from "@/shared/lib/cn";
-import { useT, type MessageKey } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
@@ -55,7 +54,7 @@ type ProjectActivityItem = {
   createdAt: number;
   actorPubkey: string | null;
   actorName: string | null;
-  action: MessageKey;
+  action: string;
   title: string;
   body: string;
   detail: string | null;
@@ -108,7 +107,7 @@ function buildActivityItems({
       createdAt: project.createdAt,
       actorPubkey: project.owner,
       actorName: null,
-      action: "projects.activity.action.createdRepo",
+      action: "created the repository",
       title: project.name,
       body: contentPreview(project.description),
       detail: null,
@@ -130,7 +129,7 @@ function buildActivityItems({
       createdAt: commit.timestamp,
       actorPubkey: null,
       actorName: commit.authorName,
-      action: "projects.activity.action.pushedCommit",
+      action: "pushed a commit to",
       title: commit.subject || commit.shortHash,
       body: "",
       detail: commit.shortHash,
@@ -155,7 +154,7 @@ function buildActivityItems({
       createdAt: pullRequest.createdAt,
       actorPubkey: pullRequest.author,
       actorName: null,
-      action: "projects.activity.action.openedPr",
+      action: "opened a pull request in",
       title: pullRequest.title,
       body: contentPreview(pullRequest.content),
       detail: pullRequest.status,
@@ -168,7 +167,7 @@ function buildActivityItems({
         createdAt: update.createdAt,
         actorPubkey: update.author,
         actorName: null,
-        action: "projects.activity.action.updatedPr",
+        action: "updated a pull request in",
         title: pullRequest.title,
         body: contentPreview(update.content),
         detail: update.commit?.slice(0, 7) ?? null,
@@ -197,15 +196,20 @@ function buildActivityItems({
         actorName: null,
         action:
           kind === "approval"
-            ? "projects.activity.action.approvedPr"
+            ? "approved a pull request in"
             : kind === "changes-requested"
-              ? "projects.activity.action.requestedChangesPr"
+              ? "requested changes to a pull request in"
               : kind === "review-request"
-                ? "projects.activity.action.requestedReview"
-                : "projects.activity.action.commentedPr",
+                ? "requested review in"
+                : "commented on a pull request in",
         title: pullRequest.title,
         body: contentPreview(comment.content),
-        detail: null,
+        detail:
+          kind === "approval"
+            ? "Approved"
+            : kind === "changes-requested"
+              ? "Changes requested"
+              : null,
         target,
       });
     }
@@ -219,7 +223,7 @@ function buildActivityItems({
       createdAt: issue.createdAt,
       actorPubkey: issue.author,
       actorName: null,
-      action: "projects.activity.action.createdIssue",
+      action: "created an issue in",
       title: issue.title,
       body: contentPreview(issue.content),
       detail: issue.status,
@@ -232,7 +236,7 @@ function buildActivityItems({
         createdAt: comment.createdAt,
         actorPubkey: comment.author,
         actorName: null,
-        action: "projects.activity.action.commentedIssue",
+        action: "commented on an issue in",
         title: issue.title,
         body: contentPreview(comment.content),
         detail: null,
@@ -263,7 +267,6 @@ function ActivityCard({
   onOpenProject: () => void;
   profiles?: UserProfileLookup;
 }) {
-  const t = useT();
   const visual = PROJECT_EVENT_VISUALS[item.kind];
   const TypeIcon = visual.icon;
   const profile = item.actorPubkey
@@ -271,13 +274,7 @@ function ActivityCard({
     : undefined;
   const actorLabel = item.actorPubkey
     ? resolveUserLabel({ profiles, pubkey: item.actorPubkey })
-    : item.actorName || t("projects.activity.someone");
-  const detailLabel =
-    item.kind === "approval"
-      ? t("projects.activity.approved")
-      : item.kind === "changes-requested"
-        ? t("projects.activity.changesRequested")
-        : item.detail;
+    : item.actorName || "Someone";
 
   return (
     <div
@@ -288,10 +285,7 @@ function ActivityCard({
       data-testid="projects-activity-card"
     >
       <button
-        aria-label={t("projects.activity.openInProject", {
-          title: item.title,
-          project: item.target.project.name,
-        })}
+        aria-label={`Open ${item.title} in ${item.target.project.name}`}
         className="absolute inset-0 rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         onClick={onOpen}
         type="button"
@@ -328,9 +322,7 @@ function ActivityCard({
           {item.actorPubkey ? (
             <UserProfilePopover pubkey={item.actorPubkey} triggerElement="span">
               <button
-                aria-label={t("projects.activity.viewProfile", {
-                  name: actorLabel,
-                })}
+                aria-label={`View ${actorLabel}'s profile`}
                 className="pointer-events-auto relative z-10 shrink-0 rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
               >
@@ -371,7 +363,7 @@ function ActivityCard({
                 ) : (
                   actorLabel
                 )}{" "}
-                {t(item.action)}{" "}
+                {item.action}{" "}
                 <button
                   className="pointer-events-auto relative z-10 inline-block max-w-48 truncate rounded-sm align-bottom font-semibold text-foreground hover:underline focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring sm:max-w-64 2xl:max-w-none"
                   onClick={onOpenProject}
@@ -395,14 +387,14 @@ function ActivityCard({
                 </TooltipContent>
               </Tooltip>
             </div>
-            {detailLabel ? (
+            {item.detail ? (
               <span
                 className={cn(
                   "shrink-0 rounded-full border px-2 py-0.5 text-2xs font-medium",
                   visual.detailClassName,
                 )}
               >
-                {detailLabel}
+                {item.detail}
               </span>
             ) : null}
           </div>
@@ -436,7 +428,6 @@ function ActivityCard({
 
 /** Mixed GitHub-style workspace activity shown beneath the overview callouts. */
 export function ProjectsActivityFeed(props: ProjectsActivityFeedProps) {
-  const t = useT();
   const items = buildActivityItems(props);
 
   if (props.isLoading && items.length === 0) {
@@ -459,10 +450,10 @@ export function ProjectsActivityFeed(props: ProjectsActivityFeedProps) {
     return (
       <div className="rounded-xl border border-dashed border-border/60 px-4 py-12 text-center">
         <p className="text-sm font-medium text-foreground">
-          {t("projects.activity.emptyTitle")}
+          No project activity yet
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {t("projects.activity.emptyHint")}
+          Commits, pull requests, reviews, and issues will appear here.
         </p>
       </div>
     );

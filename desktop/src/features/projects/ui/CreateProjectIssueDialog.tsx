@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import type { Project, Repository } from "@/features/projects/hooks";
 import { useCreateProjectIssueMutation } from "@/features/projects/issueMutations";
 import { selectProjectRepository } from "@/features/projects/projectModels";
-import { useT } from "@/shared/i18n";
 import {
   CreateProjectWorkItemDialog,
   type CreateProjectWorkItemDialogInput,
@@ -27,7 +26,6 @@ export function CreateProjectIssueDialog({
   open: boolean;
   projects: Project[];
 }) {
-  const t = useT();
   const repositoryOptions = React.useMemo(
     () =>
       projects.flatMap((project) =>
@@ -57,21 +55,19 @@ export function CreateProjectIssueDialog({
   }, [initialProjectId, open, projects]);
 
   async function handleCreate(input: CreateProjectWorkItemDialogInput) {
-    if (!project || !repository) {
-      throw new Error(t("projects.pr.create.chooseRepositoryOnly"));
-    }
+    if (!project || !repository) throw new Error("Choose a repository.");
     const issueId = await createMutation.mutateAsync(input);
-    toast.success(t("projects.toast.issueCreated"));
+    toast.success("Issue created.");
     await onCreated(project, repository, issueId);
   }
 
   return (
     <CreateProjectWorkItemDialog
-      bodyPlaceholder={t("projects.issue.create.bodyPlaceholder")}
+      bodyPlaceholder="Add context, expected behavior, or reproduction steps"
       description={
         repository
-          ? t("projects.issue.create.inRepo", { name: repository.name })
-          : t("projects.issue.create.chooseRepository")
+          ? `Create an issue in ${repository.name}`
+          : "Choose a repository for this issue."
       }
       isCreating={createMutation.isPending}
       itemName="issue"
@@ -79,11 +75,11 @@ export function CreateProjectIssueDialog({
       onOpenChange={onOpenChange}
       open={open}
       submitDisabled={!repository}
-      title={t("projects.issue.create.title")}
-      titlePlaceholder={t("projects.issue.create.titlePlaceholder")}
+      title="Create an issue"
+      titlePlaceholder="Describe the issue"
     >
       <label className="block space-y-1.5 text-sm font-medium">
-        <span>{t("projects.issue.create.repository")}</span>
+        <span>Repository</span>
         <select
           className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm font-normal outline-hidden focus:ring-1 focus:ring-ring"
           data-testid="create-issue-repository"

@@ -38,12 +38,6 @@ import {
   ProfilePersonaPrimaryActions,
   ProfilePrimaryActions,
 } from "@/features/profile/ui/UserProfilePrimaryActions";
-import {
-  fillRuntimePreviewDiagnostics,
-  fillRuntimePreviewFields,
-  UserProfileConfigPreview,
-  UserProfileRuntimePreviewNotice,
-} from "@/features/profile/ui/UserProfileRuntimePreview";
 import { StatusEmoji } from "@/features/user-status/ui/StatusEmoji";
 import { BotIdenticon } from "@/features/messages/ui/BotIdenticon";
 import type { ManagedAgent, RelayAgent } from "@/shared/api/types";
@@ -63,7 +57,6 @@ export { AgentInstructionsFocusedView } from "@/features/profile/ui/UserProfileP
 
 export type ProfileSummaryViewProps = {
   activityAgent: ProfileActivityAgent | null;
-  callerChannelId: string | null;
   canAddToChannel: boolean;
   canDeleteAgent: boolean;
   canEditAgent: boolean;
@@ -102,6 +95,8 @@ export type ProfileSummaryViewProps = {
   agentSettingsFields: ProfileField[];
   diagnosticsFields: ProfileField[];
   onAddToChannel: () => void;
+  /** Mint an agent trading card. Present only for owner-managed personas. */
+  onCreateCard?: () => void;
   onDeleteAgent: () => void;
   onDuplicateAgent?: () => void;
   onExportAgent?: () => void;
@@ -138,7 +133,6 @@ const PROFILE_HERO_PRESENCE_BADGE = {
 
 export function ProfileSummaryView({
   activityAgent,
-  callerChannelId,
   canAddToChannel,
   canDeleteAgent,
   canEditAgent,
@@ -177,6 +171,7 @@ export function ProfileSummaryView({
   agentSettingsFields,
   diagnosticsFields,
   onAddToChannel,
+  onCreateCard,
   onDeleteAgent,
   onDuplicateAgent,
   onExportAgent,
@@ -231,11 +226,10 @@ export function ProfileSummaryView({
   const runtimeSettingsFields = agentSettingsFields.filter(
     (field) => !AGENT_DETAILS_FIELD_LABELS.has(field.label),
   );
-  const showRuntimePreview =
-    import.meta.env.DEV &&
-    isOwner === true &&
-    isBot &&
-    managedAgent === undefined;
+  const runtimeFields = [
+    ...runtimeConfigurationFields,
+    ...runtimeSettingsFields,
+  ];
   const showRuntimeTab =
     isOwner === true &&
     isBot &&
@@ -244,29 +238,18 @@ export function ProfileSummaryView({
       runtimeSettingsFields.length > 0 ||
       instances.length > 0 ||
       diagnosticsFields.length > 0 ||
-      canOpenAgentLogs ||
-      showRuntimePreview);
-  const displayedRuntimeFields = showRuntimePreview
-    ? fillRuntimePreviewFields([
-        ...runtimeConfigurationFields,
-        ...runtimeSettingsFields,
-      ])
-    : [...runtimeConfigurationFields, ...runtimeSettingsFields];
-  const displayedDiagnosticsFields = showRuntimePreview
-    ? fillRuntimePreviewDiagnostics(diagnosticsFields)
-    : diagnosticsFields;
+      canOpenAgentLogs);
   const showDiagnosticsIngress =
     diagnosticsFields.some((field) => field.label !== "Status") ||
     canOpenAgentLogs;
   const showActivityIngress = canViewActivity;
   const showInfoTab =
     agentInfoFields.length > 0 ||
-    displayedRuntimeFields.length > 0 ||
+    runtimeFields.length > 0 ||
     isArchived ||
     showActivityIngress ||
     showInstructionBlock ||
     managedAgent !== undefined ||
-    showRuntimePreview ||
     !showRuntimeTab;
 
   const diagnosticsErrorField = diagnosticsFields.find(
@@ -530,12 +513,12 @@ export function ProfileSummaryView({
                 archiveActions={archiveActions}
                 canArchiveAgent={isBot && archiveActions.canArchive}
                 canDeleteAgent={canDeleteAgent}
-                callerChannelId={callerChannelId}
                 channelIdToName={channelIdToName}
                 isArchived={isArchived}
                 isDeleteAgentPending={isAgentActionPending}
                 managedAgent={managedAgent}
                 onEditAgent={handleEditAgent}
+                onCreateCard={onCreateCard}
                 onDeleteAgent={onDeleteAgent}
                 onDuplicateAgent={onDuplicateAgent}
                 onExportAgent={onExportAgent}
@@ -547,17 +530,14 @@ export function ProfileSummaryView({
             ) : null}
             {activeTab === "runtime" ? (
               <div className="space-y-4">
-                {showRuntimePreview ? (
-                  <UserProfileRuntimePreviewNotice />
-                ) : null}
                 <ProfileRuntimeTabContent
                   autoRestartEnabled={
                     managedAgent?.autoRestartOnConfigChange ?? false
                   }
                   currentPubkey={pubkey}
-                  diagnosticsFields={displayedDiagnosticsFields}
+                  diagnosticsFields={diagnosticsFields}
                   diagnosticsSummary={diagnosticsTrailing}
-                  configurationFields={displayedRuntimeFields}
+                  configurationFields={runtimeFields}
                   instances={instances}
                   modelSettings={
                     isOwner === true && managedAgent !== undefined ? (
@@ -565,11 +545,6 @@ export function ProfileSummaryView({
                         advancedMode="flat"
                         onEdit={canEditAgent ? handleEditAgent : undefined}
                         pubkey={managedAgent.pubkey}
-                        sections={["model"]}
-                      />
-                    ) : showRuntimePreview ? (
-                      <UserProfileConfigPreview
-                        onEdit={canEditAgent ? handleEditAgent : undefined}
                         sections={["model"]}
                       />
                     ) : undefined
@@ -586,9 +561,6 @@ export function ProfileSummaryView({
                   onOpenDiagnostics={onOpenDiagnostics}
                   onOpenInstance={onOpenInstance}
                   showDiagnosticsIngress={showDiagnosticsIngress}
-                  showPreviewHarnessLog={
-                    showRuntimePreview && !showDiagnosticsIngress
-                  }
                 />
                 {isOwner === true && managedAgent !== undefined ? (
                   <AgentConfigPanel
@@ -596,9 +568,6 @@ export function ProfileSummaryView({
                     pubkey={managedAgent.pubkey}
                     sections={["mcp", "advanced"]}
                   />
-                ) : null}
-                {showRuntimePreview ? (
-                  <UserProfileConfigPreview sections={["mcp", "advanced"]} />
                 ) : null}
               </div>
             ) : null}

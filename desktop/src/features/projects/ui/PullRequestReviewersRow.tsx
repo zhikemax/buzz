@@ -11,7 +11,6 @@ import { useRequestProjectPullRequestReviewMutation } from "@/features/projects/
 import { useUserSearchQuery } from "@/features/profile/hooks";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { UserSearchResult } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
 import {
@@ -61,7 +60,6 @@ export function PullRequestReviewersRow({
   pullRequest: ProjectPullRequest;
   signAsManagedOwner: boolean;
 }) {
-  const t = useT();
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [reviewerQuery, setReviewerQuery] = React.useState("");
   const requestInFlightRef = React.useRef(false);
@@ -118,18 +116,16 @@ export function PullRequestReviewersRow({
         });
         setPickerOpen(false);
         setReviewerQuery("");
-        toast.success(t("projects.toast.reviewRequested"));
+        toast.success("Review requested.");
       } catch (error) {
         toast.error(
-          error instanceof Error
-            ? error.message
-            : t("projects.toast.requestReviewFailed"),
+          error instanceof Error ? error.message : "Failed to request review.",
         );
       } finally {
         requestInFlightRef.current = false;
       }
     },
-    [pullRequest, requestReviewMutation, signAsManagedOwner, t],
+    [pullRequest, requestReviewMutation, signAsManagedOwner],
   );
 
   React.useEffect(() => {
@@ -173,10 +169,10 @@ export function PullRequestReviewersRow({
             <TooltipContent>
               {label}
               {hasApproved
-                ? t("projects.pr.review.reviewer.approvedSuffix")
+                ? " — approved"
                 : hasRequestedChanges
-                  ? t("projects.pr.review.reviewer.changesRequestedSuffix")
-                  : t("projects.pr.review.reviewer.requestedSuffix")}
+                  ? " — requested changes"
+                  : " — review requested"}
             </TooltipContent>
           </Tooltip>
         );
@@ -191,16 +187,14 @@ export function PullRequestReviewersRow({
               type="button"
               variant="ghost"
             >
-              {t("projects.pr.review.reviewer.addButton")}
+              Add Reviewer
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
             <DialogHeader className="border-b border-border/60 px-6 py-5 pr-14">
-              <DialogTitle>
-                {t("projects.pr.review.reviewer.addTitle")}
-              </DialogTitle>
+              <DialogTitle>Add reviewer</DialogTitle>
               <DialogDescription>
-                {t("projects.pr.review.reviewer.addDesc")}
+                Choose a person or agent to review this pull request.
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center gap-2 border-b border-border/60 px-6 py-3">
@@ -210,14 +204,14 @@ export function PullRequestReviewersRow({
                 className="h-8 border-0 px-0 text-sm shadow-none focus-visible:ring-0"
                 data-testid="project-reviewer-search"
                 onChange={(event) => setReviewerQuery(event.target.value)}
-                placeholder={t("projects.pr.review.reviewer.searchPlaceholder")}
+                placeholder="Search people and agents"
                 value={reviewerQuery}
               />
             </div>
             <div className="max-h-72 min-h-28 overflow-y-auto p-2">
               {userSearchQuery.isLoading ? (
                 <p className="px-3 py-4 text-sm text-muted-foreground">
-                  {t("invites.add.searching")}
+                  Searching…
                 </p>
               ) : candidates.length > 0 ? (
                 candidates.map((candidate) => {
@@ -244,9 +238,7 @@ export function PullRequestReviewersRow({
                           {label}
                         </span>
                         <span className="block truncate text-xs text-muted-foreground">
-                          {candidate.isAgent
-                            ? t("projects.pr.review.reviewer.agentPrefix")
-                            : ""}
+                          {candidate.isAgent ? "Agent · " : ""}
                           {truncatePubkey(candidate.pubkey)}
                         </span>
                       </span>
@@ -255,7 +247,7 @@ export function PullRequestReviewersRow({
                 })
               ) : (
                 <p className="px-3 py-4 text-sm text-muted-foreground">
-                  {t("projects.empty.noMatchingPeople")}
+                  No matching people or agents.
                 </p>
               )}
             </div>

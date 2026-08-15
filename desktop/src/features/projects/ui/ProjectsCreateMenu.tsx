@@ -1,7 +1,6 @@
 import { CircleDot, FolderGit2, GitPullRequest, Plus } from "lucide-react";
 import * as React from "react";
 
-import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   POPOVER_SHADOW_STYLE,
@@ -20,7 +19,6 @@ export function ProjectsCreateMenu({
   onCreateProject: () => void;
   onCreatePullRequest: () => void;
 }) {
-  const t = useT();
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLElement>(null);
 
@@ -51,7 +49,7 @@ export function ProjectsCreateMenu({
 
   return (
     <nav
-      aria-label={t("projects.create.menuAria")}
+      aria-label="Create project item"
       className="relative shrink-0"
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -71,7 +69,7 @@ export function ProjectsCreateMenu({
       <Button
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={t("projects.create.menuButton")}
+        aria-label="Create"
         className="h-8 w-8 rounded-full"
         data-testid="projects-create-menu"
         onClick={() => setOpen(true)}
@@ -95,7 +93,7 @@ export function ProjectsCreateMenu({
               type="button"
             >
               <FolderGit2 />
-              {t("projects.create.menuProject")}
+              Project
             </button>
             <button
               className={MENU_ITEM_CLASS}
@@ -104,7 +102,7 @@ export function ProjectsCreateMenu({
               type="button"
             >
               <CircleDot />
-              {t("projects.create.menuIssue")}
+              Issue
             </button>
             <button
               className={MENU_ITEM_CLASS}
@@ -113,7 +111,7 @@ export function ProjectsCreateMenu({
               type="button"
             >
               <GitPullRequest />
-              {t("projects.create.menuPullRequest")}
+              Pull Request
             </button>
           </div>
         </div>

@@ -8,18 +8,19 @@ import {
 import { resolveAgentCardModelLabel } from "@/features/agents/lib/agentCardModelLabel";
 import { friendlyAgentLastError } from "@/features/agents/lib/friendlyAgentLastError";
 import { isManagedAgentActive } from "@/features/agents/lib/managedAgentControlActions";
+import { pickProfileAgent } from "@/features/agents/lib/pickProfileAgent";
 import { useUserProfileQuery } from "@/features/profile/hooks";
 import type { AgentPersona, ManagedAgent } from "@/shared/api/types";
 import type { ProfilePanelOpenOptions } from "@/shared/context/ProfilePanelContext";
 import { useFeedbackToasts } from "@/shared/hooks/useToastEffect";
+import { useT } from "@/shared/i18n";
 import { Badge } from "@/shared/ui/badge";
 import { IdentityCardSkeleton } from "@/shared/ui/identity-card-skeleton";
 import { AgentIdentityCard } from "./AgentIdentityCard";
 import { AgentRuntimeAvatarControl } from "./AgentRuntimeAvatarControl";
 import { CreateIdentityCard } from "./CreateIdentityCard";
 import { PersonaActionsMenu } from "./PersonaActionsMenu";
-import { buildUnifiedGroups, pickProfileAgent } from "./unifiedAgentGroups";
-import { useT } from "@/shared/i18n";
+import { buildUnifiedGroups } from "./unifiedAgentGroups";
 
 type UnifiedAgentsSectionProps = {
   defaultModel: string;
@@ -64,6 +65,7 @@ export const AGENT_CARD_GRID_COLUMNS_CLASS =
 export const IDENTITY_CARD_GRID_CLASS = `${AGENT_CARD_COLUMN_CLASS} ${AGENT_CARD_GRID_COLUMNS_CLASS} grid gap-3`;
 
 export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
+  const t = useT();
   const {
     actionErrorMessage,
     actionNoticeMessage,
@@ -93,7 +95,6 @@ export function UnifiedAgentsSection(props: UnifiedAgentsSectionProps) {
     onDeactivatePersona,
     onDeletePersona,
   } = props;
-  const t = useT();
 
   const { groups, ungrouped, unknown } = React.useMemo(
     () => buildUnifiedGroups(personas, agents),
@@ -255,9 +256,9 @@ function AgentPersonaCard({
   const title = persona.displayName;
   const modelLabel = resolveAgentCardModelLabel({
     agent,
+    t,
     personaModel: persona.model,
     defaultModel,
-    t,
   });
   const isActive = agent ? isManagedAgentActive(agent) : false;
   const profileQuery = useUserProfileQuery(agent?.pubkey);
@@ -275,7 +276,7 @@ function AgentPersonaCard({
         avatarUrl,
         isAgentCardAvatarLoading(Boolean(agent), profileQuery.isPending),
       )}
-      ariaLabel={t("agents.agentProfileAria", { name: title })}
+      ariaLabel={`${title} agent profile`}
       avatar={
         agent ? (
           <AgentRuntimeAvatarControl
@@ -368,7 +369,7 @@ function StandaloneAgentCard({
 
   return (
     <AgentIdentityCard
-      ariaLabel={t("agents.agentProfileAria", { name: title })}
+      ariaLabel={`${title} agent profile`}
       avatar={
         <AgentRuntimeAvatarControl
           activeTestId={`agent-runtime-active-${agent.pubkey}`}
@@ -396,9 +397,9 @@ function StandaloneAgentCard({
       label={title}
       modelLabel={resolveAgentCardModelLabel({
         agent,
+        t,
         personaModel: null,
         defaultModel,
-        t,
       })}
       onClick={() => {
         onOpenAgentProfile(

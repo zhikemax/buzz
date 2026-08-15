@@ -24,6 +24,7 @@ import {
   relativeTime,
 } from "@/features/projects/lib/projectsViewHelpers";
 import type { ProjectRepoUnavailableReason } from "@/features/projects/lib/projectRepoAvailability";
+import { projectShareLink } from "@/features/projects/lib/projectShareLinks";
 import { projectTerminalLabel } from "@/features/projects/ui/useOpenProjectTerminal";
 import {
   PROJECT_LIST_ROW_CLASS,
@@ -34,7 +35,6 @@ import {
   PROJECT_LIST_ROW_TRAILING_CLASS,
 } from "@/features/projects/ui/projectListRowStyles";
 import { cn } from "@/shared/lib/cn";
-import { useT } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
 import {
   AlertDialog,
@@ -51,6 +51,7 @@ import { Card } from "@/shared/ui/card";
 import { DropdownMenuItem } from "@/shared/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
+import { CopyShareLinkMenuItem } from "./CopyShareLinkMenuItem";
 import { ProjectListRowMenu } from "./ProjectListRowMenu";
 
 function ProjectUpdatedLabel({
@@ -62,7 +63,6 @@ function ProjectUpdatedLabel({
   project: Project;
   summary: ProjectActivitySummary | undefined;
 }) {
-  const t = useT();
   const updatedAt = getProjectUpdatedAt(project, summary);
   const latestCommit = summary?.latestCommit;
   const authorLabel = latestCommit?.author
@@ -81,9 +81,7 @@ function ProjectUpdatedLabel({
           ? `${latestCommit.title || latestCommit.commit.slice(0, 7)}${
               authorLabel ? ` · ${authorLabel}` : ""
             } · ${formatExactTimestamp(latestCommit.createdAt)}`
-          : t("projects.detail.createdAt", {
-              time: formatExactTimestamp(project.createdAt),
-            })}
+          : `Created ${formatExactTimestamp(project.createdAt)}`}
       </TooltipContent>
     </Tooltip>
   );
@@ -98,7 +96,6 @@ export function ProjectPeopleStack({
   profiles?: UserProfileLookup;
   workOwnerPubkey: string;
 }) {
-  const t = useT();
   const visible = pubkeys.slice(0, 5);
   const remaining = pubkeys.length - visible.length;
 
@@ -120,7 +117,7 @@ export function ProjectPeopleStack({
           >
             <UserProfilePopover pubkey={pubkey} triggerElement="span">
               <button
-                aria-label={t("projects.activity.viewProfile", { name: label })}
+                aria-label={`View ${label}'s profile`}
                 className="inline-flex rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
               >
@@ -154,8 +151,7 @@ const PROJECT_STAT_ITEMS = [
     iconClass: "text-primary/60",
     barClass: "bg-primary/60",
     columnClass: "w-24",
-    labelOne: "projects.stat.commitOne",
-    labelMany: "projects.stat.commitMany",
+    label: (count: number) => (count === 1 ? "commit" : "commits"),
   },
   {
     key: "prCount",
@@ -163,8 +159,7 @@ const PROJECT_STAT_ITEMS = [
     iconClass: "text-primary",
     barClass: "bg-primary",
     columnClass: "w-16",
-    labelOne: "projects.stat.prOne",
-    labelMany: "projects.stat.prMany",
+    label: (count: number) => (count === 1 ? "PR" : "PRs"),
   },
   {
     key: "issueCount",
@@ -172,11 +167,14 @@ const PROJECT_STAT_ITEMS = [
     iconClass: "text-orange-500",
     barClass: "bg-orange-500",
     columnClass: "w-20",
-    labelOne: "projects.stat.issueOne",
-    labelMany: "projects.stat.issueMany",
+    label: (count: number) => (count === 1 ? "issue" : "issues"),
   },
 ] as const;
 
+/**
+ * Textual commit/PR/issue counts. Repository lists show these next to the
+ * activity bar; project lists show the bar alone (counts via its tooltips).
+ */
 export function ProjectStatsRow({
   summary,
   fixedColumns = false,
@@ -185,7 +183,6 @@ export function ProjectStatsRow({
   /** Give each stat a fixed width so stats align vertically across list rows. */
   fixedColumns?: boolean;
 }) {
-  const t = useT();
   return (
     <div
       className={cn(
@@ -195,7 +192,7 @@ export function ProjectStatsRow({
       )}
     >
       {PROJECT_STAT_ITEMS.map(
-        ({ key, icon: Icon, iconClass, labelOne, labelMany, columnClass }) => {
+        ({ key, icon: Icon, iconClass, label, columnClass }) => {
           const count = summary?.[key] ?? 0;
           return (
             <span
@@ -207,7 +204,7 @@ export function ProjectStatsRow({
             >
               <Icon className={cn("h-3.5 w-3.5 shrink-0", iconClass)} />
               <span className="font-medium text-foreground">{count}</span>
-              {t(count === 1 ? labelOne : labelMany)}
+              {label(count)}
             </span>
           );
         },
@@ -223,24 +220,20 @@ export function ProjectActivityBar({
 }: {
   summary: ProjectActivitySummary | undefined;
 }) {
-  const t = useT();
-  const items = PROJECT_STAT_ITEMS.map(
-    ({ key, barClass, labelOne, labelMany }) => {
-      const count = summary?.[key] ?? 0;
-      return {
-        barClass,
-        count,
-        text: t(count === 1 ? labelOne : labelMany),
-      };
-    },
-  );
+  const items = PROJECT_STAT_ITEMS.map(({ key, barClass, label }) => {
+    const count = summary?.[key] ?? 0;
+    return { barClass, count, text: label(count) };
+  });
   const total = items.reduce((sum, item) => sum + item.count, 0);
 
   return (
     // z-10 lifts the bar above the card's full-surface open button so it
     // can receive hover events. Fixed h-2 wrapper keeps layout stable
     // while the inner bar grows on hover.
-    <div className="group/activity-bar relative z-10 flex h-2 w-full items-center">
+    <div
+      className="group/activity-bar relative z-10 flex h-2 w-full items-center"
+      data-testid="project-activity-bar"
+    >
       <div className="flex h-1.5 w-full gap-px overflow-hidden rounded-full bg-muted/60 transition-all duration-150 group-hover/activity-bar:h-2">
         {total > 0
           ? items
@@ -286,36 +279,37 @@ function RepositoryUnavailableIndicator({
 }: {
   reason: ProjectRepoUnavailableReason | undefined;
 }) {
-  const t = useT();
   if (!reason) return null;
   const status = {
     authentication: {
-      description: t("projects.repo.status.accessFailedDesc"),
-      label: t("projects.repo.status.accessFailed"),
+      description: "Buzz could not authenticate with this repository.",
+      label: "Access failed",
     },
     missing: {
-      description: t("projects.repo.status.uninitializedDesc"),
-      label: t("projects.repo.status.uninitialized"),
+      description: "No git repository was found on the Buzz relay.",
+      label: "Uninitialized",
     },
     access: {
-      description: t("projects.repo.status.noAccessDesc"),
-      label: t("projects.repo.status.noAccess"),
+      description:
+        "You’re not a member of the channel that grants access to this repository.",
+      label: "No access",
     },
     unbound: {
-      description: t("projects.repo.status.noAccessChannelDesc"),
-      label: t("projects.repo.status.noAccessChannel"),
+      description:
+        "The repository has no access channel binding, so the relay cannot authorize reads.",
+      label: "No access channel",
     },
     network: {
-      description: t("projects.repo.status.unreachableDesc"),
-      label: t("projects.repo.status.unreachable"),
+      description: "The Buzz git service could not be reached.",
+      label: "Unreachable",
     },
     ref: {
-      description: t("projects.repo.status.branchMissingDesc"),
-      label: t("projects.repo.status.branchMissing"),
+      description: "The advertised branch is missing from the git remote.",
+      label: "Branch missing",
     },
     unknown: {
-      description: t("projects.repo.status.unavailableDesc"),
-      label: t("projects.repo.status.unavailable"),
+      description: "Buzz could not load this repository.",
+      label: "Unavailable",
     },
   } satisfies Record<
     ProjectRepoUnavailableReason,
@@ -327,9 +321,7 @@ function RepositoryUnavailableIndicator({
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          aria-label={t("projects.repo.status.aria", {
-            label: label.toLowerCase(),
-          })}
+          aria-label={`Repository ${label.toLowerCase()}`}
           className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-amber-600 hover:bg-amber-500/10 dark:text-amber-300"
           role="img"
         >
@@ -345,16 +337,13 @@ function RepositoryUnavailableIndicator({
 }
 
 export function EmptyState() {
-  const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center">
       <Folders className="h-10 w-10 text-muted-foreground/40" />
       <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">
-          {t("projects.empty.noProjects")}
-        </p>
+        <p className="text-sm font-medium text-foreground">No projects yet</p>
         <p className="text-sm text-muted-foreground">
-          {t("projects.empty.noProjectsHint")}
+          Projects published to this relay will appear here.
         </p>
       </div>
     </div>
@@ -362,16 +351,15 @@ export function EmptyState() {
 }
 
 export function EmptyFilteredState() {
-  const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 border border-dashed border-border/60 px-4 py-12 text-center">
       <Folders className="h-9 w-9 text-muted-foreground/40" />
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">
-          {t("projects.empty.noMatching")}
+          No matching projects
         </p>
         <p className="text-sm text-muted-foreground">
-          {t("projects.empty.noMatchingHint")}
+          Try another owner filter or sort mode.
         </p>
       </div>
     </div>
@@ -385,16 +373,13 @@ function ProjectCardButton({
   project: Project;
   onOpen: (project: Project) => void;
 }) {
-  const t = useT();
   return (
     <button
       className="absolute inset-0 z-0 cursor-pointer"
       onClick={() => onOpen(project)}
       type="button"
     >
-      <span className="sr-only">
-        {t("projects.detail.viewProject", { name: project.name })}
-      </span>
+      <span className="sr-only">View {project.name}</span>
     </button>
   );
 }
@@ -414,14 +399,15 @@ function ProjectActionsMenu({
   onDelete: (project: Project) => Promise<void> | void;
   onOpenTerminal: (project: Project) => Promise<void> | void;
 }) {
-  const t = useT();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   return (
     <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
-      <ProjectListRowMenu
-        label={t("projects.detail.moreOptions", { name: project.name })}
-      >
+      <ProjectListRowMenu label={`More options for ${project.name}`}>
+        <CopyShareLinkMenuItem
+          link={projectShareLink(project)}
+          testId={`project-copy-link-${project.dtag}`}
+        />
         <DropdownMenuItem
           onSelect={(event) => {
             event.preventDefault();
@@ -430,7 +416,7 @@ function ProjectActionsMenu({
           }}
         >
           <TerminalSquare className="h-4 w-4" />
-          {projectTerminalLabel(hasLocal, t)}
+          {projectTerminalLabel(hasLocal)}
         </DropdownMenuItem>
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"
@@ -444,24 +430,23 @@ function ProjectActionsMenu({
           }}
         >
           <Trash2 className="h-4 w-4" />
-          {t("projects.delete.project.menuAction")}
+          Delete project
         </DropdownMenuItem>
       </ProjectListRowMenu>
       <AlertDialogContent
         data-testid={`project-delete-confirm-${project.dtag}`}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {t("projects.delete.project.title")}
-          </AlertDialogTitle>
+          <AlertDialogTitle>Delete project?</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("projects.delete.project.description", { name: project.name })}
+            Delete {project.name} from Projects for everyone. This can only be
+            done for projects you own and cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button disabled={disabled} type="button" variant="outline">
-              {t("common.cancel")}
+              Cancel
             </Button>
           </AlertDialogCancel>
           <AlertDialogAction asChild>
@@ -477,9 +462,7 @@ function ProjectActionsMenu({
               type="button"
               variant="destructive"
             >
-              {disabled
-                ? t("projects.delete.project.deleting")
-                : t("projects.delete.project.action")}
+              {disabled ? "Deleting..." : "Delete project"}
             </Button>
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -515,7 +498,6 @@ export function ProjectGridCard({
   onOpen,
   onOpenTerminal,
 }: ProjectItemProps) {
-  const t = useT();
   return (
     <Card
       className="group relative flex min-h-44 flex-col overflow-hidden border-border/60 bg-transparent shadow-none transition-colors duration-150 hover:bg-muted/20"
@@ -534,11 +516,9 @@ export function ProjectGridCard({
             </span>
             <span className="shrink-0 text-xs text-muted-foreground">
               {project.repositoryAddresses.length}{" "}
-              {t(
-                project.repositoryAddresses.length === 1
-                  ? "projects.stat.repositoryOne"
-                  : "projects.stat.repositoryMany",
-              )}
+              {project.repositoryAddresses.length === 1
+                ? "repository"
+                : "repositories"}
             </span>
             <StatusPill status={project.status} />
             <RepositoryUnavailableIndicator
@@ -563,7 +543,7 @@ export function ProjectGridCard({
         </div>
 
         <p className="line-clamp-2 min-h-10 px-4 py-2 text-sm text-muted-foreground">
-          {project.description || t("projects.readme.fallbackDescription")}
+          {project.description || "A shared space for internal git work."}
         </p>
 
         <div className="relative z-10 flex items-center px-4 pb-1">
@@ -574,13 +554,8 @@ export function ProjectGridCard({
           />
         </div>
 
-        <div className="mt-auto">
-          <div className="flex min-w-0 items-center px-4 pb-2 pt-1">
-            <ProjectStatsRow summary={summary} />
-          </div>
-          <div className="px-4 pb-3">
-            <ProjectActivityBar summary={summary} />
-          </div>
+        <div className="mt-auto px-4 pb-3 pt-2">
+          <ProjectActivityBar summary={summary} />
         </div>
       </div>
     </Card>
@@ -600,7 +575,6 @@ export function ProjectListRow({
   onOpen,
   onOpenTerminal,
 }: ProjectItemProps) {
-  const t = useT();
   return (
     <div
       className={cn(PROJECT_LIST_ROW_CLASS, "py-3")}
@@ -620,7 +594,7 @@ export function ProjectListRow({
               <StatusPill status={project.status} />
             </div>
             <p className={PROJECT_LIST_ROW_PREVIEW_CLASS}>
-              {project.description || t("projects.readme.fallbackDescription")}
+              {project.description || "A shared space for internal git work."}
             </p>
           </div>
         </div>
@@ -633,11 +607,9 @@ export function ProjectListRow({
             data-testid="projects-row-context"
           >
             {project.repositoryAddresses.length}{" "}
-            {t(
-              project.repositoryAddresses.length === 1
-                ? "projects.stat.repositoryOne"
-                : "projects.stat.repositoryMany",
-            )}
+            {project.repositoryAddresses.length === 1
+              ? "repository"
+              : "repositories"}
           </div>
           <div
             className="flex w-6 shrink-0 justify-center"
@@ -648,11 +620,10 @@ export function ProjectListRow({
             />
           </div>
           <div
-            className="hidden items-center gap-3 xl:flex"
+            className="hidden items-center xl:flex"
             data-testid="projects-row-summary"
           >
-            <ProjectStatsRow fixedColumns summary={summary} />
-            <div className="w-20 shrink-0">
+            <div className="w-32 shrink-0">
               <ProjectActivityBar summary={summary} />
             </div>
           </div>

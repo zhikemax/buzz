@@ -38,7 +38,6 @@ import type { ProjectPullRequestComment } from "@/features/projects/projectPullR
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import { cn } from "@/shared/lib/cn";
-import { useT } from "@/shared/i18n";
 import type { ProjectRepoDiff, ProjectRepoDiffFile } from "@/shared/api/types";
 import { PROJECT_DETAIL_PANEL_CLASS } from "./projectPanelStyles";
 import { ProjectPullRequestInlineCommentThread } from "./ProjectPullRequestInlineComments";
@@ -453,7 +452,6 @@ function DiffPreview({
   focusedAnchor?: ProjectPullRequestCommentAnchor | null;
   inlineComments?: InlineCommentControls;
 }) {
-  const t = useT();
   const rows = diffRows(file);
   const focusedRowRef = React.useRef<HTMLDivElement | null>(null);
   const [highlightedAnchor, setHighlightedAnchor] =
@@ -551,18 +549,14 @@ function DiffPreview({
               <span className="flex select-none items-center justify-center">
                 {anchor && inlineComments ? (
                   <button
-                    aria-label={t("projects.pr.files.commentOnLineAria", {
-                      path: anchor.path,
-                      side: anchor.side,
-                      line: String(anchor.line),
-                    })}
+                    aria-label={`Comment on ${anchor.path} ${anchor.side} line ${anchor.line}`}
                     className={cn(
                       "flex h-5 w-5 items-center justify-center rounded text-muted-foreground opacity-0 hover:bg-primary hover:text-primary-foreground focus-visible:opacity-100 focus-visible:outline-hidden group-hover:opacity-100",
                       (comments.length > 0 || isActive) && "opacity-100",
                     )}
                     data-testid="project-diff-add-comment"
                     onClick={() => inlineComments.onStart(anchor)}
-                    title={t("projects.pr.files.addLineComment")}
+                    title="Add line comment"
                     type="button"
                   >
                     <MessageSquarePlus className="h-3.5 w-3.5" />
@@ -675,7 +669,6 @@ export function ProjectPullRequestFilesChangedPanel({
   project: Project;
   pullRequest: ProjectPullRequest | null;
 }) {
-  const t = useT();
   const identityQuery = useIdentityQuery();
   const [activeAnchor, setActiveAnchor] =
     React.useState<ProjectPullRequestCommentAnchor | null>(null);
@@ -697,7 +690,7 @@ export function ProjectPullRequestFilesChangedPanel({
       mediaTags?: string[][],
       decision?: "request-changes",
     ) => {
-      if (!pullRequest) throw new Error(t("projects.error.noPullRequestSelected"));
+      if (!pullRequest) throw new Error("No pull request selected.");
       try {
         await postComment({
           anchor,
@@ -710,19 +703,19 @@ export function ProjectPullRequestFilesChangedPanel({
         setActiveAnchor(null);
         toast.success(
           decision === "request-changes"
-            ? t("projects.pr.files.changesRequestedToast")
-            : t("projects.pr.files.lineCommentPosted"),
+            ? "Changes requested."
+            : "Line comment posted.",
         );
       } catch (error) {
         toast.error(
           error instanceof Error
             ? error.message
-            : t("projects.pr.files.postCommentFailed"),
+            : "Failed to post line comment.",
         );
         throw error;
       }
     },
-    [postComment, pullRequest, t],
+    [postComment, pullRequest],
   );
 
   return (
@@ -755,7 +748,7 @@ export function ProjectPullRequestFilesChangedPanel({
           : undefined
       }
       isLoading={isLoading}
-      subjectLabel={t("projects.workItem.subject.pullRequest")}
+      subjectLabel="pull request"
     />
   );
 }
@@ -780,7 +773,6 @@ export function ProjectDiffFilesPanel({
   inlineComments?: InlineCommentControls;
   subjectLabel: string;
 }) {
-  const t = useT();
   const outerBorderClass = embedded ? "" : PROJECT_DETAIL_PANEL_CLASS;
   const [query, setQuery] = React.useState("");
   const [selectedPath, setSelectedPath] = React.useState<string | null>(null);
@@ -827,7 +819,7 @@ export function ProjectDiffFilesPanel({
         className={cn("p-4 text-sm text-muted-foreground", outerBorderClass)}
         data-project-detail-panel={embedded ? undefined : true}
       >
-        {t("projects.pr.files.loading")}
+        Loading changed files…
       </div>
     );
   }
@@ -842,7 +834,7 @@ export function ProjectDiffFilesPanel({
         )}
         data-project-detail-panel={embedded ? undefined : true}
       >
-        <p>{t("projects.pr.files.loadFailed", { subject: subjectLabel })}</p>
+        <p>Could not load changed files for this {subjectLabel}.</p>
         {message ? (
           <p className="font-mono text-xs text-muted-foreground/80">
             {message}
@@ -861,7 +853,7 @@ export function ProjectDiffFilesPanel({
         )}
         data-project-detail-panel={embedded ? undefined : true}
       >
-        {t("projects.pr.files.empty", { subject: subjectLabel })}
+        No changed files are available for this {subjectLabel} yet.
       </div>
     );
   }
@@ -878,18 +870,14 @@ export function ProjectDiffFilesPanel({
         <div className="space-y-3 p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Files className="h-3.5 w-3.5" />
-            <span>
-              {t("projects.pr.files.changedFilesCount", {
-                count: files.length,
-              })}
-            </span>
+            <span>{files.length} changed files</span>
           </div>
           <label className="flex h-8 items-center gap-2 border border-border/60 bg-background/70 px-2 text-xs text-muted-foreground">
             <Search className="h-3.5 w-3.5" />
             <input
               className="min-w-0 flex-1 bg-transparent text-foreground outline-hidden placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder={t("projects.pr.files.filterPlaceholder")}
+              placeholder="Filter files…"
               value={query}
             />
           </label>
@@ -910,11 +898,7 @@ export function ProjectDiffFilesPanel({
             <span className="truncate">{headerLabel}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span>
-              {t("projects.pr.files.filesChangedCount", {
-                count: files.length,
-              })}
-            </span>
+            <span>{files.length} files changed</span>
             <span className="text-green-500">+{stats.additions}</span>
             <span className="text-destructive">-{stats.deletions}</span>
           </div>
@@ -956,7 +940,7 @@ export function ProjectDiffFilesPanel({
             </article>
           ) : (
             <div className="border border-border/60 bg-background/45 p-4 text-sm text-muted-foreground">
-              {t("projects.pr.files.noMatch")}
+              No files match this filter.
             </div>
           )}
         </div>
