@@ -56,6 +56,7 @@ import {
 import { appearanceCommunityLabel } from "../lib/appearanceScopeCopy";
 import {
   AccentPickerContent,
+  ConversationDisplaySettings,
   GlassBackgroundSetting,
   LinkPreviewStyleSetting,
   ProminentActiveTabSetting,
@@ -866,6 +867,7 @@ function ThemeSettingsCard() {
               ))}
             </div>
           </SettingsOptionRow>
+          <ConversationDisplaySettings />
           <LinkPreviewStyleSetting />
           <ThreadLayoutSetting />
         </SettingsOptionGroup>

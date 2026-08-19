@@ -17,10 +17,14 @@ import { useT } from "@/shared/i18n";
 import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
 import { useNow } from "@/shared/lib/useNow";
 import { Markdown } from "@/shared/ui/markdown";
-import { Popover, PopoverAnchor, PopoverContent } from "@/shared/ui/popover";
+import {
+  DEFAULT_POPOVER_HOVER_OPEN_DELAY_MS,
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/shared/ui/popover";
 import { UserAvatar } from "@/shared/ui/UserAvatar";
 
-const HOVER_OPEN_DELAY_MS = 250;
 const HOVER_CLOSE_DELAY_MS = 180;
 const ACTIVITY_POPOVER_MOTION_STYLE = {
   "--tw-enter-scale": "1",
@@ -315,7 +319,7 @@ export function ChannelActivityPopover({
     clearHoverTimer();
     hoverTimerRef.current = setTimeout(() => {
       setOpen(true);
-    }, HOVER_OPEN_DELAY_MS);
+    }, DEFAULT_POPOVER_HOVER_OPEN_DELAY_MS);
   }, [clearHoverTimer, hasContent]);
   const openImmediately = React.useCallback(() => {
     if (!hasContent) return;

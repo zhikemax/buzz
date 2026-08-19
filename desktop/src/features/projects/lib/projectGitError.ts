@@ -1,4 +1,5 @@
 import { translate, type TranslateFn } from "@/shared/i18n";
+import type { ProjectRepoUnavailableReason } from "./projectRepoAvailability";
 
 export type ProjectGitErrorPresentation = {
   title: string;
@@ -21,11 +22,18 @@ function isGitHubUrl(cloneUrl: string | null | undefined) {
 export function projectCloneErrorPresentation(
   error: unknown,
   cloneUrl?: string | null,
+  unavailableReason?: ProjectRepoUnavailableReason,
   t: TranslateFn = translate,
 ): ProjectGitErrorPresentation {
   const message = errorText(error);
   const github = isGitHubUrl(cloneUrl);
 
+  if (unavailableReason === "access") {
+    return {
+      title: t("projects.gitError.accessRestricted.title"),
+      description: t("projects.gitError.accessRestricted.desc"),
+    };
+  }
   if (
     /\b(?:401|403)\b|authenticat|authoriz|permission denied|access denied|ssh certificate/.test(
       message,

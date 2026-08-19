@@ -16,6 +16,8 @@ import {
 import { useT } from "@/shared/i18n";
 
 import { Button } from "@/shared/ui/button";
+import { projectExternalRefUrl } from "@/features/projects/lib/projectExternalUrl";
+import type { ProjectRepoUnavailableReason } from "@/features/projects/lib/projectRepoAvailability";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,9 +69,7 @@ export function RepositoryBranchDropdown({
   const RefIcon = selectedTag ? Tag : GitBranch;
   if (!branch) {
     return (
-      <span className="truncate font-mono text-sm font-semibold text-foreground">
-        —
-      </span>
+      <span className="truncate text-sm font-semibold text-foreground">—</span>
     );
   }
   return (
@@ -77,12 +77,15 @@ export function RepositoryBranchDropdown({
       <DropdownMenuTrigger asChild>
         <Button
           className={PROJECT_PICKER_TRIGGER_CLASS}
+          data-testid="project-repository-branch-trigger"
           size="sm"
           type="button"
           variant="outline"
         >
           <RefIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate font-mono">{selectedTag ?? branch}</span>
+          <span className="min-w-0 flex-1 truncate text-left">
+            {selectedTag ?? branch}
+          </span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
@@ -101,7 +104,7 @@ export function RepositoryBranchDropdown({
           {selectableBranches.map((option) => (
             <DropdownMenuRadioItem key={option} value={`branch:${option}`}>
               <GitBranch className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
-              <span className="truncate font-mono">{option}</span>
+              <span className="min-w-0 flex-1 truncate">{option}</span>
             </DropdownMenuRadioItem>
           ))}
           {tagOptions.length > 0 ? (
@@ -114,7 +117,7 @@ export function RepositoryBranchDropdown({
                   value={`tag:${option.name}`}
                 >
                   <Tag className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="truncate font-mono">{option.name}</span>
+                  <span className="min-w-0 flex-1 truncate">{option.name}</span>
                   <span className="ml-auto font-mono text-xs text-muted-foreground">
                     {option.commit.slice(0, 7)}
                   </span>
@@ -183,7 +186,10 @@ export type RepoSourceHeaderControls = {
   localLabel: string;
   remoteLabel: string;
   remoteKind?: "buzz" | "external";
+  remoteUnavailableReason?: ProjectRepoUnavailableReason;
   externalUrl?: string | null;
+  /** Opens repository-scoped assistance when remote access is restricted. */
+  onAskForAccess?: () => void;
   /** Clones the repository when no local checkout is available. */
   onCloneLocal?: () => void;
   clonePending?: boolean;
@@ -233,7 +239,7 @@ export function RepoSourceDropdown({
           variant="outline"
         >
           <SourceIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate">
+          <span className="min-w-0 flex-1 truncate text-left">
             {isLocal ? controls.localLabel : controls.remoteLabel}
           </span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -289,8 +295,12 @@ export function RepoSyncActionButton({
 }: {
   controls: RepoSourceHeaderControls;
 }) {
+  const externalOpenUrl = projectExternalRefUrl(
+    controls.externalUrl,
+    controls.selectedTag ?? controls.branch,
+  );
   if (controls.remoteKind === "external") {
-    return controls.externalUrl ? (
+    return externalOpenUrl ? (
       <Button
         asChild
         className={PROJECT_PANEL_ACTION_BUTTON_CLASS}
@@ -298,7 +308,7 @@ export function RepoSyncActionButton({
         title={`Open repository on ${controls.remoteLabel}`}
         variant="ghost"
       >
-        <a href={controls.externalUrl} rel="noreferrer" target="_blank">
+        <a href={externalOpenUrl} rel="noreferrer" target="_blank">
           <ExternalLink className="h-4 w-4" />
           Open
         </a>

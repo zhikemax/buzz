@@ -250,6 +250,21 @@ export const en = {
   "settings.appearance.linkPreviewRichDesc":
     "Unfurl links with larger images and descriptions",
   "settings.appearance.accentColor": "Accent color",
+  "settings.appearance.accentColorHint":
+    "Choose the highlight color used throughout Buzz.",
+  "settings.appearance.fontSize": "Font size",
+  "settings.appearance.fontSizeHint":
+    "Applies across conversations and interface text",
+  "settings.appearance.fontSizeSmaller": "Smaller",
+  "settings.appearance.fontSizeDefault": "Default",
+  "settings.appearance.fontSizeLarger": "Larger",
+  "settings.appearance.conversationDensity": "Conversation density",
+  "settings.appearance.conversationDensityHint":
+    "Spacing in conversations and Markdown content across Buzz",
+  "settings.appearance.densityCompact": "Compact",
+  "settings.appearance.densityComfy": "Comfy",
+  "settings.appearance.densitySpacious": "Spacious",
+  "settings.appearance.preview": "Preview",
 
   "settings.agents.title": "Agents",
   "settings.agents.description":
@@ -1316,6 +1331,7 @@ export const en = {
   "msg.new": "New",
   "msg.newMessages": "New messages",
   "msg.thread": "Thread",
+  "msg.openTitle": "Open {title}",
   "msg.backToConversation": "Back to conversation",
   "msg.collapseThread": "Collapse thread",
   "msg.collapseReplies": "Collapse replies",
@@ -2690,6 +2706,12 @@ export const en = {
   "agents.openToLoadModels": "Open to load available models.",
   "agents.modelUnavailable": "That model isn't available for this agent.",
   "agents.modelSwitchedSession": "Model switched for this session.",
+  "agents.modelSwitchFailedKept":
+    "Couldn't switch models — the agent kept its current model.",
+  "agents.modelSwitchNotDelivered":
+    "Couldn't switch models — the agent wasn't running a turn to switch.",
+  "agents.modelSwitchPending":
+    "Model switch pending — applies when the current turn finishes.",
   "agents.originFromAcp": "from ACP",
   "agents.originFromAcpConfig": "from ACP config",
   "agents.originFromEnv": "from env",
@@ -3392,6 +3414,7 @@ export const en = {
   "workflows.loadFailed": "Failed to load workflows",
   "workflows.empty": "No workflows yet",
   "workflows.viewSr": "View {name}",
+  "workflows.channelWorkflow": "Channel workflow",
   "workflows.actionsAria": "Workflow actions",
   "workflows.trigger": "Trigger",
   "workflows.triggering": "Triggering…",
@@ -3862,8 +3885,8 @@ export const en = {
   "inbox.reminder.inMinutes": "Reminder in {count}m",
   "inbox.reminder.inHours": "Reminder in {count}h",
   "inbox.reminder.inDays": "Reminder in {count}d",
-  "inbox.type.pullRequest": "Pull request",
-  "inbox.type.issue": "Issue",
+  "inbox.type.pullRequest": "Review",
+  "inbox.type.issue": "Task",
   "inbox.type.projectUpdate": "Project update",
   "inbox.type.dm": "DM",
   "inbox.type.dmFrom": "DM from {name}",
@@ -4130,6 +4153,23 @@ export const en = {
   "projects.empty.noMatchingHint": "Try another owner filter or sort mode.",
   "projects.empty.noPullRequests": "No pull requests yet.",
   "projects.empty.noIssues": "No issues yet.",
+  "projects.empty.noTasks": "No tasks yet.",
+  "projects.empty.noReviews": "No reviews yet.",
+  "projects.loading.tasks": "Loading tasks",
+  "projects.loading.reviews": "Loading reviews",
+  "projects.loading.activityShort": "Loading activity",
+  "projects.loading.repositoryShort": "Loading repository",
+  "projects.phrase.openedThisIn": "opened this in",
+  "projects.phrase.andTaggedIt": "and tagged it",
+  "projects.phrase.toMerge": "to merge",
+  "projects.phrase.into": "into",
+  "projects.phrase.from": "from",
+  "projects.phrase.targeting": "targeting",
+  "projects.copy.taskLink": "Copy task link",
+  "projects.copy.reviewLink": "Copy review link",
+  "projects.table.task": "Task",
+  "projects.table.review": "Review",
+  "projects.table.type": "Type",
   "projects.empty.noRepositories": "No repositories yet.",
   "projects.empty.noActivity": "No activity",
   "projects.empty.noPeople": "No people yet.",
@@ -4210,6 +4250,9 @@ export const en = {
     "Close the branch's pull request before deleting it.",
   "projects.branch.error.noChannelBinding":
     "This repository is not linked to a project channel, so the relay cannot authorize access. The repository owner can link it with: buzz repos bind --id <repo> --channel <channel-uuid>",
+  "projects.gitError.accessRestricted.title": "Repository access restricted",
+  "projects.gitError.accessRestricted.desc":
+    "You need access to the repository's channel before you can clone it.",
   "projects.gitError.accessRequired.title": "Repository access required",
   "projects.gitError.accessRequired.githubDesc":
     "This repository requires GitHub authentication. Buzz currently clones public GitHub repositories without credentials.",

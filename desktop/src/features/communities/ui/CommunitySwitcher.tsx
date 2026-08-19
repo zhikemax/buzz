@@ -40,6 +40,12 @@ import { useActiveCommunityIcon } from "@/features/communities/useCommunityIcons
 import { useT, type TranslateFn } from "@/shared/i18n";
 import { EditCommunityDialog } from "./EditCommunityDialog";
 
+// Community actions is a responsive navigation submenu, not an informational
+// disclosure. Keep its short hover dwell explicit rather than inheriting the
+// shared 500 ms Popover delay intended to prevent incidental inspection UI.
+const PROFILE_MENU_HOVER_OPEN_DELAY_MS = 80;
+const PROFILE_MENU_HOVER_CLOSE_DELAY_MS = 160;
+
 function getConnectionLabel(status: ConnectionState, t: TranslateFn): string {
   switch (status) {
     case "idle":
@@ -139,7 +145,9 @@ export function CommunitySwitcher({
     clearProfileMenuHoverTimer();
     profileMenuHoverTimer.current = window.setTimeout(
       () => setDropdownOpen(nextOpen),
-      nextOpen ? 80 : 160,
+      nextOpen
+        ? PROFILE_MENU_HOVER_OPEN_DELAY_MS
+        : PROFILE_MENU_HOVER_CLOSE_DELAY_MS,
     );
   }
 

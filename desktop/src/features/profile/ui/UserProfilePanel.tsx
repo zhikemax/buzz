@@ -38,6 +38,7 @@ import {
 } from "@/features/agents/ui/personaDialogState";
 import { useChannelsQuery } from "@/features/channels/hooks";
 import { useIdentityArchive } from "@/features/identity-archive/hooks";
+import { useT } from "@/shared/i18n";
 import { usePresenceQuery } from "@/features/presence/hooks";
 import {
   useContactListQuery,
@@ -99,7 +100,6 @@ import { UserProfilePanelFrame } from "@/features/profile/ui/UserProfilePanelFra
 import { getUserProfilePanelHeaderContent } from "@/features/profile/ui/UserProfilePanelHeaderContent";
 import { UserProfileEditAgentDialog } from "@/features/profile/ui/UserProfileEditAgentDialog";
 import { useProfileEditAgentRequest } from "@/features/profile/ui/useProfileEditAgentRequest";
-import { useT } from "@/shared/i18n";
 export type { ProfilePanelTab, ProfilePanelView };
 
 export function UserProfilePanel({
@@ -123,7 +123,6 @@ export function UserProfilePanel({
   transparentChrome = false,
 }: UserProfilePanelProps) {
   const t = useT();
-
   const { globalConfig } = useGlobalAgentConfig();
   const isOverlay = useIsThreadPanelOverlay();
   const isSplitLayout = layout === "split";
@@ -190,14 +189,14 @@ export function UserProfilePanel({
       requestedInstancePubkey &&
       normalizePubkey(pubkey) === normalizePubkey(requestedInstancePubkey),
   );
-
   const personasQuery = usePersonasQuery();
   const managedAgentsQuery = useManagedAgentsQuery({ enabled: true });
-  const { linkedPersonaId, managedAgent, personaInstances } =
+  const { instanceBuckets, linkedPersonaId, managedAgent } =
     useCanonicalManagedAgentProfile({
       currentPubkey,
       managedAgents: managedAgentsQuery.data,
       personaId: persona?.id,
+      preferDirectManagedAgent: true,
       preserveRequestedInstance,
       pubkey,
     });
@@ -401,15 +400,17 @@ export function UserProfilePanel({
     onClose,
     viewerIsOwner,
   });
-
+  const openResolvedPersonaEditor = React.useCallback(() => {
+    if (!resolvedPersona) return false;
+    setPersonaDialogState(
+      editPersonaDialogState(resolvedPersona, t),
+    );
+    return true;
+  }, [resolvedPersona, t]);
   const handleEditAgent = React.useCallback(() => {
-    if (resolvedPersona) {
-      setPersonaDialogState(editPersonaDialogState(resolvedPersona, t));
-      return;
-    }
+    if (openResolvedPersonaEditor()) return;
     setEditAgentOpen(true);
-  }, [resolvedPersona, setEditAgentOpen]);
-
+  }, [openResolvedPersonaEditor, setEditAgentOpen]);
   const { deleteManagedAgentRecord, deleteManagedAgentsForPersona } =
     useProfileAgentDeletion({
       channels: channelsQuery.data,
@@ -476,7 +477,7 @@ export function UserProfilePanel({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t("agents.failedStartAgent"),
+        error instanceof Error ? error.message : "Failed to start agent.",
       );
     }
   }, [createManagedAgentForPersona, resolvedPersona]);
@@ -498,7 +499,7 @@ export function UserProfilePanel({
       toast.error(
         error instanceof Error
           ? error.message
-          : t("agents.failedUpdateStartup"),
+          : "Failed to update startup preference.",
       );
     }
   }, [managedAgent, startOnLaunchMutation.mutateAsync]);
@@ -514,7 +515,7 @@ export function UserProfilePanel({
       onClose();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t("agents.failedDeleteAgent"),
+        error instanceof Error ? error.message : "Failed to delete agent.",
       );
     }
   }, [deleteManagedAgentRecord, managedAgent, onClose]);
@@ -522,7 +523,6 @@ export function UserProfilePanel({
   const handleSubmitPersona = React.useCallback(
     async (input: CreatePersonaInput | UpdatePersonaInput) => {
       await submitProfilePersonaDialog({
-        t,
         createManagedAgentForPersona,
         createPersona: createPersonaMutation.mutateAsync,
         input,
@@ -533,6 +533,7 @@ export function UserProfilePanel({
         },
         previousPersona: resolvedPersona,
         runtimes: acpRuntimesQuery.data ?? [],
+        t,
         updateManagedAgent: updateManagedAgentMutation.mutateAsync,
         updatePersona: updatePersonaMutation.mutateAsync,
       });
@@ -544,20 +545,18 @@ export function UserProfilePanel({
       personasQuery.refetch,
       resolvedPersona,
       acpRuntimesQuery.data,
+      t,
       updateManagedAgentMutation.mutateAsync,
       updatePersonaMutation.mutateAsync,
     ],
   );
 
-  const handleEditPersona = React.useCallback(() => {
-    if (!resolvedPersona) return;
-    setPersonaDialogState(editPersonaDialogState(resolvedPersona, t));
-  }, [resolvedPersona]);
+  const handleEditPersona = openResolvedPersonaEditor;
 
   const handleDuplicatePersona = React.useCallback(() => {
     if (!resolvedPersona) return;
     setPersonaDialogState(duplicatePersonaDialogState(resolvedPersona, t));
-  }, [resolvedPersona]);
+  }, [resolvedPersona, t]);
 
   const handleExportPersona = React.useCallback(() => {
     if (resolvedPersona) {
@@ -582,7 +581,7 @@ export function UserProfilePanel({
         onClose();
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : t("agents.failedDeleteAgent"),
+          error instanceof Error ? error.message : "Failed to delete agent.",
         );
       }
       return;
@@ -616,7 +615,7 @@ export function UserProfilePanel({
         onClose();
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : t("agents.failedDeleteAgent"),
+          error instanceof Error ? error.message : "Failed to delete agent.",
         );
       }
     },
@@ -817,7 +816,7 @@ export function UserProfilePanel({
           isFollowing={isFollowing}
           isOwner={viewerIsOwner}
           isSelf={isSelf}
-          instances={personaInstances}
+          instanceBuckets={instanceBuckets}
           activityAgent={activityAgent}
           managedAgent={managedAgent}
           agentInfoFields={agentInfoFields}
@@ -917,7 +916,7 @@ export function UserProfilePanel({
           ? () => {
               setEditAgentOpen(false);
               setEditAgentFocus(undefined);
-              setPersonaDialogState(editPersonaDialogState(resolvedPersona, t));
+              openResolvedPersonaEditor();
             }
           : undefined
       }

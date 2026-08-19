@@ -13,6 +13,7 @@ import {
 } from "./personaModelDiscoveryStatus";
 import type { PersonaModelOption } from "./agentConfigOptions";
 import { providerRequiresExplicitModel } from "./agentConfigOptions";
+import { resolveModelLabel } from "@/features/agents/lib/formatAgentModelLabel";
 
 export const MODEL_DISCOVERY_LOADING_VALUE = "__model_discovery_loading__";
 
@@ -37,29 +38,12 @@ function isHarnessDefaultModelEntry(model: { id: string }) {
   return model.id.trim().toLowerCase() === "default";
 }
 
-function hasUsableDiscoveredModels(
-  response: AgentModelsResponse | null,
-  provider: string,
-): boolean {
-  if (!response?.supportsSwitching || response.models.length === 0) {
-    return false;
-  }
-  const explicitModels = response.models.filter(
-    (model) => !isHarnessDefaultModelEntry(model),
-  );
-  const harnessDefaultEntry = response.models.find(isHarnessDefaultModelEntry);
-  const hasDefaultRow =
-    !providerRequiresExplicitModel(provider) ||
-    harnessDefaultEntry !== undefined;
-  return explicitModels.length > 0 || hasDefaultRow;
-}
-
 export function getDiscoveredPersonaModelOptions(
   response: AgentModelsResponse | null,
   provider: string,
   t: TranslateFn,
 ): readonly PersonaModelOption[] | null {
-  if (!hasUsableDiscoveredModels(response, provider) || !response) {
+  if (!response?.supportsSwitching || response.models.length === 0) {
     return null;
   }
 
@@ -84,7 +68,11 @@ export function getDiscoveredPersonaModelOptions(
                 ? t("agents.defaultAuto")
                 : agentDefaultModel
                   ? t("settings.agents.defaultModelWithId", {
-                      model: agentDefaultModel,
+                      model: resolveModelLabel(
+                        agentDefaultModel,
+                        null,
+                        provider,
+                      ),
                     })
                   : t("agents.defaultModel"),
           },
@@ -98,7 +86,7 @@ export function getDiscoveredPersonaModelOptions(
     ...defaultModelOption,
     ...explicitModels.map((model) => ({
       id: model.id,
-      label: model.name?.trim() || model.id,
+      label: resolveModelLabel(model.id, model.name, provider),
     })),
   ];
 }
@@ -134,8 +122,9 @@ export function synthesizeEmptyDiscoveryStatus(
 export function isCacheableDiscoveryResponse(
   response: AgentModelsResponse,
   provider: string,
+  t: TranslateFn,
 ): boolean {
-  return hasUsableDiscoveredModels(response, provider);
+  return getDiscoveredPersonaModelOptions(response, provider, t) !== null;
 }
 
 /**
@@ -327,7 +316,7 @@ export function usePersonaModelDiscovery({
           // empty/no-switching result gets the "reopen this screen" warning,
           // and closing → reopening the dialog must re-run discovery so the
           // user's CLI-install/sign-in is actually reflected.
-          if (isCacheableDiscoveryResponse(response, trimmedProvider)) {
+          if (isCacheableDiscoveryResponse(response, trimmedProvider, t)) {
             modelDiscoveryCacheRef.current.set(
               activeModelDiscoveryKey,
               response,

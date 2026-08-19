@@ -13,6 +13,7 @@ import { useTheme } from "@/shared/theme/ThemeProvider";
 import { resolveShikiThemeName } from "@/shared/theme/theme-loader";
 import { useT } from "@/shared/i18n";
 import { copyCodeBlockToClipboard } from "@/shared/lib/codeBlockClipboard";
+import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { useSmoothCorners } from "@/shared/ui/smoothCorners";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -133,6 +134,7 @@ export function MarkdownCodeBlock({
 }
 
 export function SyntaxHighlightedCode({
+  className,
   code,
   language,
   ...props
@@ -214,7 +216,7 @@ export function SyntaxHighlightedCode({
     }
   }, [code, language, shikiTheme, loadedKey]);
 
-  const codeClassName = CODE_BLOCK_CLASS;
+  const codeClassName = cn(CODE_BLOCK_CLASS, className);
 
   if (!tokens) {
     const lines = code.split("\n");

@@ -57,7 +57,7 @@ function isRelayMembershipDeniedError(error: unknown): boolean {
 const STARTER_PERSONA_ANIMATIONS: Record<string, string> = {
   Fizz: "/onboarding/starter-team/fizz.png",
   Honey: "/onboarding/starter-team/honey.png",
-  Bumble: "/onboarding/starter-team/bumble.png",
+  Pollen: "/onboarding/starter-team/pollen.png",
 };
 
 /** Fade duration for the "entering" curtain over the mounting app. */
@@ -208,7 +208,7 @@ export function CommunityOnboardingFlow({
     void listPersonas()
       .then((personas) =>
         setStarterPersonas(
-          ["Fizz", "Honey", "Bumble"].flatMap((name) => {
+          ["Fizz", "Honey", "Pollen"].flatMap((name) => {
             const persona = personas.find(
               (candidate) => candidate.displayName === name,
             );

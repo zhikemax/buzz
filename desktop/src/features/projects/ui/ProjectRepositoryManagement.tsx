@@ -1,13 +1,16 @@
 import * as React from "react";
-import { Check, ShieldCheck } from "lucide-react";
+import { useT } from "@/shared/i18n";
+import { Check, FolderPlus, Link, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
+import { useIsManagedAgent } from "@/features/agent-memory/hooks";
 import { useChannelsQuery } from "@/features/channels/hooks";
 import type { Project, Repository } from "@/features/projects/hooks";
+import { useUsersBatchQuery } from "@/features/profile/hooks";
+import { ownsAuthorAgent } from "@/features/profile/lib/identity";
 import { useAddProjectRepositoryMutation } from "@/features/projects/useAddProjectRepository";
 import { useAttachProjectRepositoryMutation } from "@/features/projects/useAttachProjectRepository";
 import { useBindProjectRepositoryChannelMutation } from "@/features/projects/useBindProjectRepositoryChannel";
-import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -18,15 +21,16 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { AddProjectRepositoryDialog } from "./AddProjectRepositoryDialog";
 import { AttachProjectRepositoryDialog } from "./AttachProjectRepositoryDialog";
-import { ProjectRepositoryPicker } from "./ProjectRepositoryPicker";
 
 export function ProjectRepositoryManagement({
+  compact = false,
   identityPubkey,
   onChange,
   project,
   projects,
   repository,
 }: {
+  compact?: boolean;
   identityPubkey?: string;
   onChange: (repositoryId: string) => void;
   project: Project;
@@ -40,7 +44,24 @@ export function ProjectRepositoryManagement({
   const createMutation = useAddProjectRepositoryMutation();
   const attachMutation = useAttachProjectRepositoryMutation();
   const repairMutation = useBindProjectRepositoryChannelMutation();
-  const canEdit = identityPubkey?.toLowerCase() === project.owner.toLowerCase();
+  const ownerProfileQuery = useUsersBatchQuery([project.owner], {
+    enabled: Boolean(identityPubkey),
+  });
+  const projectOwnerProfile =
+    ownerProfileQuery.data?.profiles[project.owner.toLowerCase()];
+  const projectOwnerIsManaged = useIsManagedAgent(project.owner) === true;
+  const viewerIsProjectOwner =
+    identityPubkey?.toLowerCase() === project.owner.toLowerCase();
+  const viewerOwnsProjectAgent = ownsAuthorAgent(
+    projectOwnerProfile,
+    identityPubkey,
+  );
+  const canEdit =
+    viewerIsProjectOwner || projectOwnerIsManaged || viewerOwnsProjectAgent;
+  const ownerControlAgentPubkey =
+    viewerOwnsProjectAgent && !projectOwnerIsManaged && !viewerIsProjectOwner
+      ? project.owner
+      : undefined;
   const accessChannels = React.useMemo(
     () =>
       (channelsQuery.data ?? []).filter(
@@ -86,11 +107,12 @@ export function ProjectRepositoryManagement({
         channels={accessChannels}
         isCreating={createMutation.isPending}
         onAdd={async (input) => {
-          const result = await createMutation.mutateAsync(input);
+          const result = await createMutation.mutateAsync({
+            ...input,
+            ownerControlAgentPubkey,
+          });
           onChange(result.repository.id);
-          toast.success(
-            t("projects.toast.repoCreated", { name: result.repository.name }),
-          );
+          toast.success(`Repository "${result.repository.name}" created.`);
         }}
         onOpenChange={setCreateOpen}
         open={createOpen}
@@ -100,42 +122,80 @@ export function ProjectRepositoryManagement({
         isAttaching={attachMutation.isPending}
         onAttach={async (candidate) => {
           const result = await attachMutation.mutateAsync({
+            ownerControlAgentPubkey,
             project,
             repository: candidate,
           });
           onChange(result.repository.id);
-          toast.success(
-            t("projects.toast.repoAdded", { name: result.repository.name }),
-          );
+          toast.success(`Repository "${result.repository.name}" added.`);
         }}
         onOpenChange={setAttachOpen}
         open={attachOpen}
         project={project}
         repositories={attachCandidates}
       />
-      <ProjectRepositoryPicker
-        onAttach={canEdit ? () => setAttachOpen(true) : undefined}
-        onChange={onChange}
-        onCreate={canEdit ? () => setCreateOpen(true) : undefined}
-        project={project}
-        repository={repository}
-      />
+      {canEdit ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label={t("projects.repo.add.title")}
+              className={
+                compact
+                  ? "h-6 w-6 shrink-0 rounded-md text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  : "h-7 shrink-0 gap-1.5 rounded-md"
+              }
+              data-testid="add-project-repository"
+              size={compact ? "icon" : "sm"}
+              type="button"
+              variant={compact ? "ghost" : "outline"}
+            >
+              <Plus className={compact ? "h-4 w-4" : "h-3.5 w-3.5"} />
+              {compact ? null : "Add"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem
+              data-testid="create-project-repository"
+              onSelect={() => setCreateOpen(true)}
+            >
+              <FolderPlus className="h-4 w-4" />
+              Create new repository
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              data-testid="attach-project-repository"
+              onSelect={() => setAttachOpen(true)}
+            >
+              <Link className="h-4 w-4" />
+              Select existing repository
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
       {canManageAccess ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              className="h-8 shrink-0 gap-1.5"
+              aria-label="Manage repository access"
+              className={
+                compact
+                  ? "h-6 w-6 shrink-0 rounded-md text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  : "h-7 shrink-0 gap-1.5 rounded-md"
+              }
               disabled={repairMutation.isPending}
-              size="sm"
+              size={compact ? "icon" : "sm"}
               type="button"
-              variant="outline"
+              variant={compact ? "ghost" : "outline"}
             >
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {repairMutation.isPending ? "Updating…" : "Access"}
+              <ShieldCheck className={compact ? "h-4 w-4" : "h-3.5 w-3.5"} />
+              {compact
+                ? null
+                : repairMutation.isPending
+                  ? "Updating…"
+                  : "Access"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-56">
-            <DropdownMenuLabel>Repository access channel</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("projects.create.dialog.accessChannel")}</DropdownMenuLabel>
             {accessChannels.map((channel) => (
               <DropdownMenuItem
                 className="justify-between gap-4"
@@ -149,16 +209,14 @@ export function ProjectRepositoryManagement({
                     })
                     .then(() => {
                       toast.success(
-                        t("projects.repo.management.accessSet", {
-                          channel: channel.name,
-                        }),
+                        `Repository access set to #${channel.name}.`,
                       );
                     })
                     .catch((error: unknown) => {
                       toast.error(
                         error instanceof Error
                           ? error.message
-                          : t("projects.repo.management.accessFailed"),
+                          : "Failed to update repository access.",
                       );
                     });
                 }}

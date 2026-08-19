@@ -1,9 +1,10 @@
-import { Activity, Bot, FolderGit2, Inbox, Zap } from "lucide-react";
+import { Activity, Bot, Folders, Inbox, Zap } from "lucide-react";
+import { useT } from "@/shared/i18n";
 
 import { TopbarSearch } from "@/features/search/ui/TopbarSearch";
+import { SidebarProjectsSection } from "@/features/sidebar/ui/SidebarProjectsSection";
 import { FeatureGate } from "@/shared/features";
 import type { Channel, SearchHit } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -97,111 +98,92 @@ export function AppSidebarPrimaryMenu({
   selectedView,
 }: AppSidebarPrimaryMenuProps) {
   const t = useT();
-  const inboxLabel = t("nav.inbox");
-  const pulseLabel = t("nav.pulse");
-  const projectsLabel = t("nav.projects");
-  const agentsLabel = t("nav.agents");
-  const workflowsLabel = t("nav.workflows");
-
   return (
-    <SidebarHeader
-      className="relative z-40 cursor-default select-none px-2 pb-0 pt-0"
-      data-tauri-drag-region
-      data-testid="sidebar-primary-menu"
-    >
-      <SidebarMenu className="pb-2">
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            className="data-[active=true]:font-normal"
-            isActive={selectedView === "home"}
-            onClick={onSelectHome}
-            tooltip={inboxLabel}
-            type="button"
-          >
-            <Inbox
-              className={
-                selectedView !== "home" ? "h-4 w-4 opacity-80" : "h-4 w-4"
-              }
-            />
-            <SidebarMenuLabel
-              className={selectedView !== "home" ? "opacity-80" : undefined}
-            >
-              {inboxLabel}
-            </SidebarMenuLabel>
-          </SidebarMenuButton>
-          {homeBadgeCount > 0 ? (
-            <SidebarMenuBadge
-              className="right-2 rounded-full bg-primary/15 px-1.5 text-2xs text-primary peer-data-[active=true]/menu-button:bg-sidebar-active-foreground/20 peer-data-[active=true]/menu-button:text-sidebar-active-foreground"
-              data-testid="sidebar-home-count"
-            >
-              {Math.min(homeBadgeCount, 99)}
-            </SidebarMenuBadge>
-          ) : null}
-        </SidebarMenuItem>
-        <FeatureGate feature="pulse">
+    <>
+      <SidebarHeader
+        className="relative z-40 cursor-default select-none px-2 pb-0 pt-0"
+        data-tauri-drag-region
+        data-testid="sidebar-primary-menu"
+      >
+        <SidebarMenu className="sidebar-primary-menu pb-2">
           <SidebarMenuItem>
             <SidebarMenuButton
-              data-testid="open-pulse-view"
-              isActive={selectedView === "pulse"}
-              onClick={onSelectPulse}
-              tooltip={pulseLabel}
+              className="data-[active=true]:font-normal"
+              isActive={selectedView === "home"}
+              onClick={onSelectHome}
+              tooltip={t("nav.inbox")}
               type="button"
             >
-              <Activity className="h-4 w-4" />
-              <SidebarMenuLabel>{pulseLabel}</SidebarMenuLabel>
+              <Inbox className="h-4 w-4" />
+              <SidebarMenuLabel>{t("nav.inbox")}</SidebarMenuLabel>
             </SidebarMenuButton>
+            {homeBadgeCount > 0 ? (
+              <SidebarMenuBadge
+                className="right-2 rounded-full bg-primary/15 px-1.5 text-2xs text-primary peer-data-[active=true]/menu-button:bg-sidebar-active-foreground/20 peer-data-[active=true]/menu-button:text-sidebar-active-foreground"
+                data-testid="sidebar-home-count"
+              >
+                {Math.min(homeBadgeCount, 99)}
+              </SidebarMenuBadge>
+            ) : null}
           </SidebarMenuItem>
-        </FeatureGate>
-        <FeatureGate feature="projects">
+          <FeatureGate feature="pulse">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                data-testid="open-pulse-view"
+                isActive={selectedView === "pulse"}
+                onClick={onSelectPulse}
+                tooltip={t("nav.pulse")}
+                type="button"
+              >
+                <Activity className="h-4 w-4" />
+                <SidebarMenuLabel>{t("nav.pulse")}</SidebarMenuLabel>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </FeatureGate>
+          <FeatureGate feature="projects">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                data-testid="open-projects-view"
+                isActive={selectedView === "projects"}
+                onClick={onSelectProjects}
+                tooltip={t("nav.projects")}
+                type="button"
+              >
+                <Folders className="h-4 w-4" />
+                <SidebarMenuLabel>{t("nav.projects")}</SidebarMenuLabel>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </FeatureGate>
           <SidebarMenuItem>
             <SidebarMenuButton
-              data-testid="open-projects-view"
-              isActive={selectedView === "projects"}
-              onClick={onSelectProjects}
-              tooltip={projectsLabel}
+              className="data-[active=true]:font-normal"
+              data-testid="open-agents-view"
+              isActive={selectedView === "agents"}
+              onClick={onSelectAgents}
+              tooltip={t("nav.agents")}
               type="button"
             >
-              <FolderGit2 className="h-4 w-4" />
-              <SidebarMenuLabel>{projectsLabel}</SidebarMenuLabel>
+              <Bot className="h-4 w-4" />
+              <SidebarMenuLabel>{t("nav.agents")}</SidebarMenuLabel>
             </SidebarMenuButton>
           </SidebarMenuItem>
-        </FeatureGate>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            className="data-[active=true]:font-normal"
-            data-testid="open-agents-view"
-            isActive={selectedView === "agents"}
-            onClick={onSelectAgents}
-            tooltip={agentsLabel}
-            type="button"
-          >
-            <Bot
-              className={
-                selectedView !== "agents" ? "h-4 w-4 opacity-80" : "h-4 w-4"
-              }
-            />
-            <SidebarMenuLabel
-              className={selectedView !== "agents" ? "opacity-80" : undefined}
-            >
-              {agentsLabel}
-            </SidebarMenuLabel>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <FeatureGate feature="workflows">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              data-testid="open-workflows-view"
-              isActive={selectedView === "workflows"}
-              onClick={onSelectWorkflows}
-              tooltip={workflowsLabel}
-              type="button"
-            >
-              <Zap className="h-4 w-4" />
-              <SidebarMenuLabel>{workflowsLabel}</SidebarMenuLabel>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </FeatureGate>
-      </SidebarMenu>
-    </SidebarHeader>
+          <FeatureGate feature="workflows">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                data-testid="open-workflows-view"
+                isActive={selectedView === "workflows"}
+                onClick={onSelectWorkflows}
+                tooltip={t("nav.workflows")}
+                type="button"
+              >
+                <Zap className="h-4 w-4" />
+                <SidebarMenuLabel>{t("nav.workflows")}</SidebarMenuLabel>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </FeatureGate>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarProjectsSection />
+    </>
   );
 }

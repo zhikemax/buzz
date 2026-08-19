@@ -15,7 +15,6 @@ import {
   useAgentConfigSurface,
   managedAgentsQueryKey,
 } from "@/features/agents/hooks";
-import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -24,6 +23,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
+import { resolveModelLabel } from "@/features/agents/lib/formatAgentModelLabel";
+import { useT } from "@/shared/i18n";
 
 export function ModelPicker({
   agent,
@@ -84,15 +85,19 @@ export function ModelPicker({
   );
 
   const currentValue = agent.model ?? modelsData?.agentDefaultModel ?? "";
-  const displayLabel =
-    agent.model ??
-    (modelsData?.agentDefaultModel
+  const displayLabel = agent.model
+    ? resolveModelLabel(agent.model, null, agent.provider)
+    : modelsData?.agentDefaultModel
       ? t("agents.modelDefaultSuffix", {
-          model: modelsData.agentDefaultModel,
+          model: resolveModelLabel(
+            modelsData.agentDefaultModel,
+            null,
+            agent.provider,
+          ),
         })
       : hasRequestedModels && loading
         ? t("agents.loadingEllipsis")
-        : t("agents.modelAuto"));
+        : t("agents.modelAuto");
 
   // Provenance label shown only for post-spawn agents where the model origin
   // is known from the config surface and the source is not a user-explicit
@@ -112,26 +117,39 @@ export function ModelPicker({
   }, [configSurface, t]);
 
   // Send a live `switch_model` frame to each channel the agent is working in
-  // and wait for the harness to acknowledge. Any single `unsupported_model`
-  // result rejects the whole pick immediately; all other statuses must arrive
-  // from every channel before resolving success.
+  // and wait for the harness to acknowledge. A single `unsupported_model`
+  // (model unavailable) or `failure` (adapter refused) result rejects the whole
+  // pick immediately. The busy-path `sent` ack is provisional (the adapter
+  // isn't consulted until the requeued session); success is confirmed only by a
+  // real positive terminal frame from every channel, and if none arrives before
+  // the timeout the pick resolves `"pending"` (accepted, apply deferred).
   const sendLiveSwitch = React.useCallback(
     (modelId: string) => {
       const channelIds = activeTurns.map((turn) => turn.channelId);
+      // Opaque per-pick correlator. The harness echoes it on the immediate ack
+      // and the late terminal frame, so a five-minute reconnect replay of an
+      // earlier pick's result cannot settle this one.
+      const requestId = crypto.randomUUID();
       return awaitLiveSwitchOutcome({
-        channelCount: channelIds.length,
-        modelId,
+        requestId,
+        channelIds,
         subscribe: (listener) =>
           subscribeControlResults(agent.pubkey, listener),
         sendSwitches: async () => {
           await Promise.all(
             channelIds.map((channelId) =>
-              switchManagedAgentModel(agent.pubkey, channelId, modelId),
+              switchManagedAgentModel(
+                agent.pubkey,
+                channelId,
+                modelId,
+                requestId,
+              ),
             ),
           );
         },
-        // No reply in time: treat as sent. The override still rides the
-        // requeued/next session; we just can't confirm synchronously.
+        // No positive terminal in time: resolve `"pending"`. The override still
+        // rides the requeued/next session; we just can't confirm synchronously,
+        // and must not claim a success that hasn't happened.
         scheduleTimeout: (onTimeout) => {
           const timeout = window.setTimeout(onTimeout, 8_000);
           return () => window.clearTimeout(timeout);
@@ -149,6 +167,25 @@ export function ModelPicker({
         const outcome = await sendLiveSwitch(modelId);
         if (outcome === "unsupported") {
           toast.error(t("agents.modelUnavailable"));
+          return;
+        }
+        if (outcome === "failed") {
+          toast.error(t("agents.modelSwitchFailedKept"));
+          return;
+        }
+        if (outcome === "not_delivered") {
+          // The switch never reached a session: the turn was already ending, or
+          // no active turn remained by the time the harness received it. Nothing
+          // was applied and nothing rides a later session — tell the truth.
+          toast.error(t("agents.modelSwitchNotDelivered"));
+          return;
+        }
+        if (outcome === "pending") {
+          // The switch was accepted but its apply is deferred to the next
+          // session (the agent is mid-turn) and didn't confirm before the
+          // fallback timeout. Tell the truth instead of claiming success.
+          toast.info(t("agents.modelSwitchPending"));
+          onModelChanged?.();
           return;
         }
         toast.success(t("agents.modelSwitchedSession"));
@@ -225,7 +262,9 @@ export function ModelPicker({
             <div className="px-3 py-2 text-sm text-muted-foreground">
               {agent.model ? (
                 <>
-                  <p className="font-medium text-foreground">{agent.model}</p>
+                  <p className="font-medium text-foreground">
+                    {resolveModelLabel(agent.model, null, agent.provider)}
+                  </p>
                   <p className="mt-0.5 text-xs">
                     {t("agents.runtimeNoModelSwitch")}
                   </p>
@@ -241,7 +280,7 @@ export function ModelPicker({
             >
               {modelsData.models.map((model) => (
                 <DropdownMenuRadioItem key={model.id} value={model.id}>
-                  {model.name ?? model.id}
+                  {resolveModelLabel(model.id, model.name, agent.provider)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -249,9 +288,7 @@ export function ModelPicker({
         </DropdownMenuContent>
       </DropdownMenu>
       {needsRestart ? (
-        <span className="text-2xs text-warning">
-          {t("agents.restartToApply")}
-        </span>
+        <span className="text-2xs text-warning">{t("agents.restartToApply")}</span>
       ) : null}
     </span>
   );

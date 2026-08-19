@@ -106,7 +106,15 @@ function behaviorEntry(
 export function editPersonaDialogState(
   persona: AgentPersona,
   t: TranslateFn,
+  accessSource?: Pick<AgentPersona, "respondTo" | "respondToAllowlist">,
 ): PersonaDialogState {
+  const behaviorSource = accessSource
+    ? {
+        ...persona,
+        respondTo: accessSource.respondTo,
+        respondToAllowlist: accessSource.respondToAllowlist,
+      }
+    : persona;
   return {
     title: t("agents.editTitle"),
     description: "",
@@ -125,7 +133,7 @@ export function editPersonaDialogState(
       // the dialog must therefore round-trip the existing values.)
       namePool: persona.namePool ?? [],
       envVars: persona.envVars ?? {},
-      ...behaviorEntry(persona),
+      ...behaviorEntry(behaviorSource),
     },
   };
 }

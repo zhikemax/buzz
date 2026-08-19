@@ -1,3 +1,5 @@
+import type * as React from "react";
+import { useT } from "@/shared/i18n";
 import type { ThreadPanelLayoutProps } from "@/features/channels/lib/threadPanelLayout";
 import {
   THREAD_PANEL_COLUMN_CLASS,
@@ -6,7 +8,6 @@ import {
 } from "@/features/messages/lib/messageThreadPanelLayout";
 import { useEscapeKey } from "@/shared/hooks/useEscapeKey";
 import { useIsThreadPanelOverlay } from "@/shared/hooks/use-mobile";
-import { useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import {
   AuxiliaryPanel,
@@ -16,6 +17,64 @@ import {
   AuxiliaryPanelTitle,
 } from "@/shared/layout/AuxiliaryPanel";
 import { Skeleton } from "@/shared/ui/skeleton";
+
+/** Shared title row so the skeleton and loaded panel keep the same chrome. */
+export function MessageThreadPanelHeader({
+  headerLeading,
+  headerTitle,
+  headerTitleAriaLabel,
+  isFocusMode,
+  isSinglePanelView,
+  onClose,
+  onHeaderTitleClick,
+  showBackButton,
+}: {
+  headerLeading?: React.ReactNode;
+  headerTitle?: string;
+  headerTitleAriaLabel?: string;
+  isFocusMode: boolean;
+  isSinglePanelView: boolean;
+  onClose: () => void;
+  onHeaderTitleClick?: () => void;
+  showBackButton?: boolean;
+}) {
+  const t = useT();
+  const resolvedTitle = headerTitle ?? t("msg.thread");
+  const openTitleLabel = t("msg.openTitle", { title: resolvedTitle });
+  const title = onHeaderTitleClick ? (
+    <button
+      aria-label={headerTitleAriaLabel ?? openTitleLabel}
+      className="min-w-0 max-w-full truncate text-left hover:underline"
+      data-testid="message-thread-open-channel"
+      onClick={onHeaderTitleClick}
+      title={headerTitleAriaLabel ?? openTitleLabel}
+      type="button"
+    >
+      {resolvedTitle}
+    </button>
+  ) : (
+    resolvedTitle
+  );
+
+  return (
+    <AuxiliaryPanelHeader backdrop>
+      <AuxiliaryPanelHeaderGroup
+        backButtonAriaLabel={t("msg.backToConversation")}
+        backButtonTestId="message-thread-back"
+        leading={headerLeading}
+        // Focus drawers fill width via isSinglePanelView but use the scrim to go
+        // back, so they omit this control. The narrow single-column view keeps it.
+        onBack={
+          (showBackButton ?? (isSinglePanelView && !isFocusMode))
+            ? onClose
+            : undefined
+        }
+      >
+        <AuxiliaryPanelTitle>{title}</AuxiliaryPanelTitle>
+      </AuxiliaryPanelHeaderGroup>
+    </AuxiliaryPanelHeader>
+  );
+}
 
 type MessageThreadPanelSkeletonProps = ThreadPanelLayoutProps & {
   onClose: () => void;
@@ -96,30 +155,28 @@ function ThreadComposerSkeleton({
 
 /** Loading state for the thread panel, in every layout the real panel supports. */
 export function MessageThreadPanelSkeleton({
+  canResetWidth,
   columnMaxWidthPx,
+  enterMotion,
   headerLeading,
+  headerTitle,
+  headerTitleAriaLabel,
   isFocusMode,
   isSinglePanelView = false,
   layout = "standalone",
   onClose,
+  onHeaderTitleClick,
+  onResetWidth,
+  onResizeStart,
+  showBackButton,
+  splitPaneClamp,
+  testId = "message-thread-panel",
   widthPx,
   transparentChrome = false,
 }: MessageThreadPanelSkeletonProps) {
-  const t = useT();
   const isOverlay = useIsThreadPanelOverlay();
   const hasConstrainedColumn = columnMaxWidthPx != null;
   useEscapeKey(onClose, isOverlay || isSinglePanelView || isFocusMode);
-
-  const threadHeaderContent = (
-    <AuxiliaryPanelHeaderGroup
-      backButtonAriaLabel={t("msg.backToConversation")}
-      // Matches the loaded panel's header so it doesn't shift on resolve.
-      leading={headerLeading}
-      onBack={isSinglePanelView && !isFocusMode ? onClose : undefined}
-    >
-      <AuxiliaryPanelTitle>{t("msg.thread")}</AuxiliaryPanelTitle>
-    </AuxiliaryPanelHeaderGroup>
-  );
 
   const threadBody = (
     <AuxiliaryPanelBody
@@ -158,17 +215,29 @@ export function MessageThreadPanelSkeleton({
 
   return (
     <AuxiliaryPanel
+      canResetWidth={canResetWidth}
       className="relative"
-      // See `MessageThreadPanel`: the focus drawer owns the slide.
-      enterMotion={!isFocusMode}
+      enterMotion={enterMotion ?? !isFocusMode}
       footer={<ThreadComposerSkeleton columnMaxWidthPx={columnMaxWidthPx} />}
       header={
-        <AuxiliaryPanelHeader>{threadHeaderContent}</AuxiliaryPanelHeader>
+        <MessageThreadPanelHeader
+          headerLeading={headerLeading}
+          headerTitle={headerTitle}
+          headerTitleAriaLabel={headerTitleAriaLabel}
+          isFocusMode={isFocusMode}
+          isSinglePanelView={isSinglePanelView}
+          onClose={onClose}
+          onHeaderTitleClick={onHeaderTitleClick}
+          showBackButton={showBackButton}
+        />
       }
       isSinglePanelView={isSinglePanelView}
       layout={layout}
       onClose={onClose}
-      testId="message-thread-panel"
+      onResetWidth={onResetWidth}
+      onResizeStart={onResizeStart}
+      splitPaneClamp={splitPaneClamp}
+      testId={testId}
       transparentChrome={transparentChrome}
       widthPx={widthPx}
     >

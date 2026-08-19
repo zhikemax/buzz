@@ -22,7 +22,6 @@ import { ProfileAvatar } from "@/features/profile/ui/ProfileAvatar";
 import { PresenceDot } from "@/features/presence/ui/PresenceBadge";
 import {
   agentCommunityAvailability,
-  localizeAgentCommunityAvailability,
   MANAGED_AGENT_PAIR_ACTION_LABEL_KEYS,
   type ManagedAgentPairAction,
 } from "@/features/agents/managedAgentRuntimeStatus";
@@ -220,36 +219,36 @@ export function MembersSidebarMemberCard({
           </div>
         )}
         {managedAgentRuntime || managedAgent ? (
-          <Badge
-            className="mt-1 normal-case tracking-normal"
-            data-testid={`sidebar-managed-agent-status-${member.pubkey}`}
-            variant={
-              managedAgentRuntime
-                ? agentCommunityAvailability(managedAgentRuntime) === "Here"
-                  ? "default"
-                  : "secondary"
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <Badge
+              className="normal-case tracking-normal"
+              data-testid={`sidebar-managed-agent-status-${member.pubkey}`}
+              variant={
+                managedAgentRuntime
+                  ? agentCommunityAvailability(managedAgentRuntime) === "Here"
+                    ? "default"
+                    : "secondary"
+                  : managedAgent && isManagedAgentActive(managedAgent)
+                    ? "default"
+                    : "secondary"
+              }
+            >
+              {managedAgentRuntime
+                ? agentCommunityAvailability(managedAgentRuntime)
                 : managedAgent && isManagedAgentActive(managedAgent)
-                  ? "default"
-                  : "secondary"
-            }
-          >
-            {managedAgentRuntime
-              ? localizeAgentCommunityAvailability(
-                  agentCommunityAvailability(managedAgentRuntime),
-                  t,
-                )
-              : managedAgent && isManagedAgentActive(managedAgent)
-                ? t("agents.statusRunning")
-                : t("agents.statusStopped")}
-          </Badge>
-        ) : null}
-        {managedAgent ? (
-          <span
-            className="sr-only"
-            data-testid={`sidebar-managed-agent-respond-to-${member.pubkey}`}
-          >
-            {formatRespondToLabel(managedAgent, t)}
-          </span>
+                  ? t("agents.statusRunning")
+                  : t("agents.statusStopped")}
+            </Badge>
+            {managedAgent ? (
+              <Badge
+                className="normal-case tracking-normal"
+                data-testid={`sidebar-managed-agent-respond-to-${member.pubkey}`}
+                variant="outline"
+              >
+                {formatRespondToLabel(managedAgent, t)}
+              </Badge>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </div>

@@ -1,4 +1,7 @@
-import { formatAgentModelLabel } from "./formatAgentModelLabel";
+import {
+  formatAgentModelLabel,
+  resolveModelLabel,
+} from "./formatAgentModelLabel";
 import type { ManagedAgent } from "@/shared/api/types";
 import type { TranslateFn } from "@/shared/i18n";
 
@@ -20,8 +23,10 @@ import type { TranslateFn } from "@/shared/i18n";
  * than falling through to "inherited" for lack of an instance.
  */
 export function resolveAgentCardModelLabel(input: {
-  agent: Pick<ManagedAgent, "modelSource" | "model"> | undefined;
+  agent: Pick<ManagedAgent, "modelSource" | "model" | "provider"> | undefined;
   personaModel: string | null | undefined;
+  /** Inference provider for the persona/agent — threads provider-qualified label lookup. */
+  provider?: string | null | undefined;
   defaultModel: string;
   t: TranslateFn;
 }): string {
@@ -29,23 +34,34 @@ export function resolveAgentCardModelLabel(input: {
     const isInherited =
       !input.agent.modelSource || input.agent.modelSource === "global";
     if (isInherited) {
-      return formatDefaultModelLabel(input.defaultModel, input.t);
+      return formatDefaultModelLabel(
+        input.defaultModel,
+        input.t,
+        input.agent.provider,
+      );
     }
     return input.agent.model?.trim()
-      ? formatAgentModelLabel(input.agent.model)
-      : formatDefaultModelLabel(input.defaultModel, input.t);
+      ? formatAgentModelLabel(input.agent.model, input.agent.provider)
+      : formatDefaultModelLabel(
+          input.defaultModel,
+          input.t,
+          input.agent.provider,
+        );
   }
   return input.personaModel?.trim()
-    ? formatAgentModelLabel(input.personaModel)
-    : formatDefaultModelLabel(input.defaultModel, input.t);
+    ? formatAgentModelLabel(input.personaModel, input.provider)
+    : formatDefaultModelLabel(input.defaultModel, input.t, input.provider);
 }
 
 export function formatDefaultModelLabel(
   defaultModel: string,
   t: TranslateFn,
+  provider?: string | null | undefined,
 ) {
   const model = defaultModel.trim();
   return model
-    ? t("settings.agents.defaultModelWithId", { model })
+    ? t("settings.agents.defaultModelWithId", {
+        model: resolveModelLabel(model, undefined, provider),
+      })
     : t("agents.defaultModel");
 }
