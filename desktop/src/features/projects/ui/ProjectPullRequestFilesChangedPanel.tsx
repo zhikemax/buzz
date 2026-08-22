@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
-import { useT } from "@/shared/i18n";
 
 import {
   type ProjectPullRequest,
@@ -40,6 +39,7 @@ import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import { cn } from "@/shared/lib/cn";
 import type { ProjectRepoDiff, ProjectRepoDiffFile } from "@/shared/api/types";
+import { BuzzLoadingState } from "@/shared/ui/BuzzLoadingState";
 import { PROJECT_DETAIL_PANEL_CLASS } from "./projectPanelStyles";
 import { ProjectPullRequestInlineCommentThread } from "./ProjectPullRequestInlineComments";
 
@@ -453,7 +453,6 @@ function DiffPreview({
   focusedAnchor?: ProjectPullRequestCommentAnchor | null;
   inlineComments?: InlineCommentControls;
 }) {
-  const t = useT();
   const rows = diffRows(file);
   const focusedRowRef = React.useRef<HTMLDivElement | null>(null);
   const [highlightedAnchor, setHighlightedAnchor] =
@@ -558,7 +557,7 @@ function DiffPreview({
                     )}
                     data-testid="project-diff-add-comment"
                     onClick={() => inlineComments.onStart(anchor)}
-                    title={t("projects.pr.files.addLineComment")}
+                    title="Add line comment"
                     type="button"
                   >
                     <MessageSquarePlus className="h-3.5 w-3.5" />
@@ -692,7 +691,7 @@ export function ProjectPullRequestFilesChangedPanel({
       mediaTags?: string[][],
       decision?: "request-changes",
     ) => {
-      if (!pullRequest) throw new Error("No pull request selected.");
+      if (!pullRequest) throw new Error("No review selected.");
       try {
         await postComment({
           anchor,
@@ -728,7 +727,7 @@ export function ProjectPullRequestFilesChangedPanel({
       focusedAnchor={focusedAnchor}
       headerLabel={
         pullRequest
-          ? `${pullRequest.title} · ${pullRequest.commit?.slice(0, 7) ?? "PR"}`
+          ? `${pullRequest.title} · ${pullRequest.commit?.slice(0, 7) ?? "Review"}`
           : ""
       }
       inlineComments={
@@ -750,14 +749,16 @@ export function ProjectPullRequestFilesChangedPanel({
           : undefined
       }
       isLoading={isLoading}
-      subjectLabel="pull request"
+      subjectLabel="review"
     />
   );
 }
 
 export function ProjectDiffFilesPanel({
+  className,
   error,
   diff,
+  fileTreeClassName,
   isLoading,
   embedded = false,
   focusedAnchor,
@@ -765,6 +766,10 @@ export function ProjectDiffFilesPanel({
   inlineComments,
   subjectLabel,
 }: {
+  /** Extra classes for the file-tree/diff grid container. */
+  className?: string;
+  /** Overrides the file tree's default `max-h-96` cap, e.g. for full-height layouts. */
+  fileTreeClassName?: string;
   error: unknown;
   diff: ProjectRepoDiff | null | undefined;
   isLoading: boolean;
@@ -775,7 +780,6 @@ export function ProjectDiffFilesPanel({
   inlineComments?: InlineCommentControls;
   subjectLabel: string;
 }) {
-  const t = useT();
   const outerBorderClass = embedded ? "" : PROJECT_DETAIL_PANEL_CLASS;
   const [query, setQuery] = React.useState("");
   const [selectedPath, setSelectedPath] = React.useState<string | null>(null);
@@ -816,18 +820,11 @@ export function ProjectDiffFilesPanel({
     }
   }, [filteredFiles, selectedPath]);
 
-  if (isLoading) {
-    return (
-      <div
-        className={cn("p-4 text-sm text-muted-foreground", outerBorderClass)}
-        data-project-detail-panel={embedded ? undefined : true}
-      >
-        {t("projects.pr.files.loading")}
-      </div>
-    );
+  if (isLoading && !diff) {
+    return <BuzzLoadingState label="Loading changed files" />;
   }
 
-  if (error) {
+  if (error && !diff) {
     const message = errorMessage(error);
     return (
       <div
@@ -866,6 +863,7 @@ export function ProjectDiffFilesPanel({
       className={cn(
         "grid min-h-0 overflow-hidden lg:grid-cols-[17rem_minmax(0,1fr)]",
         outerBorderClass,
+        className,
       )}
       data-project-detail-panel={embedded ? undefined : true}
     >
@@ -880,12 +878,17 @@ export function ProjectDiffFilesPanel({
             <input
               className="min-w-0 flex-1 bg-transparent text-foreground outline-hidden placeholder:text-muted-foreground"
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder={t("projects.pr.files.filterPlaceholder")}
+              placeholder="Filter files…"
               value={query}
             />
           </label>
         </div>
-        <nav className="max-h-96 overflow-auto border-border/50 border-t py-1">
+        <nav
+          className={cn(
+            "max-h-96 overflow-auto border-border/50 border-t py-1",
+            fileTreeClassName,
+          )}
+        >
           <FileTreeItems
             node={fileTree}
             onSelect={setSelectedPath}
@@ -943,7 +946,7 @@ export function ProjectDiffFilesPanel({
             </article>
           ) : (
             <div className="border border-border/60 bg-background/45 p-4 text-sm text-muted-foreground">
-              {t("projects.pr.files.noMatch")}
+              No files match this filter.
             </div>
           )}
         </div>

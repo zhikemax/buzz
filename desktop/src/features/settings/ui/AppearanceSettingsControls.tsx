@@ -1,6 +1,7 @@
+import * as React from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ChevronDown, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import {
   setThreadViewMode,
   useThreadViewMode,
@@ -15,15 +16,20 @@ import {
   type LinkPreviewStyle,
 } from "@/shared/lib/linkPreviewStylePreference";
 import { isLinuxPlatform } from "@/shared/lib/platform";
+import type { ResolvedLinkPreview } from "@/shared/lib/useResolvedLinkPreviews";
+import { LinkPreviewAttachmentPresentation } from "@/shared/ui/link-preview-attachment";
+import type { LinkPreviewImageLightboxProps } from "@/shared/ui/rich-link-preview-attachment";
 import {
   previewConversationDensity,
   setConversationDensity,
   useConversationDensity,
+  type ConversationDensity,
 } from "@/shared/lib/conversationDensityPreference";
 import {
   previewFontSize,
   setFontSize,
   useFontSize,
+  type FontSize,
 } from "@/shared/lib/fontSizePreference";
 import {
   ACCENT_COLORS,
@@ -34,23 +40,13 @@ import {
   useTheme,
 } from "@/shared/theme/ThemeProvider";
 
-import { Button } from "@/shared/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
 import { Switch } from "@/shared/ui/switch";
 import { SettingsOptionRow } from "./SettingsOptionGroup";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
-import { useT, type TranslateFn } from "@/shared/i18n";
 
 /** Buzz navigation can use either its production tint or a stronger tab. */
 export function ProminentActiveTabSetting() {
   const { prominentActiveTab, setProminentActiveTab } = useTheme();
-  const t = useT();
 
   return (
     <SettingsOptionRow data-testid="prominent-active-tab-row">
@@ -59,13 +55,13 @@ export function ProminentActiveTabSetting() {
           className="text-sm font-medium"
           htmlFor="prominent-active-tab-switch"
         >
-          {t("settings.appearance.prominentActiveTab")}
+          Prominent active tab
         </label>
         <p
           className="text-sm font-normal text-muted-foreground/70"
           data-settings-subcopy
         >
-          {t("settings.appearance.prominentActiveTabHint")}
+          Give the selected navigation item a higher-contrast background.
         </p>
       </div>
       <Switch
@@ -78,36 +74,58 @@ export function ProminentActiveTabSetting() {
   );
 }
 
-function linkPreviewStyleOptions(t: TranslateFn) {
-  return [
-    {
-      value: "compact" as const,
-      label: t("settings.appearance.linkPreviewCompact"),
-      description: t("settings.appearance.linkPreviewCompactDesc"),
-    },
-    {
-      value: "rich" as const,
-      label: t("settings.appearance.linkPreviewRich"),
-      description: t("settings.appearance.linkPreviewRichDesc"),
-    },
-  ];
-}
+const LINK_PREVIEW_STYLE_OPTIONS: {
+  value: LinkPreviewStyle;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "compact",
+    label: "Compact",
+    description: "Small cards with a thumbnail",
+  },
+  {
+    value: "rich",
+    label: "Rich",
+    description: "Large previews with images and descriptions",
+  },
+];
 
-function conversationDensityOptions(t: TranslateFn) {
-  return [
-    { value: "compact" as const, label: t("settings.appearance.densityCompact") },
-    { value: "comfortable" as const, label: t("settings.appearance.densityComfy") },
-    { value: "spacious" as const, label: t("settings.appearance.densitySpacious") },
-  ];
-}
+const CONVERSATION_DENSITY_OPTIONS: readonly {
+  value: ConversationDensity;
+  label: string;
+}[] = [
+  {
+    value: "compact",
+    label: "Compact",
+  },
+  {
+    value: "comfortable",
+    label: "Comfy",
+  },
+  {
+    value: "spacious",
+    label: "Spacious",
+  },
+];
 
-function fontSizeOptions(t: TranslateFn) {
-  return [
-    { value: "smaller" as const, label: t("settings.appearance.fontSizeSmaller") },
-    { value: "default" as const, label: t("settings.appearance.fontSizeDefault") },
-    { value: "larger" as const, label: t("settings.appearance.fontSizeLarger") },
-  ];
-}
+const FONT_SIZE_OPTIONS: readonly {
+  value: FontSize;
+  label: string;
+}[] = [
+  {
+    value: "smaller",
+    label: "Smaller",
+  },
+  {
+    value: "default",
+    label: "Default",
+  },
+  {
+    value: "larger",
+    label: "Larger",
+  },
+];
 
 function ConversationDensityPreviewMessage({
   avatar,
@@ -143,7 +161,6 @@ function ConversationDensityPreviewMessage({
 }
 
 function ConversationPreview() {
-  const t = useT();
   return (
     <div className="px-4 py-3" data-testid="conversation-preview">
       <div
@@ -153,7 +170,7 @@ function ConversationPreview() {
       >
         <span className="absolute right-3.5 top-3 inline-flex items-center gap-1 text-2xs font-medium text-muted-foreground/55">
           <Eye aria-hidden="true" className="size-3" />
-          {t("settings.appearance.preview")}
+          Preview
         </span>
         <div className="p-4" data-testid="conversation-preview-content">
           <ConversationDensityPreviewMessage
@@ -184,7 +201,6 @@ function ConversationPreview() {
 
 /** App-wide type sizing and conversation-specific spacing controls. */
 export function ConversationDisplaySettings() {
-  const t = useT();
   const density = useConversationDensity();
   const fontSize = useFontSize();
 
@@ -192,44 +208,42 @@ export function ConversationDisplaySettings() {
     <div data-testid="conversation-display-group">
       <SettingsOptionRow data-testid="font-size-row">
         <div className="min-w-0">
-          <p className="text-sm font-medium">{t("settings.appearance.fontSize")}</p>
+          <p className="text-sm font-medium">Font size</p>
           <p
             className="text-sm font-normal text-muted-foreground/70"
             data-settings-subcopy
           >
-            {t("settings.appearance.fontSizeHint")}
+            Applies across conversations and interface text
           </p>
         </div>
         <SegmentedControl
           size="wide"
-          legend={t("settings.appearance.fontSize")}
+          legend="Font size"
           onPreviewChange={previewFontSize}
           onValueChange={setFontSize}
           optionTestIdPrefix="font-size"
-          options={fontSizeOptions(t)}
+          options={FONT_SIZE_OPTIONS}
           testId="font-size-control"
           value={fontSize}
         />
       </SettingsOptionRow>
       <SettingsOptionRow data-testid="conversation-density-row">
         <div className="min-w-0">
-          <p className="text-sm font-medium">
-            {t("settings.appearance.conversationDensity")}
-          </p>
+          <p className="text-sm font-medium">Conversation density</p>
           <p
             className="text-sm font-normal text-muted-foreground/70"
             data-settings-subcopy
           >
-            {t("settings.appearance.conversationDensityHint")}
+            Spacing in conversations and Markdown content across Buzz
           </p>
         </div>
         <SegmentedControl
           size="wide"
-          legend={t("settings.appearance.conversationDensity")}
+          legend="Conversation density"
           onPreviewChange={previewConversationDensity}
           onValueChange={setConversationDensity}
           optionTestIdPrefix="conversation-density"
-          options={conversationDensityOptions(t)}
+          options={CONVERSATION_DENSITY_OPTIONS}
           testId="conversation-density-control"
           value={density}
         />
@@ -239,85 +253,144 @@ export function ConversationDisplaySettings() {
   );
 }
 
-export function LinkPreviewStyleSetting() {
-  const t = useT();
-  const style = useLinkPreviewStyle();
-  const options = linkPreviewStyleOptions(t);
-  const activeOption =
-    options.find((option) => option.value === style) ?? options[0];
+/**
+ * Static sample used by the settings preview card. The thumbnail is an inline
+ * SVG data URL so the preview needs no network fetch or native image pipeline.
+ */
+const LINK_PREVIEW_SAMPLE_BASE: Omit<ResolvedLinkPreview, "imageDataUrl"> = {
+  kind: "generic-link",
+  href: "https://example.com/product-updates",
+  provider: "example.com",
+  title: "Product updates — a fresh look at conversations",
+  typeLabel: "link",
+  description:
+    "Highlights from this release: refreshed conversation layout, quicker link handling, and readability improvements.",
+  imageState: "image",
+  imageDomain: "example.com",
+};
 
+/**
+ * Build the sample thumbnail as an SVG data URL from the Buzz gradient
+ * tokens. Data-URL images cannot resolve CSS variables, so the token values
+ * are read from the live stylesheet and baked in per render — if the Buzz
+ * gradient ever changes in `theme.css`, this preview follows automatically.
+ */
+function buzzGradientSampleImage(isDark: boolean): string {
+  const styles = globalThis.document
+    ? getComputedStyle(document.documentElement)
+    : null;
+  const readToken = (token: string, fallback: string): string =>
+    styles?.getPropertyValue(token).trim() || fallback;
+  const top = isDark
+    ? readToken("--buzz-gradient-dark-top", "#4a4616")
+    : readToken("--buzz-gradient-light-top", "#e6e6b6");
+  const bottom = isDark
+    ? readToken("--buzz-gradient-dark-bottom", "#0a1423")
+    : readToken("--buzz-gradient-light-bottom", "#c4d0da");
+  const shapeToken = isDark ? "--foreground" : "--background";
+  const shapeFallback = isDark ? "0 0% 98%" : "0 0% 100%";
+  const shape = `hsl(${readToken(shapeToken, shapeFallback)})`;
+  const shapeOpacities = isDark ? [0.5, 0.38, 0.28] : [0.82, 0.68, 0.52];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 382 200"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient></defs><rect width="382" height="200" fill="url(#g)"/><rect x="76" y="64" width="72" height="72" rx="22" fill="${shape}" opacity="${shapeOpacities[0]}"/><rect x="168" y="76" width="96" height="18" rx="9" fill="${shape}" opacity="${shapeOpacities[1]}"/><rect x="168" y="106" width="138" height="18" rx="9" fill="${shape}" opacity="${shapeOpacities[2]}"/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/** Lightbox stand-in for the settings sample — renders the image inert. */
+function SampleImageLightbox({
+  children,
+  className,
+}: LinkPreviewImageLightboxProps) {
+  return <div className={className}>{children}</div>;
+}
+
+function LinkPreviewSample({ style }: { style: LinkPreviewStyle }) {
+  const { isDark } = useTheme();
+  const preview = React.useMemo<ResolvedLinkPreview>(
+    () => ({
+      ...LINK_PREVIEW_SAMPLE_BASE,
+      imageDataUrl: buzzGradientSampleImage(isDark),
+    }),
+    [isDark],
+  );
   return (
-    <SettingsOptionRow>
-      <div className="min-w-0">
-        <p className="text-sm font-medium">
-          {t("settings.appearance.linkPreviewTitle")}
-        </p>
-        <p
-          className="text-sm font-normal text-muted-foreground/70"
-          data-settings-subcopy
-        >
-          {activeOption.description}
-        </p>
+    <div className="px-4 py-3" data-testid="link-preview-sample">
+      <div
+        aria-hidden="true"
+        className="relative overflow-hidden rounded-xl border border-border/65 bg-transparent"
+        data-testid="link-preview-sample-surface"
+        inert
+      >
+        <span className="absolute right-3.5 top-3 inline-flex items-center gap-1 text-2xs font-medium text-muted-foreground/55">
+          <Eye aria-hidden="true" className="size-3" />
+          Preview
+        </span>
+        <div className="p-4 pr-24">
+          <LinkPreviewAttachmentPresentation
+            ImageLightbox={SampleImageLightbox}
+            preview={preview}
+            showExpandControl={false}
+            style={style}
+          />
+        </div>
       </div>
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className="h-7 min-w-28 justify-between gap-1.5 rounded-md border border-border/50 bg-muted/45 px-2.5 text-xs font-medium text-foreground shadow-none hover:bg-muted/70"
-            data-testid="link-preview-style-trigger"
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <span className="truncate">{activeOption.label}</span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="min-w-72 rounded-md"
-          data-testid="link-preview-style-menu"
-        >
-          <DropdownMenuRadioGroup
-            onValueChange={(next) =>
-              setLinkPreviewStyle(next as LinkPreviewStyle)
-            }
-            value={style}
-          >
-            {options.map((option) => (
-              <DropdownMenuRadioItem
-                data-testid={`link-preview-style-${option.value}`}
-                key={option.value}
-                value={option.value}
-              >
-                <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-2xs text-muted-foreground">
-                    {option.description}
-                  </span>
-                </span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </SettingsOptionRow>
+    </div>
   );
 }
 
-function threadViewModeOptions(t: TranslateFn) {
-  return [
-    {
-      value: "focus" as const,
-      label: t("settings.appearance.threadFocus"),
-      description: t("settings.appearance.threadFocusDesc"),
-    },
-    {
-      value: "split" as const,
-      label: t("settings.appearance.threadSplit"),
-      description: t("settings.appearance.threadSplitDesc"),
-    },
-  ];
+export function LinkPreviewStyleSetting() {
+  const style = useLinkPreviewStyle();
+  const [previewStyle, setPreviewStyle] =
+    React.useState<LinkPreviewStyle | null>(null);
+  const displayedStyle = previewStyle ?? style;
+  const activeOption =
+    LINK_PREVIEW_STYLE_OPTIONS.find(
+      (option) => option.value === displayedStyle,
+    ) ?? LINK_PREVIEW_STYLE_OPTIONS[0];
+
+  return (
+    <div data-testid="link-preview-style-group">
+      <SettingsOptionRow>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">Link previews</p>
+          <p
+            className="text-sm font-normal text-muted-foreground/70"
+            data-settings-subcopy
+          >
+            {activeOption.description}
+          </p>
+        </div>
+        <SegmentedControl
+          size="compact"
+          legend="Link previews"
+          onPreviewChange={setPreviewStyle}
+          onValueChange={setLinkPreviewStyle}
+          optionTestIdPrefix="link-preview-style"
+          options={LINK_PREVIEW_STYLE_OPTIONS}
+          testId="link-preview-style-control"
+          value={style}
+        />
+      </SettingsOptionRow>
+      <LinkPreviewSample style={displayedStyle} />
+    </div>
+  );
 }
+
+const THREAD_VIEW_MODE_OPTIONS: {
+  value: ThreadViewMode;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "focus",
+    label: "Focus",
+    description: "Threads open over the channel",
+  },
+  {
+    value: "split",
+    label: "Split",
+    description: "Threads open in a side panel next to the channel",
+  },
+];
 
 /** Native window glass rows sit below theme and accent choices. */
 export function GlassBackgroundSetting() {
@@ -328,7 +401,6 @@ export function GlassBackgroundSetting() {
     setGlassBackground,
     setGlassOpacity,
   } = useTheme();
-  const t = useT();
   const shouldReduceMotion = useReducedMotion();
 
   if (isLinuxPlatform()) return null;
@@ -337,19 +409,19 @@ export function GlassBackgroundSetting() {
   const opacityRow = (
     <SettingsOptionRow data-testid="glass-opacity-row">
       <div className="min-w-0">
-        <p className="text-sm font-medium">{t("settings.appearance.glassOpacity")}</p>
+        <p className="text-sm font-medium">Glass opacity</p>
         <p
           className="text-sm font-normal text-muted-foreground/70"
           data-settings-subcopy
           id="glass-opacity-description"
         >
-          {t("settings.appearance.glassOpacityHint")}
+          Lower values reveal more of the desktop blur.
         </p>
       </div>
       <div className="flex w-64 shrink-0 items-center">
         <AvatarFramingSlider
           ariaDescribedBy="glass-opacity-description"
-          ariaLabel={t("settings.appearance.glassOpacity")}
+          ariaLabel="Glass opacity"
           ariaValueText={`${glassOpacity}% opacity`}
           compact
           handleAlwaysVisible
@@ -357,7 +429,7 @@ export function GlassBackgroundSetting() {
           min={GLASS_OPACITY_MIN}
           onChange={setGlassOpacity}
           onReset={() => setGlassOpacity(DEFAULT_GLASS_OPACITY)}
-          resetLabel={t("settings.appearance.glassOpacityReset")}
+          resetLabel="Reset glass opacity"
           resetTestId="glass-opacity-reset"
           resetValue={DEFAULT_GLASS_OPACITY}
           testId="glass-opacity-slider"
@@ -375,15 +447,15 @@ export function GlassBackgroundSetting() {
             className="text-sm font-medium"
             htmlFor="glass-background-switch"
           >
-            {t("settings.appearance.glassBackground")}
+            Glass background
           </label>
           <p
             className="text-sm font-normal text-muted-foreground/70"
             data-settings-subcopy
           >
             {glassBackgroundSupported
-              ? t("settings.appearance.glassBackgroundHint")
-              : t("settings.appearance.glassBackgroundUnsupported")}
+              ? "Blur the desktop behind navigation while keeping content solid."
+              : "Available in the macOS desktop app."}
           </p>
         </div>
         <Switch
@@ -422,74 +494,159 @@ export function GlassBackgroundSetting() {
 }
 
 /** Compact thread preference row in the Appearance preferences card. */
-export function ThreadLayoutSetting() {
-  const t = useT();
-  const threadViewMode = useThreadViewMode();
-  const { communities } = useCommunities();
-  const showCommunityScope = communities.length > 1;
-  const options = threadViewModeOptions(t);
-  const activeOption =
-    options.find((option) => option.value === threadViewMode) ?? options[0];
+/**
+ * Abstract diagram for the thread layout preview, in the same soft-block
+ * style as the links sample: a rounded frame holding a channel surface and a
+ * thread surface, with light skeleton bars. Inline SVG (not a data-URL image)
+ * so fills reference theme tokens directly and follow light/dark and accent
+ * changes automatically. Only the panel proportions change between modes.
+ */
+function ThreadLayoutDiagram({ mode }: { mode: ThreadViewMode }) {
+  const { isDark } = useTheme();
+  const gradientId = React.useId();
+  // Inline SVG resolves CSS variables, so the frame gradient references the
+  // Buzz gradient tokens directly and follows theme.css automatically.
+  const gradientTop = isDark
+    ? "var(--buzz-gradient-dark-top, #4a4616)"
+    : "var(--buzz-gradient-light-top, #e6e6b6)";
+  const gradientBottom = isDark
+    ? "var(--buzz-gradient-dark-bottom, #0a1423)"
+    : "var(--buzz-gradient-light-bottom, #c4d0da)";
+  const channelSurface = "hsl(var(--muted))";
+  const threadSurface = "hsl(var(--background))";
+  const channelOpacity = isDark ? 0.88 : 0.78;
+  const threadOpacity = isDark ? 0.98 : 0.96;
+  const bar = "hsl(var(--foreground) / 0.24)";
+  const barSoft = "hsl(var(--foreground) / 0.14)";
+
+  const isFocus = mode === "focus";
+  // Inner content area: 10..230 x 10..122 (inside the frame padding).
+  // Split: channel and thread share the area side by side with a gap.
+  // Focus: the channel continues beneath the overlaid thread, leaving only
+  // a narrow orientation sliver visible at the left edge.
+  const gap = 6;
+  const threadX = isFocus ? 42 : 124;
+  const channelWidth = isFocus ? 64 : threadX - 10 - gap;
+  const threadWidth = 230 - threadX;
+
+  /** Two skeleton text bars, clipped to the panel they sit in. */
+  const skeleton = (x: number, y: number, width: number) => (
+    <>
+      <rect fill={bar} height={7} rx={3.5} width={width * 0.62} x={x} y={y} />
+      <rect
+        fill={barSoft}
+        height={7}
+        rx={3.5}
+        width={width * 0.86}
+        x={x}
+        y={y + 13}
+      />
+    </>
+  );
 
   return (
-    <SettingsOptionRow>
-      <div className="min-w-0">
-        <p className="text-sm font-medium">
-          {t("settings.appearance.threadLayout")}
-          {showCommunityScope ? (
-            <span className="font-normal text-muted-foreground">
-              {" "}
-              {t("settings.appearance.threadLayoutAllCommunities")}
-            </span>
-          ) : null}
-        </p>
-        <p
-          className="text-sm font-normal text-muted-foreground/70"
-          data-settings-subcopy
-        >
-          {activeOption.description}
-        </p>
+    <svg
+      aria-hidden="true"
+      className="block w-full max-w-60"
+      data-testid={`thread-layout-diagram-${mode}`}
+      role="img"
+      viewBox="0 0 240 132"
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor={gradientTop} />
+          <stop offset="1" stopColor={gradientBottom} />
+        </linearGradient>
+      </defs>
+      {/* Frame */}
+      <rect fill={`url(#${gradientId})`} height={132} rx={18} width={240} />
+      {/* Channel surface */}
+      <rect
+        fill={channelSurface}
+        height={112}
+        opacity={channelOpacity}
+        rx={10}
+        width={channelWidth}
+        x={10}
+        y={10}
+      />
+      {channelWidth > 60 ? skeleton(22, 24, channelWidth - 24) : null}
+      {/* Thread surface */}
+      <path
+        d={`M ${threadX + 10} 10 H 220 Q 230 10 230 20 V 112 Q 230 122 220 122 H ${threadX + 10} Q ${threadX} 122 ${threadX} 112 V 20 Q ${threadX} 10 ${threadX + 10} 10 Z`}
+        fill={threadSurface}
+        opacity={threadOpacity}
+      />
+      {skeleton(threadX + 12, 24, threadWidth - 24)}
+    </svg>
+  );
+}
+
+function ThreadLayoutPreview({ mode }: { mode: ThreadViewMode }) {
+  return (
+    <div className="px-4 py-3" data-testid="thread-layout-preview">
+      <div
+        aria-hidden="true"
+        className="relative overflow-hidden rounded-xl border border-border/65 bg-transparent"
+        data-testid="thread-layout-preview-surface"
+      >
+        <span className="absolute right-3.5 top-3 inline-flex items-center gap-1 text-2xs font-medium text-muted-foreground/55">
+          <Eye aria-hidden="true" className="size-3" />
+          Preview
+        </span>
+        <div className="p-4 pr-24">
+          <ThreadLayoutDiagram mode={mode} />
+        </div>
       </div>
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className="h-7 min-w-28 justify-between gap-1.5 rounded-md border border-border/50 bg-muted/45 px-2.5 text-xs font-medium text-foreground shadow-none hover:bg-muted/70"
-            data-testid="thread-layout-trigger"
-            size="sm"
-            type="button"
-            variant="ghost"
+    </div>
+  );
+}
+
+export function ThreadLayoutSetting() {
+  const threadViewMode = useThreadViewMode();
+  const [previewMode, setPreviewMode] = React.useState<ThreadViewMode | null>(
+    null,
+  );
+  const { communities } = useCommunities();
+  const showCommunityScope = communities.length > 1;
+  const displayedMode = previewMode ?? threadViewMode;
+  const activeOption =
+    THREAD_VIEW_MODE_OPTIONS.find((option) => option.value === displayedMode) ??
+    THREAD_VIEW_MODE_OPTIONS[0];
+
+  return (
+    <div data-testid="thread-layout-group">
+      <SettingsOptionRow>
+        <div className="min-w-0">
+          <p className="text-sm font-medium">
+            Thread layout
+            {showCommunityScope ? (
+              <span className="font-normal text-muted-foreground">
+                {" "}
+                (all communities)
+              </span>
+            ) : null}
+          </p>
+          <p
+            className="text-sm font-normal text-muted-foreground/70"
+            data-settings-subcopy
           >
-            <span className="truncate">{activeOption.label}</span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="min-w-72 rounded-md"
-          data-testid="thread-layout-menu"
-        >
-          <DropdownMenuRadioGroup
-            onValueChange={(next) => setThreadViewMode(next as ThreadViewMode)}
-            value={threadViewMode}
-          >
-            {options.map((option) => (
-              <DropdownMenuRadioItem
-                data-testid={`thread-layout-${option.value}`}
-                key={option.value}
-                value={option.value}
-              >
-                <span className="flex min-w-0 flex-col">
-                  <span className="font-medium">{option.label}</span>
-                  <span className="text-2xs text-muted-foreground">
-                    {option.description}
-                  </span>
-                </span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </SettingsOptionRow>
+            {activeOption.description}
+          </p>
+        </div>
+        <SegmentedControl
+          size="compact"
+          legend="Thread layout"
+          onPreviewChange={setPreviewMode}
+          onValueChange={setThreadViewMode}
+          optionTestIdPrefix="thread-layout"
+          options={THREAD_VIEW_MODE_OPTIONS}
+          testId="thread-layout-control"
+          value={threadViewMode}
+        />
+      </SettingsOptionRow>
+      <ThreadLayoutPreview mode={displayedMode} />
+    </div>
   );
 }
 
@@ -503,16 +660,15 @@ export function AccentPickerContent({
   isDark: boolean;
   setAccentColor: (value: string) => void;
 }) {
-  const t = useT();
   return (
     <SettingsOptionRow className="items-start">
       <div className="min-w-0">
-        <p className="text-sm font-medium">{t("settings.appearance.accentColor")}</p>
+        <p className="text-sm font-medium">Accent color</p>
         <p
           className="text-sm font-normal text-muted-foreground/70"
           data-settings-subcopy
         >
-          {t("settings.appearance.accentColorHint")}
+          Choose the highlight color used throughout Buzz.
         </p>
       </div>
       <div

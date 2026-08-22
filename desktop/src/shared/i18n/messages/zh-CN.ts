@@ -489,6 +489,9 @@ export const zhCN: Record<MessageKey, string> = {
   "settings.shortcuts.sendMessage.description": "发送当前消息",
   "settings.shortcuts.newLine.label": "换行",
   "settings.shortcuts.newLine.description": "在输入框中插入换行",
+  "settings.shortcuts.alwaysAddressAgent.label": "始终 @ 智能体",
+  "settings.shortcuts.alwaysAddressAgent.description":
+    "打开智能体选择器，或切换当前高亮的智能体",
   "settings.shortcuts.publishNote.label": "发布笔记",
   "settings.shortcuts.publishNote.description": "发布一条 Pulse 笔记",
   "settings.shortcuts.closeDialog.label": "关闭对话框",

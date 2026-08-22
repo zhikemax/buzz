@@ -1,11 +1,7 @@
 import * as React from "react";
 import { ArrowDown } from "lucide-react";
 
-import { useKnownAgentPubkeys } from "@/features/agents/useKnownAgentPubkeys";
 import { HuddleTranscriptIntro } from "@/features/huddle/components/HuddleTranscriptIntro";
-import { orderMentionPubkeysByText } from "@/features/messages/lib/orderMentionPubkeys";
-import { normalizePubkey } from "@/shared/lib/pubkey";
-import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 import {
   buildThreadSummaryFromVisibleEntries,
   hasNestedThreadBranches,
@@ -29,11 +25,6 @@ import { cn } from "@/shared/lib/cn";
 import { AuxiliaryPanel } from "@/shared/layout/AuxiliaryPanel";
 import { AuxiliaryPanelBody } from "@/shared/layout/AuxiliaryPanel";
 import {
-  AuxiliaryPanelHeader,
-  AuxiliaryPanelHeaderGroup,
-  AuxiliaryPanelTitle,
-} from "@/shared/layout/AuxiliaryPanel";
-import {
   THREAD_PANEL_COLUMN_CLASS,
   THREAD_PANEL_COMPOSER_GUTTER_CLASS,
   THREAD_PANEL_MESSAGE_GUTTER_CLASS,
@@ -43,8 +34,12 @@ import { Separator } from "@/shared/ui/separator";
 import { ComposerActivityAccessory } from "./ComposerActivityAccessory";
 import { ComposerDockBackdrop } from "./ComposerDockBackdrop";
 import { MessageComposer } from "./MessageComposer";
-import { ThreadMessageSkeleton } from "./MessageThreadPanelSkeleton";
-import { MessageRow, type ThreadDepthGuideAction } from "./MessageRow";
+import {
+  MessageThreadPanelHeader,
+  ThreadMessageSkeleton,
+} from "./MessageThreadPanelSkeleton";
+import type { ThreadDepthGuideAction } from "./MessageRow";
+import { MessageThreadRow } from "./MessageThreadRow";
 import { MessageThreadSummaryRow } from "./MessageThreadSummaryRow";
 import { TypingIndicatorRow } from "./TypingIndicatorRow";
 import { UnreadDivider } from "./UnreadDivider";
@@ -52,7 +47,6 @@ import { useComposerHeightPadding } from "./useComposerHeightPadding";
 import { useStableSendToChannel } from "./useStableSendToChannel";
 import { useAnchoredScroll } from "./useAnchoredScroll";
 import { selectDeferredListRenderState } from "@/features/messages/lib/timelineSnapshot";
-import { useT } from "@/shared/i18n";
 
 type MessageThreadPanelProps = ThreadPanelLayoutProps & {
   channel: Channel | null;
@@ -201,7 +195,10 @@ export function MessageThreadPanel({
   isHuddleTranscript = false,
   layout = "standalone",
   editTarget,
+  enterMotion,
   headerLeading,
+  headerTitle,
+  headerTitleAriaLabel,
   isSending,
   isFocusMode,
   isSinglePanelView = false,
@@ -210,6 +207,9 @@ export function MessageThreadPanel({
   onCancelEdit,
   onCancelReply,
   onClose,
+  onHeaderTitleClick,
+  onResetWidth,
+  onResizeStart,
   onDelete,
   onEdit,
   onEditLastOwnMessage,
@@ -238,12 +238,15 @@ export function MessageThreadPanel({
   threadTypingPubkeys,
   activityAccessoryContent,
   activityAccessoryVisible,
+  canResetWidth,
+  splitPaneClamp,
+  showBackButton,
+  testId = "message-thread-panel",
   widthPx,
   transparentChrome = false,
   autoSendDraftKey = null,
   onAutoSubmitComplete,
 }: MessageThreadPanelProps) {
-  const t = useT();
   const threadBodyRef = React.useRef<HTMLDivElement>(null);
   const threadContentRef = React.useRef<HTMLDivElement>(null);
   const threadComposerWrapperRef = React.useRef<HTMLDivElement>(null);
@@ -459,8 +462,8 @@ export function MessageThreadPanel({
               depth: ancestor.message.depth,
               label:
                 ancestor.message.id === threadHead.id
-                  ? t("msg.collapseThread")
-                  : t("msg.collapseReplies"),
+                  ? "Collapse thread"
+                  : "Collapse replies",
               message: ancestor.message,
             }))
           : undefined;
@@ -499,7 +502,6 @@ export function MessageThreadPanel({
     firstUnreadReplyId,
     hoveredCollapseBranchId,
     isHuddleTranscript,
-    t,
     threadHead,
   ]);
 
@@ -528,29 +530,6 @@ export function MessageThreadPanel({
     "padding",
     settleAtBottomAfterLayout,
   );
-  const knownAgentPubkeys = useKnownAgentPubkeys();
-  const initialAgentPubkeys = React.useMemo(() => {
-    if (
-      !threadHead ||
-      !currentPubkey ||
-      normalizePubkey(threadHead.signerPubkey ?? threadHead.pubkey ?? "") !==
-        normalizePubkey(currentPubkey)
-    ) {
-      return [];
-    }
-    const { mentionPubkeysByName } = resolveMentionProps(
-      threadHead.tags,
-      profiles,
-    );
-    if (!mentionPubkeysByName) return [];
-
-    return orderMentionPubkeysByText(
-      threadHead.body,
-      mentionPubkeysByName,
-      (pubkey) =>
-        knownAgentPubkeys.has(pubkey) || profiles?.[pubkey]?.isAgent === true,
-    );
-  }, [currentPubkey, knownAgentPubkeys, profiles, threadHead]);
   const stableSendToChannel = useStableSendToChannel(
     channelId,
     threadHead,
@@ -586,7 +565,7 @@ export function MessageThreadPanel({
             data-testid="message-thread-head"
           >
             <div className="rounded-2xl">
-              <MessageRow
+              <MessageThreadRow
                 actionBarPlacement="inside"
                 channelId={channelId}
                 currentPubkey={currentPubkey}
@@ -594,7 +573,6 @@ export function MessageThreadPanel({
                 huddleMemberPubkeysPending={huddleMemberPubkeysPending}
                 isFollowingThread={isFollowingThread}
                 isUnread={isMessageUnreadById?.(threadHead.id)}
-                layoutVariant="thread-reply"
                 message={threadHead}
                 onDelete={
                   onDelete &&
@@ -720,11 +698,11 @@ export function MessageThreadPanel({
                       key={entry.message.renderKey ?? entry.message.id}
                     >
                       {showUnreadDivider ? <UnreadDivider /> : null}
-                      <MessageRow
+                      <MessageThreadRow
                         channelId={channelId}
                         currentPubkey={currentPubkey}
                         collapseDepthGuideActions={collapseDepthGuideActions}
-                        collapseDescendantsLabel={t("msg.collapseReplies")}
+                        collapseDescendantsLabel="Collapse replies"
                         connectDescendants={
                           shouldShowThreadBranchGuides && connectsToVisibleChild
                         }
@@ -748,7 +726,6 @@ export function MessageThreadPanel({
                         huddleMemberPubkeysPending={huddleMemberPubkeysPending}
                         isContinuation={isContinuation}
                         isUnread={isMessageUnreadById?.(entry.message.id)}
-                        layoutVariant="thread-reply"
                         message={entry.message}
                         onCollapseDepthGuide={handleCollapseDepthGuide}
                         onCollapseDepthGuideHoverChange={
@@ -835,10 +812,10 @@ export function MessageThreadPanel({
             // frame while a non-empty list streams in on the deferred commit.
             <div className="rounded-2xl border border-dashed border-border/70 bg-card/40 px-4 py-6 text-center">
               <p className="text-sm font-medium text-foreground/80">
-                {t("msg.noRepliesYet")}
+                No replies in this branch yet
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t("msg.replyToContinue")}
+                Reply in the thread to continue this branch.
               </p>
             </div>
           ) : // "pending": deferred list is empty but the live list has content —
@@ -864,10 +841,8 @@ export function MessageThreadPanel({
           >
             <ArrowDown aria-hidden />
             {newMessageCount > 0
-              ? newMessageCount === 1
-                ? t("msg.newMessageOne", { count: newMessageCount })
-                : t("msg.newMessageMany", { count: newMessageCount })
-              : t("msg.jumpToLatest")}
+              ? `${newMessageCount} new message${newMessageCount === 1 ? "" : "s"}`
+              : "Jump to latest"}
           </Button>
         </div>
       ) : null}
@@ -891,11 +866,7 @@ export function MessageThreadPanel({
           >
             <ComposerDockBackdrop gutterClassName="inset-x-5" />
             <MessageComposer
-              audienceContext={{
-                type: "thread",
-                threadRootId: threadHead.id,
-                initialAgentPubkeys,
-              }}
+              audienceContext={{ type: "thread" }}
               channelId={channelId}
               channelName={channelName}
               channelType={channel?.channelType ?? null}
@@ -918,8 +889,8 @@ export function MessageThreadPanel({
               onSend={onSend}
               placeholder={
                 isHuddleTranscript
-                  ? t("msg.messageTheHuddle")
-                  : t("msg.replyInThreadTo", { author: threadHead.author })
+                  ? "Message the huddle"
+                  : `Reply in thread to ${threadHead.author}`
               }
               profiles={profiles}
               replyTarget={composerReplyTarget}
@@ -957,39 +928,34 @@ export function MessageThreadPanel({
     </>
   );
 
-  const threadHeaderContent = (
-    <>
-      <AuxiliaryPanelHeaderGroup
-        backButtonAriaLabel={t("msg.backToConversation")}
-        backButtonTestId="message-thread-back"
-        // A focus drawer only sets `isSinglePanelView` to fill its container's
-        // width — it isn't the narrow single-column view, and it has the scrimmed
-        // sliver as its way back, so it takes no back control of its own. The
-        // narrow view still needs one.
-        leading={headerLeading}
-        onBack={isSinglePanelView && !isFocusMode ? onClose : undefined}
-      >
-        <AuxiliaryPanelTitle>{t("msg.thread")}</AuxiliaryPanelTitle>
-      </AuxiliaryPanelHeaderGroup>
-    </>
-  );
-
   return (
     <VideoReviewNavigationProvider>
       <AuxiliaryPanel
+        canResetWidth={canResetWidth}
         className="relative"
-        // The focus drawer animates itself; a second slide here would compound.
-        enterMotion={!isFocusMode}
+        enterMotion={enterMotion ?? !isFocusMode}
         footer={threadFooter}
         header={
           isHuddleTranscript ? undefined : (
-            <AuxiliaryPanelHeader>{threadHeaderContent}</AuxiliaryPanelHeader>
+            <MessageThreadPanelHeader
+              headerLeading={headerLeading}
+              headerTitle={headerTitle}
+              headerTitleAriaLabel={headerTitleAriaLabel}
+              isFocusMode={isFocusMode}
+              isSinglePanelView={isSinglePanelView}
+              onClose={onClose}
+              onHeaderTitleClick={onHeaderTitleClick}
+              showBackButton={showBackButton}
+            />
           )
         }
         isSinglePanelView={isSinglePanelView}
         layout={layout}
         onClose={onClose}
-        testId="message-thread-panel"
+        onResetWidth={onResetWidth}
+        onResizeStart={onResizeStart}
+        splitPaneClamp={splitPaneClamp}
+        testId={testId}
         transparentChrome={transparentChrome}
         widthPx={widthPx}
       >

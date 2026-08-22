@@ -1,7 +1,9 @@
-import { useT } from "@/shared/i18n";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ChevronDown, ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
+
+import { invalidateChannelMembersRosters } from "@/features/channels/rosterFreshness";
 
 import {
   useModerationAuditQuery,
@@ -243,7 +245,6 @@ function ResolveMenu({
   disabled: boolean;
   onResolve: (action: ResolutionAction) => void;
 }) {
-  const t = useT();
   const options = RESOLUTION_OPTIONS.filter((option) =>
     allowed.includes(option.action),
   );
@@ -256,12 +257,12 @@ function ResolveMenu({
           size="sm"
           type="button"
         >
-          {t("settings.moderation.resolve")}
+          Resolve
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel>{t("settings.moderation.resolution")}</DropdownMenuLabel>
+        <DropdownMenuLabel>Resolution</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map((option) => (
           <DropdownMenuItem
@@ -367,7 +368,7 @@ function QueueGroupCard({
 }
 
 function QueueTab() {
-  const t = useT();
+  const queryClient = useQueryClient();
   const reportsQuery = useModerationReportsQuery({ status: "open" });
   const auditQuery = useModerationAuditQuery();
   const resolveMutation = useResolveReportMutation();
@@ -411,6 +412,12 @@ function QueueTab() {
       // report open (retryable, no orphan decision row). Only after the paired
       // 9040/9005/9001 lands do we resolve every open report about this target.
       await enforceResolution(group, action, banMutation.mutateAsync);
+      if (action === "kick" && group.channelId != null) {
+        // The kick writes the roster directly (no member mutation); without
+        // this, the kicked identity stays in the cached roster for the
+        // freshness window.
+        await invalidateChannelMembersRosters(queryClient, [group.channelId]);
+      }
       await Promise.all(
         openReports.map((report) =>
           resolveMutation.mutateAsync({
@@ -425,7 +432,7 @@ function QueueTab() {
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : t("settings.moderation.resolveFailed"),
+        error instanceof Error ? error.message : "Failed to resolve the report",
       );
     }
   }
@@ -438,12 +445,12 @@ function QueueTab() {
     );
   }
   if (reportsQuery.isLoading) {
-    return <p className="text-sm text-muted-foreground">{t("settings.moderation.loadingReports")}</p>;
+    return <p className="text-sm text-muted-foreground">Loading reports…</p>;
   }
   if (groups.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-        {t("settings.moderation.emptyQueue")}
+        No open reports. The queue is clear.
       </p>
     );
   }
@@ -503,7 +510,6 @@ function AuditRow({
 }
 
 function AuditTab() {
-  const t = useT();
   const auditQuery = useModerationAuditQuery();
 
   const actions = auditQuery.data ?? EMPTY_ACTIONS;
@@ -532,12 +538,12 @@ function AuditTab() {
     );
   }
   if (auditQuery.isLoading) {
-    return <p className="text-sm text-muted-foreground">{t("settings.moderation.loadingAudit")}</p>;
+    return <p className="text-sm text-muted-foreground">Loading audit log…</p>;
   }
   if (actions.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-        {t("settings.moderation.emptyAudit")}
+        No moderation actions yet.
       </p>
     );
   }
@@ -555,7 +561,6 @@ function AuditTab() {
 }
 
 export function ModerationQueueCard() {
-  const t = useT();
   const membershipQuery = useMyRelayMembershipQuery();
   const role = membershipQuery.data?.role;
   const isModerator = role === "owner" || role === "admin";
@@ -566,26 +571,26 @@ export function ModerationQueueCard() {
       data-testid="settings-moderation"
     >
       <SettingsSectionHeader
-        title={t("settings.moderation.title")}
-        description={t("settings.moderation.description")}
+        title="Moderation"
+        description="Review reported content and take action. Visible to community moderators only."
       />
 
       {!isModerator ? (
         membershipQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t("settings.moderation.checkingAccess")}</p>
+          <p className="text-sm text-muted-foreground">Checking access…</p>
         ) : (
           <p className="rounded-lg border border-dashed border-border/70 bg-background/40 px-3 py-6 text-center text-sm text-muted-foreground">
-            {t("settings.moderation.modOnly")}
+            The moderation queue is available to community moderators only.
           </p>
         )
       ) : (
         <Tabs defaultValue="queue">
           <TabsList>
             <TabsTrigger data-testid="moderation-tab-queue" value="queue">
-              {t("settings.moderation.tabQueue")}
+              Queue
             </TabsTrigger>
             <TabsTrigger data-testid="moderation-tab-audit" value="audit">
-              {t("settings.moderation.tabAudit")}
+              Audit log
             </TabsTrigger>
           </TabsList>
           <TabsContent value="queue">

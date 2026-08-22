@@ -46,6 +46,7 @@ type AppSidebarPrimaryMenuProps = {
   onSelectProjects: () => void;
   onSelectPulse: () => void;
   onSelectWorkflows: () => void;
+  projectsOverviewActive: boolean;
   selectedView: SidebarSelectedView;
 };
 
@@ -95,6 +96,7 @@ export function AppSidebarPrimaryMenu({
   onSelectProjects,
   onSelectPulse,
   onSelectWorkflows,
+  projectsOverviewActive,
   selectedView,
 }: AppSidebarPrimaryMenuProps) {
   const t = useT();
@@ -144,7 +146,7 @@ export function AppSidebarPrimaryMenu({
             <SidebarMenuItem>
               <SidebarMenuButton
                 data-testid="open-projects-view"
-                isActive={selectedView === "projects"}
+                isActive={selectedView === "projects" && projectsOverviewActive}
                 onClick={onSelectProjects}
                 tooltip={t("nav.projects")}
                 type="button"

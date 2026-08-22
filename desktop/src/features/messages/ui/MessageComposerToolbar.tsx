@@ -1,11 +1,15 @@
 import * as React from "react";
 import type { Editor } from "@tiptap/react";
 import { AnimatePresence, motion } from "motion/react";
-import { ALargeSmall, ArrowUp, AtSign, Paperclip, X } from "lucide-react";
+import { ALargeSmall, Paperclip, X } from "lucide-react";
 
-import { useT } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
+import {
+  type ComposerAddressAgent,
+  ComposerMentionButton,
+  ComposerSendButton,
+} from "./ComposerAddressControls";
 import { ComposerEmojiPicker } from "./ComposerEmojiPicker";
 import { FormattingToolbar } from "./FormattingToolbar";
 import { SelectionFormattingTray } from "./SelectionFormattingTray";
@@ -16,9 +20,12 @@ const presenceSpring = {
   stiffness: 400,
   damping: 28,
 } as const;
+const NO_ADDRESSED_AGENTS: readonly ComposerAddressAgent[] = [];
+const ignoreAddressRemoval = () => {};
 
 export const MessageComposerToolbar = React.memo(
   function MessageComposerToolbar({
+    addressedAgents = NO_ADDRESSED_AGENTS,
     composerDisabled,
     editor,
     extraActions,
@@ -34,8 +41,12 @@ export const MessageComposerToolbar = React.memo(
     onLinkButton,
     onOpenMentionPicker,
     onPaperclip,
+    onRemoveAddressedAgent = ignoreAddressRemoval,
+    pulseVersionByPubkey,
     sendDisabled,
+    shakeVersionByPubkey,
   }: {
+    addressedAgents?: readonly ComposerAddressAgent[];
     composerDisabled: boolean;
     editor: Editor | null;
     extraActions?: React.ReactNode;
@@ -51,9 +62,11 @@ export const MessageComposerToolbar = React.memo(
     onLinkButton: () => void;
     onOpenMentionPicker: () => void;
     onPaperclip: () => void;
+    onRemoveAddressedAgent?: (pubkey: string) => void;
+    pulseVersionByPubkey?: Readonly<Record<string, number>>;
     sendDisabled: boolean;
+    shakeVersionByPubkey?: Readonly<Record<string, number>>;
   }) {
-    const t = useT();
     return (
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <SelectionFormattingTray
@@ -93,7 +106,7 @@ export const MessageComposerToolbar = React.memo(
                   <Tooltip disableHoverableContent>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={t("composer.toggleFormatting")}
+                        aria-label="Toggle formatting"
                         aria-pressed={isFormattingOpen}
                         disabled={composerDisabled}
                         onClick={() => onFormattingToggle(!isFormattingOpen)}
@@ -105,7 +118,7 @@ export const MessageComposerToolbar = React.memo(
                         <ALargeSmall />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{t("composer.formatting")}</TooltipContent>
+                    <TooltipContent>Formatting</TooltipContent>
                   </Tooltip>
                 </motion.div>
                 <motion.div
@@ -118,7 +131,7 @@ export const MessageComposerToolbar = React.memo(
                   <Tooltip disableHoverableContent>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={t("composer.closeFormatting")}
+                        aria-label="Close formatting"
                         disabled={composerDisabled}
                         onClick={() => onFormattingToggle(false)}
                         onMouseDown={onCaptureSelection}
@@ -130,9 +143,7 @@ export const MessageComposerToolbar = React.memo(
                         <X />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {t("composer.closeFormatting")}
-                    </TooltipContent>
+                    <TooltipContent>Close formatting</TooltipContent>
                   </Tooltip>
                   <div className="mx-1 h-5 w-px shrink-0 bg-border/60" />
                 </motion.div>
@@ -162,28 +173,20 @@ export const MessageComposerToolbar = React.memo(
                 exit={{ opacity: 0, x: -12 }}
                 transition={presenceSpring}
               >
-                {/* disableHoverableContent keeps tooltips from lingering over the editor. */}
+                <ComposerMentionButton
+                  agents={addressedAgents}
+                  disabled={composerDisabled}
+                  onCaptureSelection={onCaptureSelection}
+                  onOpen={onOpenMentionPicker}
+                  onRemove={onRemoveAddressedAgent}
+                  pulseVersionByPubkey={pulseVersionByPubkey}
+                  shakeVersionByPubkey={shakeVersionByPubkey}
+                  showAgents
+                />
                 <Tooltip disableHoverableContent>
                   <TooltipTrigger asChild>
                     <Button
-                      aria-label={t("composer.mention")}
-                      data-testid="message-insert-mention"
-                      disabled={composerDisabled}
-                      onClick={onOpenMentionPicker}
-                      onMouseDown={onCaptureSelection}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <AtSign />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{t("composer.mention")}</TooltipContent>
-                </Tooltip>
-                <Tooltip disableHoverableContent>
-                  <TooltipTrigger asChild>
-                    <Button
-                      aria-label={t("composer.attachFile")}
+                      aria-label="Attach file"
                       disabled={composerDisabled || isUploading}
                       onClick={onPaperclip}
                       onMouseDown={onCaptureSelection}
@@ -194,7 +197,7 @@ export const MessageComposerToolbar = React.memo(
                       <Paperclip />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>{t("composer.attachFile")}</TooltipContent>
+                  <TooltipContent>Attach file</TooltipContent>
                 </Tooltip>
                 <ComposerEmojiPicker
                   disabled={composerDisabled}
@@ -213,7 +216,7 @@ export const MessageComposerToolbar = React.memo(
                   <Tooltip disableHoverableContent>
                     <TooltipTrigger asChild>
                       <Button
-                        aria-label={t("composer.toggleFormatting")}
+                        aria-label="Toggle formatting"
                         aria-pressed={isFormattingOpen}
                         disabled={composerDisabled}
                         onClick={() => onFormattingToggle(!isFormattingOpen)}
@@ -225,7 +228,7 @@ export const MessageComposerToolbar = React.memo(
                         <ALargeSmall />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>{t("composer.formatting")}</TooltipContent>
+                    <TooltipContent>Formatting</TooltipContent>
                   </Tooltip>
                 </motion.div>
               </motion.div>
@@ -235,25 +238,10 @@ export const MessageComposerToolbar = React.memo(
 
         <div className="flex items-center gap-2">
           {extraActions}
-          <Button
-            aria-label={
-              isSending ? t("composer.sending") : t("composer.send")
-            }
-            className="rounded-full"
-            data-testid="send-message"
-            disabled={sendDisabled || isSending}
-            size="icon"
-            type="submit"
-          >
-            {isSending ? (
-              <span
-                aria-hidden
-                className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"
-              />
-            ) : (
-              <ArrowUp aria-hidden />
-            )}
-          </Button>
+          <ComposerSendButton
+            isSending={isSending}
+            sendDisabled={sendDisabled}
+          />
         </div>
       </div>
     );

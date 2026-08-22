@@ -3,15 +3,13 @@ import { RefreshCw } from "lucide-react";
 import { Badge } from "@/shared/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import type { RestartDiffEntry, RestartChange } from "@/shared/api/types";
-import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 
 // ── Auto-restart copy ─────────────────────────────────────────────────────────
 
 /**
- * Shared blurb strings for the auto-restart state. Prefer
- * {@link autoRestartBlurb} with `useT()` so locale stays in sync; these English
- * constants remain for non-React callers / tests.
+ * Shared blurb strings for the auto-restart state. Exported so the Runtime-tab
+ * banner can import the same constants — the two surfaces must never drift.
  */
 export const AUTO_RESTART_ON_BLURB =
   "Configuration changed since this agent started. Buzz can restart it automatically after ~3 minutes idle, or stop and respawn it to apply now.";
@@ -19,14 +17,6 @@ export const AUTO_RESTART_ON_BLURB =
 export const AUTO_RESTART_OFF_BLURB =
   "Configuration changed since this agent started. Automatic restart is off for this agent — stop and respawn it to apply the changes.";
 
-export function autoRestartBlurb(
-  autoRestartEnabled: boolean,
-  t: TranslateFn,
-): string {
-  return autoRestartEnabled
-    ? t("agents.autoRestartOnBlurb")
-    : t("agents.autoRestartOffBlurb");
-}
 // ── Label helpers ─────────────────────────────────────────────────────────────
 
 /**
@@ -53,7 +43,6 @@ function formatJsonValue(v: unknown): string {
 }
 
 function ChangeDescription({ change }: { change: RestartChange }) {
-  const t = useT();
   switch (change.kind) {
     case "value":
       return (
@@ -70,7 +59,7 @@ function ChangeDescription({ change }: { change: RestartChange }) {
       const after = change.after_chars ?? 0;
       return (
         <span>
-          {t("agents.charsArrow", { before, after })}
+          {before} chars → {after} chars
         </span>
       );
     }
@@ -85,9 +74,9 @@ function ChangeDescription({ change }: { change: RestartChange }) {
         </span>
       );
     case "added":
-      return <span>{t("agents.diffAdded")}</span>;
+      return <span>added</span>;
     case "removed":
-      return <span>{t("agents.diffRemoved")}</span>;
+      return <span>removed</span>;
     default:
       // Unknown kind — render nothing, remain type-safe at runtime
       return null;
@@ -99,8 +88,8 @@ function ChangeDescription({ change }: { change: RestartChange }) {
 const TOOLTIP_CAP = 6;
 
 /**
- * `tooltip` — renders inside the dark `bg-primary` tooltip; uses
- *   `text-primary-foreground` variants for contrast there.
+ * `tooltip` — renders inside the semantic secondary tooltip surface; uses
+ *   `text-secondary-foreground` variants for contrast there.
  * `inline`  — renders inside the amber Runtime banner or other light
  *   surfaces; inherits foreground from the container instead.
  */
@@ -113,16 +102,15 @@ function DiffList({
   cap?: number;
   variant?: "tooltip" | "inline";
 }) {
-  const t = useT();
   const visible = cap !== undefined ? entries.slice(0, cap) : entries;
   const overflow =
     cap !== undefined && entries.length > cap ? entries.length - cap : 0;
 
   const valueClass =
-    variant === "tooltip" ? "text-primary-foreground/80" : "text-foreground";
+    variant === "tooltip" ? "text-secondary-foreground/80" : "text-foreground";
   const overflowClass =
     variant === "tooltip"
-      ? "text-primary-foreground/60"
+      ? "text-secondary-foreground/60"
       : "text-muted-foreground";
 
   return (
@@ -138,9 +126,7 @@ function DiffList({
         </li>
       ))}
       {overflow > 0 ? (
-        <li className={overflowClass}>
-          {t("agents.andNMore", { count: overflow })}
-        </li>
+        <li className={overflowClass}>and {overflow} more</li>
       ) : null}
     </ul>
   );
@@ -164,11 +150,10 @@ export function RestartDiffBadge({
   restartDiff: RestartDiffEntry[];
   className?: string;
 }) {
-  const t = useT();
   const badge = (
     <Badge className={cn("cursor-default gap-1", className)} variant="warning">
       <RefreshCw className="h-3 w-3" />
-      {t("agents.restartRequired")}
+      Restart required
     </Badge>
   );
 
@@ -189,16 +174,14 @@ export function RestartDiffBadge({
           data-testid="restart-diff-badge"
         >
           <RefreshCw className="h-3 w-3" />
-          {t("agents.restartRequired")}
+          Restart required
         </Badge>
       </TooltipTrigger>
       <TooltipContent className="max-w-72 text-xs" side="bottom">
-        <p className="mb-1.5 font-semibold">
-          {t("agents.configChangedSinceStart")}
-        </p>
+        <p className="mb-1.5 font-semibold">Config changed since last start:</p>
         <DiffList cap={TOOLTIP_CAP} entries={restartDiff} />
-        <p className="mt-1.5 text-primary-foreground/70">
-          {autoRestartBlurb(autoRestartEnabled, t)}
+        <p className="mt-1.5 text-secondary-foreground/70">
+          {autoRestartEnabled ? AUTO_RESTART_ON_BLURB : AUTO_RESTART_OFF_BLURB}
         </p>
       </TooltipContent>
     </Tooltip>

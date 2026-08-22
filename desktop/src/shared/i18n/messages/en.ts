@@ -526,6 +526,9 @@ export const en = {
   "settings.shortcuts.newLine.label": "New line",
   "settings.shortcuts.newLine.description":
     "Insert a line break in the composer",
+  "settings.shortcuts.alwaysAddressAgent.label": "Always address agent",
+  "settings.shortcuts.alwaysAddressAgent.description":
+    "Open the agent picker, or toggle the highlighted agent",
   "settings.shortcuts.publishNote.label": "Publish note",
   "settings.shortcuts.publishNote.description": "Publish a Pulse note",
   "settings.shortcuts.closeDialog.label": "Close dialog",

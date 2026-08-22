@@ -1,6 +1,5 @@
 import { CircleDot, FolderGit2, GitPullRequest, Plus } from "lucide-react";
 import * as React from "react";
-import { useT } from "@/shared/i18n";
 
 import { Button } from "@/shared/ui/button";
 import {
@@ -12,15 +11,16 @@ const MENU_ITEM_CLASS =
   "flex min-h-9 w-full items-center gap-2 rounded-lg py-2 pl-2 pr-4 text-left text-sm outline-hidden transition-colors hover:bg-muted/50 focus:bg-muted/50 focus:text-foreground focus-visible:ring-1 focus-visible:ring-ring [&_svg]:size-4 [&_svg]:shrink-0";
 
 export function ProjectsCreateMenu({
+  compact = false,
   onCreateIssue,
   onCreateProject,
   onCreatePullRequest,
 }: {
+  compact?: boolean;
   onCreateIssue: () => void;
   onCreateProject: () => void;
   onCreatePullRequest: () => void;
 }) {
-  const t = useT();
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLElement>(null);
 
@@ -51,7 +51,7 @@ export function ProjectsCreateMenu({
 
   return (
     <nav
-      aria-label={t("projects.create.menuAria")}
+      aria-label="Create project item"
       className="relative shrink-0"
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -71,13 +71,17 @@ export function ProjectsCreateMenu({
       <Button
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={t("projects.create.menuButton")}
-        className="h-8 w-8 rounded-full"
+        aria-label="Create"
+        className={
+          compact
+            ? "h-6 w-6 shrink-0 rounded-md text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+            : "h-8 w-8 rounded-full"
+        }
         data-testid="projects-create-menu"
         onClick={() => setOpen(true)}
         size="icon"
         type="button"
-        variant="default"
+        variant={compact ? "ghost" : "default"}
       >
         <Plus className="h-4 w-4" />
       </Button>
@@ -95,7 +99,7 @@ export function ProjectsCreateMenu({
               type="button"
             >
               <FolderGit2 />
-              {t("projects.create.menuProject")}
+              Project
             </button>
             <button
               className={MENU_ITEM_CLASS}
@@ -104,7 +108,7 @@ export function ProjectsCreateMenu({
               type="button"
             >
               <CircleDot />
-              {t("projects.create.menuIssue")}
+              Task
             </button>
             <button
               className={MENU_ITEM_CLASS}
@@ -113,7 +117,7 @@ export function ProjectsCreateMenu({
               type="button"
             >
               <GitPullRequest />
-              {t("projects.create.menuPullRequest")}
+              Review
             </button>
           </div>
         </div>

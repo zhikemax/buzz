@@ -2,43 +2,63 @@ import type {
   ProjectRepoSnapshot,
   Repository as Project,
 } from "@/features/projects/hooks";
-import type { MessageKey, TranslateFn } from "@/shared/i18n";
+import type { EntityLinkTab } from "@/shared/lib/entityLink";
 import { normalizePubkey } from "@/shared/lib/pubkey";
+import type { MessageKey, TranslateFn } from "@/shared/i18n";
+
+export const PROJECT_REPOSITORY_SEARCH_KEYS = [
+  "repositoryId",
+  "issueId",
+  "pullRequestId",
+  "commitHash",
+] as const;
+
+export const PROJECT_TAB_CRUMB_LABELS: Record<string, string> = {
+  files: "Files",
+  activity: "Commits",
+  issues: "Tasks",
+  prs: "Review",
+  contributors: "Contributors",
+  channels: "Channels",
+};
 
 const PROJECT_TAB_CRUMB_KEYS: Record<string, MessageKey> = {
   files: "projects.tab.files",
-  activity: "projects.tab.commits",
+  activity: "projects.detail.crumb.commits",
   issues: "projects.tab.issues",
-  prs: "projects.tab.pullRequests",
+  prs: "projects.table.review",
   contributors: "projects.tab.contributors",
+  channels: "sidebar.channels",
 };
 
-export function projectTabCrumbLabel(tab: string, t: TranslateFn): string {
+export function projectTabCrumbLabel(
+  tab: string,
+  t: TranslateFn,
+): string | null {
   const key = PROJECT_TAB_CRUMB_KEYS[tab];
-  return key ? t(key) : tab;
+  if (key) return t(key);
+  return PROJECT_TAB_CRUMB_LABELS[tab] ?? null;
 }
+
+export type ProjectDetailScreenProps = {
+  commitHash?: string;
+  entityNavigationId?: string;
+  projectId: string;
+  pullRequestId?: string;
+  issueId?: string;
+  repositoryId?: string;
+  /** Workspace tab requested by a share link (link vocabulary). */
+  tab?: EntityLinkTab;
+};
 
 /** Tooltip for the push/pull sync buttons, e.g. "Pull 2 remote commits". */
 export function pushPullTitle(
   verb: "Push" | "Pull",
   count: number | undefined,
   side: "local" | "remote",
-  t: TranslateFn,
 ) {
-  const verbLabel =
-    verb === "Push" ? t("projects.sync.pushVerb") : t("projects.sync.pullVerb");
-  const sideLabel =
-    side === "local"
-      ? t("projects.sync.sideLocal")
-      : t("projects.sync.sideRemote");
-  if (!count) {
-    return t("projects.sync.pushPullVerb", { verb: verbLabel, side: sideLabel });
-  }
-  const key =
-    count === 1
-      ? "projects.sync.pushPullCountOne"
-      : "projects.sync.pushPullCountMany";
-  return t(key, { verb: verbLabel, count, side: sideLabel });
+  if (!count) return `${verb} ${side} commits`;
+  return `${verb} ${count} ${side} ${count === 1 ? "commit" : "commits"}`;
 }
 
 /** Returns the normalized owner and contributor pubkeys for a project. */

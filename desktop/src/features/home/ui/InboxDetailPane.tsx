@@ -34,7 +34,6 @@ import {
   isWithinGroupingWindow,
   startsNewMessageGroup,
 } from "@/features/messages/lib/messageGrouping";
-import { orderMentionPubkeysByText } from "@/features/messages/lib/orderMentionPubkeys";
 import { canManageMessageForCurrentUser } from "@/features/messages/lib/canManageMessage";
 import { buildEditMentionState } from "@/features/messages/lib/draftMentionRefs";
 import { imetaMediaFromTags } from "@/features/messages/lib/imetaMediaMarkdown";
@@ -43,14 +42,11 @@ import {
   hasRenderedVideoAttachment,
 } from "@/features/messages/lib/videoReviewContext";
 import { getThreadReference } from "@/features/messages/lib/threading";
-import { normalizePubkey } from "@/shared/lib/pubkey";
 import { MessageComposer } from "@/features/messages/ui/MessageComposer";
 import { useAnchoredScroll } from "@/features/messages/ui/useAnchoredScroll";
 import { useComposerHeightPadding } from "@/features/messages/ui/useComposerHeightPadding";
 import { UpdateIndicator } from "@/features/settings/UpdateIndicator";
 import type { Channel, UserProfileSummary } from "@/shared/api/types";
-import { useT } from "@/shared/i18n";
-import { resolveMentionProps } from "@/shared/lib/resolveMentionNames";
 import { TopChromeInsetHeader } from "@/shared/layout/TopChromeInsetHeader";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
@@ -196,7 +192,6 @@ function InboxMessageDetailPane({
   onSendReply,
   onToggleReaction,
 }: InboxDetailPaneProps) {
-  const t = useT();
   const detailPaneRef = React.useRef<HTMLElement | null>(null);
   const { activeCommunity } = useCommunities();
   // Refs for the shared anchored-scroll hook's container and content roots.
@@ -216,40 +211,6 @@ function InboxMessageDetailPane({
   // Build the plain, non-virtualized timeline the shared hook anchors against.
   // Live arrivals rerun its layout compensation without changing the target.
 
-  // A latest reply can represent an Inbox conversation. Resolve the actual
-  // root from loaded context or the complete feed group; never treat an
-  // unresolved root/profile lookup as an authoritative empty audience.
-  const contextRoot = messages.find((message) => message.id === conversationId);
-  const feedRoot = item
-    ? [item.item, ...item.groupItems].find(
-        (groupItem) => groupItem.id === conversationId,
-      )
-    : undefined;
-  const rootMessage = contextRoot
-    ? {
-        authorPubkey: contextRoot.authorPubkey,
-        content: contextRoot.content,
-        mentionPubkeysByName: contextRoot.mentionPubkeysByName,
-      }
-    : feedRoot && profiles
-      ? {
-          authorPubkey: feedRoot.pubkey,
-          content: feedRoot.content,
-          mentionPubkeysByName: resolveMentionProps(feedRoot.tags, profiles)
-            .mentionPubkeysByName,
-        }
-      : null;
-  const initialAgentPubkeys = rootMessage
-    ? currentPubkey &&
-      normalizePubkey(rootMessage.authorPubkey) ===
-        normalizePubkey(currentPubkey)
-      ? orderMentionPubkeysByText(
-          rootMessage.content,
-          rootMessage.mentionPubkeysByName,
-          (pubkey) => agentPubkeys?.has(pubkey) === true,
-        )
-      : []
-    : undefined;
   const displayMessages = React.useMemo<InboxDisplayMessage[]>(() => {
     const selectedMessage = messages.find((message) => message.isSelected);
     const pendingReplyMessages: InboxDisplayMessage[] = replies.map(
@@ -474,11 +435,9 @@ function InboxMessageDetailPane({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Mail className="h-6 w-6" />
           </div>
-          <p className="mt-4 text-base font-semibold">
-            {t("inbox.detail.selectTitle")}
-          </p>
+          <p className="mt-4 text-base font-semibold">Select a message</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("inbox.detail.selectHint")}
+            Pick an inbox item to see the full message and react to it.
           </p>
         </div>
       </section>
@@ -531,23 +490,23 @@ function InboxMessageDetailPane({
     !isDirectMessage && hasInboxThreadContext(item, messages);
   const contextLabel = isThreadContext
     ? isDirectMessage
-      ? t("inbox.detail.threadWith", { name: item.senderLabel })
+      ? `Thread with ${item.senderLabel}`
       : channelContextName
-        ? t("inbox.detail.threadIn", { channel: channelContextName })
-        : t("inbox.detail.thread")
+        ? `Thread in #${channelContextName}`
+        : "Thread"
     : isDirectMessage
-      ? t("inbox.detail.dmWith", { name: item.senderLabel })
+      ? `DM with ${item.senderLabel}`
       : channelContextName
-        ? t("inbox.detail.messageIn", { channel: channelContextName })
-        : formatInboxTypeLabel(item, t);
+        ? `Message in #${channelContextName}`
+        : formatInboxTypeLabel(item);
   const contextChannelId = item.item.channelId;
   const sourceEventId = selectedEventId ?? item.id;
   const contextThreadRootId = isThreadContext ? item.conversationId : null;
   const openContextLabel = isThreadContext
-    ? t("inbox.detail.openFullThread")
+    ? "Open full thread"
     : isDirectMessage
-      ? t("inbox.detail.openConversation")
-      : t("inbox.openInChannel");
+      ? "Open conversation"
+      : "Open in channel";
 
   const handleSelectReplyTarget = (message: InboxDisplayMessage) => {
     setReplyTargetId((currentReplyTargetId) =>
@@ -582,7 +541,7 @@ function InboxMessageDetailPane({
               >
                 {onBack ? (
                   <Button
-                    aria-label={t("inbox.detail.backAria")}
+                    aria-label="Back to inbox list"
                     className="rounded-full text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                     onClick={onBack}
                     size="icon"
@@ -693,7 +652,7 @@ function InboxMessageDetailPane({
                 data-testid="home-inbox-context-loading"
               >
                 <LoaderCircle className="h-4 w-4 shrink-0 animate-spin" />
-                <span>{t("inbox.detail.loadingContext")}</span>
+                <span>Loading surrounding context...</span>
               </div>
             ) : null}
             {hasThreadContextLoadError ? (
@@ -702,7 +661,7 @@ function InboxMessageDetailPane({
                 data-testid="home-inbox-context-error"
               >
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{t("inbox.detail.contextLoadError")}</span>
+                <span>Some message context could not be loaded.</span>
               </div>
             ) : null}
             {displayMessages.map((message, index) => {
@@ -797,17 +756,9 @@ function InboxMessageDetailPane({
           />
           <div className="pointer-events-auto">
             <MessageComposer
-              audienceContext={
-                isDirectMessage
-                  ? null
-                  : {
-                      type: "thread",
-                      threadRootId: item.conversationId,
-                      initialAgentPubkeys,
-                    }
-              }
+              audienceContext={isDirectMessage ? null : { type: "thread" }}
               channelId={item.item.channelId}
-              channelName={item.channelLabel ?? t("channel.kindChannel")}
+              channelName={item.channelLabel ?? "channel"}
               channelType={composerChannelType}
               containerClassName="px-4 pb-4 sm:px-4"
               disabled={!canReply && !composerEditTarget}
@@ -856,14 +807,10 @@ function InboxMessageDetailPane({
               placeholder={
                 canReply
                   ? isDirectMessage
-                    ? t("composer.messageUser", { name: item.senderLabel })
-                    : item.channelLabel
-                      ? t("inbox.detail.replyToThread", {
-                          channel: item.channelLabel,
-                        })
-                      : t("inbox.detail.replyToChannelThread")
+                    ? `Message ${item.senderLabel}`
+                    : `Send reply to ${item.channelLabel ? `#${item.channelLabel} thread` : "channel thread"}`
                   : (disabledReplyReason ??
-                    t("inbox.detail.repliesUnavailable"))
+                    "Replies are not available for this item.")
               }
               replyTarget={composerReplyTarget}
             />
@@ -893,11 +840,9 @@ function HeaderMoreMenu({
   isDeletingMessage: boolean;
   onDelete: () => void;
 }) {
-  const t = useT();
-  const moreActionsLabel = t("inbox.detail.moreActionsAria");
   const trigger = (
     <Button
-      aria-label={moreActionsLabel}
+      aria-label="More actions"
       className="rounded-full text-muted-foreground"
       size="icon"
       type="button"
@@ -913,7 +858,7 @@ function HeaderMoreMenu({
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
         </TooltipTrigger>
-        <TooltipContent>{moreActionsLabel}</TooltipContent>
+        <TooltipContent>More actions</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
@@ -922,7 +867,7 @@ function HeaderMoreMenu({
           onClick={onDelete}
         >
           <Trash2 className="h-4 w-4" />
-          {t("msg.delete")}
+          Delete message
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

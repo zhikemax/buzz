@@ -1,10 +1,9 @@
-import { useT } from "@/shared/i18n";
 import * as React from "react";
 import { ExternalLink, Plus, RefreshCw } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 import {
-  useAcpRuntimesQuery,
+  useAcpRuntimesQueryForced,
   useGitBashPrerequisiteQuery,
 } from "@/features/agents/hooks";
 import type { AcpRuntimeCatalogEntry } from "@/shared/api/types";
@@ -23,7 +22,6 @@ function GitBashCard({
     ReturnType<typeof useGitBashPrerequisiteQuery>["data"]
   >;
 }) {
-  const t = useT();
   return (
     <div
       className={cn(
@@ -35,7 +33,7 @@ function GitBashCard({
       <div className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <p className="text-sm font-medium">{t("settings.agents.gitBash")}</p>
+            <p className="text-sm font-medium">Git Bash</p>
             <span aria-hidden="true" className="text-muted-foreground/50">
               ·
             </span>
@@ -56,7 +54,7 @@ function GitBashCard({
               onClick={() => void openUrl(prerequisite.installInstructionsUrl)}
               type="button"
             >
-              <ExternalLink className="h-4 w-4" /> {t("settings.agents.installGit")}
+              <ExternalLink className="h-4 w-4" /> Install Git for Windows
             </button>
           ) : null}
         </div>
@@ -65,7 +63,7 @@ function GitBashCard({
             className="mt-3 space-y-1 text-sm text-muted-foreground/70"
             data-settings-subcopy
           >
-            <p>{t("settings.agents.gitBashRequired")}</p>
+            <p>Required for buzz-agent shell tools on Windows.</p>
             <p>{prerequisite.installHint}</p>
           </div>
         ) : null}
@@ -87,8 +85,7 @@ function GitBashCard({
  *   needs multi-step setup, plus the custom-harness form.
  */
 export function HarnessesSettingsPanel() {
-  const t = useT();
-  const runtimesQuery = useAcpRuntimesQuery();
+  const runtimesQuery = useAcpRuntimesQueryForced();
   const gitBashQuery = useGitBashPrerequisiteQuery();
   const [catalogOpen, setCatalogOpen] = React.useState(false);
   // Incremented each time the user clicks "Check again" so HarnessRow
@@ -116,13 +113,13 @@ export function HarnessesSettingsPanel() {
   return (
     <SettingsOptionGroup
       data-testid="settings-harnesses"
-      description={t("settings.agents.runtimesDescription")}
+      description="Choose which agent tools Buzz can use on this device."
       headerAction={
         <Button
           disabled={isRefreshing}
           onClick={() => {
             setResetEpoch((e) => e + 1);
-            void runtimesQuery.refetch();
+            void runtimesQuery.forceRefresh();
             void gitBashQuery.refetch();
           }}
           size="sm"
@@ -132,50 +129,50 @@ export function HarnessesSettingsPanel() {
           <RefreshCw
             className={cn("h-4 w-4", isRefreshing && "animate-spin")}
           />
-          {t("settings.agents.checkAgain")}
+          Check again
         </Button>
       }
-      title={t("settings.agents.runtimesTitle")}
+      title="Agent runtimes"
     >
       <div className="divide-y divide-border/55">
         {gitBashQuery.data ? (
           <section>
             <div className="px-4 py-3 text-sm">
               <h2 className="text-lg font-semibold tracking-tight">
-                {t("settings.agents.prerequisites")}
+                System prerequisites
               </h2>
               <p
                 className="mt-1 text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
               >
-                {t("settings.agents.prerequisitesHint")}
+                Windows tools required by supported agents.
               </p>
             </div>
             <GitBashCard prerequisite={gitBashQuery.data} />
           </section>
         ) : null}
 
-        <section aria-label={t("settings.agents.yourRuntimes")}>
+        <section aria-label="Your runtimes">
           {/* The sub-header only earns its keep when another section (System
               prerequisites, Windows-only) shares the page; otherwise it just
               restates the page header. */}
           {gitBashQuery.data ? (
             <div className="border-b border-border/55 px-4 py-3 text-sm">
               <h2 className="text-lg font-semibold tracking-tight">
-                {t("settings.agents.yourRuntimes")}
+                Your runtimes
               </h2>
               <p
                 className="mt-1 text-sm font-normal text-muted-foreground/70"
                 data-settings-subcopy
               >
-                {t("settings.agents.yourRuntimesHint")}
+                Ready to use, or one click from installed.
               </p>
             </div>
           ) : null}
 
           {runtimesQuery.isLoading ? (
             <div className="px-4 py-4 text-sm font-normal text-muted-foreground">
-              {t("settings.agents.checkingRuntimes")}
+              Checking agent runtimes...
             </div>
           ) : rows.length > 0 ? (
             <div
@@ -193,7 +190,7 @@ export function HarnessesSettingsPanel() {
             </div>
           ) : (
             <div className="bg-amber-500/10 px-4 py-4 text-sm text-warning">
-              {t("settings.agents.noRuntimes")}
+              No agent runtimes ready yet — add one below.
             </div>
           )}
 
@@ -213,7 +210,7 @@ export function HarnessesSettingsPanel() {
               variant="outline"
             >
               <Plus className="h-4 w-4" />
-              {t("settings.agents.addRuntimes")}
+              Add runtimes
             </Button>
           </div>
         </section>

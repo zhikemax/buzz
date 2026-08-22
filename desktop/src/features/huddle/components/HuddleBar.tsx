@@ -29,6 +29,7 @@ import { useEmojiBurst } from "@/shared/ui/EmojiBurstProvider";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import { useHuddle, useHuddleLevels } from "../HuddleContext";
+import { useHuddleParticipantRoster } from "../hooks/useHuddleParticipantRoster";
 import { AddAgentDialog, type AgentAddResult } from "./AddAgentDialog";
 import type { HuddleAgentVoiceSettings } from "./AgentVoiceMenu";
 import { MicControls, SpeakerControls } from "./MicControls";
@@ -386,6 +387,13 @@ export function HuddleBar({
   const barState = isHuddleVisible && state ? state : renderedState;
   const reactionChannelId = barState?.ephemeral_channel_id ?? null;
   const currentPubkey = identityQuery.data?.pubkey ?? null;
+  const lifecycleParticipants = useHuddleParticipantRoster({
+    parentChannelId: barState?.parent_channel_id ?? null,
+    ephemeralChannelId: barState?.ephemeral_channel_id ?? null,
+    fallbackParticipants: barState?.participants ?? [],
+    preservedParticipants: barState?.agent_pubkeys ?? [],
+    huddleThreadEventId: barState?.huddle_thread_event_id ?? null,
+  });
   const participantSpeakerLevels = React.useMemo(() => {
     const levels = { ...speakerLevels };
     if (currentPubkey) {
@@ -708,7 +716,7 @@ export function HuddleBar({
 
           {mode === "main" ? (
             <HuddleParticipantsControl
-              participants={barState.participants}
+              participants={lifecycleParticipants}
               activeSpeakers={activeSpeakers}
               speakerLevels={participantSpeakerLevels}
               agentPubkeys={barState.agent_pubkeys}

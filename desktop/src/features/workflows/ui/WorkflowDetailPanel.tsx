@@ -17,21 +17,22 @@ import {
   getWorkflowDisplayStatus,
   getWorkflowTriggerSummary,
 } from "./workflowDefinition";
-import { useT } from "@/shared/i18n";
 
 type WorkflowDetailPanelProps = {
   workflowId: string;
-  onClose: () => void;
-  onEdit: (workflow: Workflow) => void;
+  onClose?: () => void;
+  onEdit?: (workflow: Workflow) => void;
+  showDefinition?: boolean;
+  showHeader?: boolean;
 };
 
 export function WorkflowDetailPanel({
   workflowId,
   onClose,
   onEdit,
+  showDefinition = true,
+  showHeader = true,
 }: WorkflowDetailPanelProps) {
-  const t = useT();
-
   const workflowQuery = useWorkflowQuery(workflowId);
   const runsQuery = useWorkflowRunsQuery(workflowId);
   const triggerMutation = useTriggerWorkflowMutation(workflowId);
@@ -44,7 +45,7 @@ export function WorkflowDetailPanel({
     ? getWorkflowDescription(workflow.definition)
     : null;
   const triggerSummary = workflow
-    ? getWorkflowTriggerSummary(workflow.definition, t)
+    ? getWorkflowTriggerSummary(workflow.definition)
     : null;
   const workflowStatus = workflow ? getWorkflowDisplayStatus(workflow) : null;
   const triggerError = errorMessage(
@@ -69,73 +70,83 @@ export function WorkflowDetailPanel({
 
   return (
     <div
-      className="flex h-full flex-col border-l bg-background pt-4"
+      className={
+        showHeader
+          ? "flex h-full flex-col border-l bg-background pt-4"
+          : "flex h-full flex-col"
+      }
       data-testid="workflow-detail-panel"
     >
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {workflow ? (
-              <h3 className="truncate text-sm font-semibold">
-                {workflow.name}
-              </h3>
-            ) : (
-              <Skeleton className="h-4 w-36" />
-            )}
-            {workflowStatus ? <RunStatusBadge status={workflowStatus} /> : null}
+      {showHeader ? (
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              {workflow ? (
+                <h3 className="truncate text-sm font-semibold">
+                  {workflow.name}
+                </h3>
+              ) : (
+                <Skeleton className="h-4 w-36" />
+              )}
+              {workflowStatus ? (
+                <RunStatusBadge status={workflowStatus} />
+              ) : null}
+            </div>
+            {workflowDescription ? (
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {workflowDescription}
+              </p>
+            ) : workflowQuery.isLoading ? (
+              <Skeleton className="mt-1 h-3 w-full max-w-64" />
+            ) : null}
+            {triggerSummary ? (
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {triggerSummary}
+              </p>
+            ) : workflowQuery.isLoading ? (
+              <Skeleton className="mt-1 h-3 w-40" />
+            ) : null}
           </div>
-          {workflowDescription ? (
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              {workflowDescription}
-            </p>
-          ) : workflowQuery.isLoading ? (
-            <Skeleton className="mt-1 h-3 w-full max-w-64" />
-          ) : null}
-          {triggerSummary ? (
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              {triggerSummary}
-            </p>
-          ) : workflowQuery.isLoading ? (
-            <Skeleton className="mt-1 h-3 w-40" />
-          ) : null}
-        </div>
-        <div className="flex items-center gap-1">
-          {workflow ? (
+          <div className="flex items-center gap-1">
+            {workflow && onEdit ? (
+              <Button
+                onClick={() => onEdit(workflow)}
+                size="sm"
+                variant="outline"
+              >
+                <Pencil className="mr-1 h-4 w-4" />
+                Edit
+              </Button>
+            ) : null}
             <Button
-              onClick={() => onEdit(workflow)}
+              disabled={triggerMutation.isPending || workflowQuery.isLoading}
+              onClick={() => void handleTrigger()}
               size="sm"
               variant="outline"
             >
-              <Pencil className="mr-1 h-4 w-4" />
-              Edit
+              <Play className="mr-1 h-4 w-4" />
+              {triggerMutation.isPending ? "Triggering..." : "Trigger"}
             </Button>
-          ) : null}
-          <Button
-            disabled={triggerMutation.isPending || workflowQuery.isLoading}
-            onClick={() => void handleTrigger()}
-            size="sm"
-            variant="outline"
-          >
-            <Play className="mr-1 h-4 w-4" />
-            {triggerMutation.isPending ? "Triggering..." : t("agents.cliPart.trigger")}
-          </Button>
-          <Button
-            aria-label={t("workflows.detail.closeAria")}
-            onClick={onClose}
-            size="icon"
-            variant="ghost"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+            {onClose ? (
+              <Button
+                aria-label="Close detail panel"
+                onClick={onClose}
+                size="icon"
+                variant="ghost"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {triggerMutation.isError ? (
         <div
           className="border-b px-4 py-2 text-xs text-destructive"
           role="alert"
         >
-          <p className="font-medium">{t("workflows.triggerFailed")}</p>
+          <p className="font-medium">Failed to trigger workflow</p>
           <p className="mt-1 break-words text-muted-foreground">
             {triggerError}
           </p>
@@ -147,20 +158,28 @@ export function WorkflowDetailPanel({
         data-scroll-restoration-id={`workflow-detail:${workflowId}`}
       >
         {workflow ? (
-          <div className="space-y-4 p-4">
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Definition
-              </h4>
-              <pre className="max-h-64 overflow-auto rounded-md bg-muted/50 p-3 font-mono text-xs leading-relaxed">
-                {JSON.stringify(workflow.definition, null, 2)}
-              </pre>
-            </div>
+          <div
+            className={
+              showHeader ? "space-y-4 p-4" : "space-y-4 px-5 pb-5 pt-2"
+            }
+          >
+            {showDefinition ? (
+              <div>
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Definition
+                </h4>
+                <pre className="max-h-64 overflow-auto rounded-md bg-muted/50 p-3 font-mono text-xs leading-relaxed">
+                  {JSON.stringify(workflow.definition, null, 2)}
+                </pre>
+              </div>
+            ) : null}
 
             <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Run History
-              </h4>
+              {showHeader ? (
+                <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Run History
+                </h4>
+              ) : null}
               {runsQuery.isError ? (
                 <div
                   className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
@@ -192,7 +211,7 @@ export function WorkflowDetailPanel({
                   </p>
                 </div>
               ) : runs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("workflows.detail.noRuns")}</p>
+                <p className="text-sm text-muted-foreground">No runs yet.</p>
               ) : (
                 <div className="space-y-2">
                   {runs.map((run) => {
@@ -248,8 +267,8 @@ export function WorkflowDetailPanel({
                                 <span>
                                   {run.executionTrace.length}{" "}
                                   {run.executionTrace.length === 1
-                                    ? t("workflows.detail.stepOne")
-                                    : t("workflows.detail.stepMany")}
+                                    ? "step"
+                                    : "steps"}
                                 </span>
                                 {duration ? <span>{duration}</span> : null}
                                 {run.currentStep !== null ? (
@@ -270,7 +289,7 @@ export function WorkflowDetailPanel({
                         {isSelected ? (
                           <div className="border-t border-border/60 bg-background/60 px-4 py-4">
                             <div className="mb-3 flex items-center gap-2 text-2xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                              <span>{t("workflows.detail.executionTrace")}</span>
+                              <span>Execution Trace</span>
                               {approvalsQuery.isFetching ? (
                                 <span className="text-2xs tracking-[0.12em] text-muted-foreground/80">
                                   Refreshing approvals...
@@ -297,10 +316,14 @@ export function WorkflowDetailPanel({
           </div>
         ) : workflowQuery.isError ? (
           <div className="flex h-32 flex-col items-center justify-center gap-2">
-            <p className="text-sm text-red-400">{t("workflows.detail.loadFailed")}</p>
+            <p className="text-sm text-red-400">Failed to load workflow</p>
           </div>
         ) : (
-          <div className="space-y-4 p-4">
+          <div
+            className={
+              showHeader ? "space-y-4 p-4" : "space-y-4 px-5 pb-5 pt-2"
+            }
+          >
             <div>
               <Skeleton className="mb-2 h-4 w-28" />
               <Skeleton className="h-40 w-full rounded-xl" />

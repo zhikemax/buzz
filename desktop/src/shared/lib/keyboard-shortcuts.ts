@@ -178,6 +178,14 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     category: "messages",
   },
   {
+    id: "always-address-agent",
+    labelKey: "settings.shortcuts.alwaysAddressAgent.label",
+    descriptionKey: "settings.shortcuts.alwaysAddressAgent.description",
+    keys: "⇧⌘↵",
+    keysWindows: "Ctrl+Shift+Enter",
+    category: "messages",
+  },
+  {
     id: "publish-note",
     labelKey: "settings.shortcuts.publishNote.label",
     descriptionKey: "settings.shortcuts.publishNote.description",
