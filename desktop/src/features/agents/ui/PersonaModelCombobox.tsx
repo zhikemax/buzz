@@ -9,6 +9,7 @@ import {
   PERSONA_FIELD_CONTROL_CLASS,
   PERSONA_FIELD_SHELL_CLASS,
 } from "./agentConfigOptions";
+import { OptionLabel } from "./PersonaDropdownOptionLabel";
 
 type PersonaModelComboboxProps = {
   disabled?: boolean;
@@ -37,8 +38,11 @@ export function PersonaModelCombobox({
   const filteredOptions = React.useMemo(() => {
     if (query.trim() === "") return options;
     const lower = query.toLowerCase();
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(lower),
+    // Search the raw id too, so `system.ai` finds rows whose label hides it.
+    return options.filter(
+      (option) =>
+        option.label.toLowerCase().includes(lower) ||
+        option.value.toLowerCase().includes(lower),
     );
   }, [options, query]);
 
@@ -206,7 +210,7 @@ export function PersonaModelCombobox({
                       )}
                     />
                   </span>
-                  <span className="truncate">{option.label}</span>
+                  <OptionLabel option={option} />
                 </button>
               ))
             ) : (

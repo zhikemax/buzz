@@ -104,7 +104,13 @@ function PairingStepIndicator({
   );
 }
 
-function PairingSteps({ step }: { step: PairingStep }) {
+function PairingSteps({
+  step,
+  codeEntry,
+}: {
+  step: PairingStep;
+  codeEntry: boolean;
+}) {
   const t = useT();
   const hasScanned =
     step === "sas" || step === "transferring" || step === "done";
@@ -140,11 +146,19 @@ function PairingSteps({ step }: { step: PairingStep }) {
           testId="mobile-pairing-confirm-step-indicator"
         />
         <div className="min-w-0 pt-0.5">
-          <p className="text-base font-medium">{t("settings.mobile.stepConfirmTitle")}</p>
+          <p className="text-base font-medium">
+            {codeEntry
+              ? t("settings.mobile.stepEnterCodeTitle")
+              : t("settings.mobile.stepConfirmTitle")}
+          </p>
           <p
             className="mt-1 text-sm text-muted-foreground/70"
             data-settings-subcopy
-          >{t("settings.mobile.stepConfirmDesc")}</p>
+          >
+            {codeEntry
+              ? t("settings.mobile.stepEnterCodeDesc")
+              : t("settings.mobile.stepConfirmDesc")}
+          </p>
         </div>
       </li>
 
@@ -167,7 +181,7 @@ function PairingSteps({ step }: { step: PairingStep }) {
           >
             {isPaired
               ? "Your mobile app is now connected to this relay."
-              : "Your mobile app will connect after you confirm the code."}
+              : "Finish setup on your phone to connect your mobile app."}
           </p>
         </div>
       </li>
@@ -176,10 +190,12 @@ function PairingSteps({ step }: { step: PairingStep }) {
 }
 
 function PairingCodeConfirmation({
+  codeEntry,
   onConfirm,
   onDeny,
   sasCode,
 }: {
+  codeEntry: boolean;
   onConfirm: () => void;
   onDeny: () => void;
   sasCode: string;
@@ -196,13 +212,19 @@ function PairingCodeConfirmation({
         className="self-start text-base font-medium"
         data-testid="pairing-sas-title"
       >
-        {t("settings.mobile.stepConfirmTitle")}
+        {codeEntry
+          ? t("settings.mobile.stepEnterCodeTitle")
+          : t("settings.mobile.stepConfirmTitle")}
       </p>
       <fieldset
         className="flex w-full self-center justify-center gap-[6px]"
         data-testid="pairing-sas-code"
       >
-        <legend className="sr-only">Confirmation code {formattedCode}</legend>
+        <legend className="sr-only">
+          {t("settings.mobile.confirmationCodeLegend", {
+            code: formattedCode,
+          })}
+        </legend>
         {PAIRING_CODE_DIGIT_POSITIONS.map((position) => (
           <span
             aria-hidden="true"
@@ -227,14 +249,16 @@ function PairingCodeConfirmation({
         className="flex w-[240px] flex-col gap-2 self-end justify-self-center"
         data-testid="pairing-sas-actions"
       >
-        <Button
-          className="w-full"
-          data-testid="confirm-sas"
-          onClick={onConfirm}
-        >
-          <Check />
-          {t("settings.mobile.codesMatch")}
-        </Button>
+        {!codeEntry && (
+          <Button
+            className="w-full"
+            data-testid="confirm-sas"
+            onClick={onConfirm}
+          >
+            <Check />
+            {t("settings.mobile.codesMatch")}
+          </Button>
+        )}
         <Button
           className="w-full"
           data-testid="deny-sas"
@@ -256,6 +280,7 @@ export function MobilePairingCard({
   const t = useT();
   const [step, setStep] = useState<PairingStep>("idle");
   const [qrUri, setQrUri] = useState<string | null>(null);
+  const [codeEntry, setCodeEntry] = useState(true);
   const [sasCode, setSasCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
@@ -269,6 +294,7 @@ export function MobilePairingCard({
     setStep("generating");
     setQrUri(null);
     setSasCode(null);
+    setCodeEntry(true);
     setError(null);
 
     startPairing().then(
@@ -294,6 +320,7 @@ export function MobilePairingCard({
     setStep("idle");
     setQrUri(null);
     setSasCode(null);
+    setCodeEntry(true);
     setError(null);
 
     if (!currentPubkey) {
@@ -303,11 +330,22 @@ export function MobilePairingCard({
     let cancelled = false;
     const unlisteners: (() => void)[] = [];
 
-    listen<{ sas: string }>("pairing-sas-received", (event) => {
-      if (!cancelled && pairingActiveRef.current) {
-        setSasCode(event.payload.sas);
-        setStep("sas");
-      }
+    listen<{ sas: string; code_entry?: boolean }>(
+      "pairing-sas-received",
+      (event) => {
+        if (!cancelled && pairingActiveRef.current) {
+          setSasCode(event.payload.sas);
+          setCodeEntry(event.payload.code_entry === true);
+          setStep("sas");
+        }
+      },
+    ).then((fn) => {
+      if (cancelled) fn();
+      else unlisteners.push(fn);
+    });
+
+    listen("pairing-code-entered", () => {
+      if (!cancelled && pairingActiveRef.current) setStep("transferring");
     }).then((fn) => {
       if (cancelled) fn();
       else unlisteners.push(fn);
@@ -388,7 +426,7 @@ export function MobilePairingCard({
   function handleDenySas() {
     pairingActiveRef.current = false;
     cancelPairing().catch(() => {});
-    setError("The codes didn't match. Pairing was canceled.");
+    setError(t("settings.mobile.canceled"));
     setStep("error");
   }
 
@@ -414,11 +452,18 @@ export function MobilePairingCard({
             and is visually hidden, so it changes nothing on screen. */}
         <p aria-live="polite" className="sr-only" data-testid="pairing-status">
           {step === "sas" && sasCode
-            ? `Verification code ${sasCode.slice(0, 3)} ${sasCode.slice(3, 6)} ready. Check that it matches on your mobile device, then confirm the codes match.`
+            ? t(
+                codeEntry
+                  ? "settings.mobile.liveRegionSasEnter"
+                  : "settings.mobile.liveRegionSas",
+                {
+                  code: `${sasCode.slice(0, 3)} ${sasCode.slice(3, 6)}`,
+                },
+              )
             : step === "transferring"
-              ? "Codes confirmed. Pairing your mobile device."
+              ? t("settings.mobile.liveRegionTransferring")
               : step === "done"
-                ? "Your mobile app is now paired."
+                ? t("settings.mobile.liveRegionDone")
                 : ""}
         </p>
         <SettingsOptionRow
@@ -443,6 +488,7 @@ export function MobilePairingCard({
             >
               {step === "sas" && sasCode ? (
                 <PairingCodeConfirmation
+                  codeEntry={codeEntry}
                   onConfirm={() => void handleConfirmSas()}
                   onDeny={handleDenySas}
                   sasCode={sasCode}
@@ -487,7 +533,7 @@ export function MobilePairingCard({
                 <div className="flex max-w-52 flex-col items-center gap-3 text-center">
                   <TriangleAlert className="h-6 w-6 text-destructive" />
                   <p className="text-sm text-destructive">
-                    {error ?? "Pairing session ended."}
+                    {error ?? t("settings.mobile.sessionEnded")}
                   </p>
                   <Button
                     data-testid="retry-pairing-button"
@@ -550,7 +596,7 @@ export function MobilePairingCard({
             </div>
           </div>
 
-          <PairingSteps step={step} />
+          <PairingSteps step={step} codeEntry={codeEntry} />
         </SettingsOptionRow>
       </SettingsOptionGroup>
     </section>

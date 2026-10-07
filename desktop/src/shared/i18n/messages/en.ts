@@ -4962,6 +4962,25 @@ export const en = {
   "status.expirationTimeAria": "Status expiration time",
   "status.chooseFutureDuration": "Choose a duration in the future.",
   "status.quickStatuses": "Quick statuses",
+
+  // ── Merge upstream/main → 0.5.27 (2026-10): localized new upstream UI ──
+  // Agent dialogs
+  "agents.chooseAcpCommand": "Choose an ACP command",
+  // Communities: remove-from-device flow
+  "community.removeFromDevice": "Remove from this device",
+  "community.leaveFailedRemoveHint":
+    "{message} If the community no longer exists, use Remove from this device.",
+  "community.removeFromDeviceFailed":
+    "Couldn't remove the community from this device. Try again.",
+  "community.removeFromDeviceConfirm":
+    "Remove \"{name}\" from this device? Buzz won't contact the relay, so your membership isn't revoked. You can add the community again later.",
+  "common.remove": "Remove",
+  // Mobile pairing: enter-code-on-phone variant
+  "settings.mobile.stepEnterCodeTitle": "Enter code on your phone",
+  "settings.mobile.stepEnterCodeDesc":
+    "Type the six-digit code shown here into the Buzz mobile app.",
+  "settings.mobile.liveRegionSasEnter":
+    "Verification code {code} ready. Enter this code in the Buzz app on your phone.",
 } as const;
 
 export type MessageKey = keyof typeof en;

@@ -7,7 +7,7 @@ members = ["crates/buzz-terminal"]
 
 [package]
 name = "buzz-desktop"
-version = "0.5.23"
+version = "0.5.27"
 description = "Buzz desktop app"
 authors = ["you"]
 edition = "2021"
@@ -39,7 +39,13 @@ libc = "0.2"
 ctrlc = { version = "3", features = ["termination"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-keyring = { version = "3.6.3", default-features = false, features = ["sync-secret-service", "vendored"], optional = true }
+# `crypto-rust` is what selects `EncryptionType::Dh` over `Plain` for the
+# Secret Service session (keyring-3.6.3/src/secret_service.rs:140-143,333-336),
+# i.e. Diffie-Hellman transit encryption of secrets over the D-Bus session bus.
+# Until MeshLLM 0.76 it arrived implicitly via feature unification with
+# mesh-llm's own keyring 3; mesh-llm now uses keyring 4, so request it here
+# explicitly rather than inheriting it by accident.
+keyring = { version = "3.6.3", default-features = false, features = ["sync-secret-service", "crypto-rust", "vendored"], optional = true }
 # Used directly (alongside tauri-plugin-notification) so we can hold the posting
 # D-Bus connection open. GNOME 46+ dismisses a notification the moment that
 # connection is dropped, which the plugin does immediately. Default features
@@ -81,7 +87,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 infer = "0.19"
 hex = "0.4"
-ed25519-dalek = "=3.0.0-rc.0"
+ed25519-dalek = "=3.0.0"
 tokio = { version = "1", features = ["fs", "sync", "rt", "macros", "time", "net", "io-util"] }
 tokio-tungstenite = { version = "0.29", features = ["rustls-tls-webpki-roots"] }
 tokio-util = { version = "0.7", features = ["rt"] }
@@ -112,6 +118,8 @@ buzz_ws_client_pkg = { package = "buzz-ws-client", path = "../../crates/buzz-ws-
 portable-pty = "0.9"
 # Fork-local: mesh-llm/iroh optional deps omitted — the mesh-llm git deps break
 # this Windows environment and the `mesh-llm` feature is an empty feature above.
+# Upstream 0.5.27 also gates iroh + mesh-llm-{sdk,host-runtime,client,node,
+# system,events} (tag v0.76.2) behind that feature; they stay omitted here.
 base64 = "0.22"
 sha2 = "0.11"
 tar = "0.4"
@@ -131,7 +139,8 @@ zip = "8"
 flate2 = "1"
 sherpa-onnx = { version = "1.12", default-features = false, features = ["shared"] }
 regex = "1"
-rusqlite = { version = "0.37", features = ["bundled"] }
+# Match MeshLLM's SQLite ABI; keep u64 conversions available without mesh-llm.
+rusqlite = { version = "0.40", features = ["bundled", "fallible_uint"] }
 axum = "0.8"
 rodio = "0.22"
 earshot = "1.0"

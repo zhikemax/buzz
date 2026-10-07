@@ -1,3 +1,4 @@
+import { isRelayRemovedError } from "@/features/agents/managedAgentRelayCleanup";
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
@@ -6,6 +7,7 @@ import { toast } from "sonner";
 
 import {
   agentConfigSurfaceQueryKey,
+  useAcpCommandsQuery,
   useAcpRuntimesQuery,
   useAgentConfigSurface,
   useBakedBuildEnvKeysQuery,
@@ -28,6 +30,7 @@ import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
 import { Dialog } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { setManagedAgentAutoRestart } from "@/shared/api/tauriManagedAgents";
+import { effortChoices, isSavableEffort, ownEffortLevel } from "./effortPicker";
 import { EffortPickerField } from "./EffortPickerField";
 import { EditAgentAdvancedFields } from "./EditAgentAdvancedFields";
 import {
@@ -120,13 +123,12 @@ export function AgentInstanceEditDialog({
   const updateMutation = useUpdateManagedAgentMutation();
   const startMutation = useStartManagedAgentMutation();
   const queryClient = useQueryClient();
-  // Spans the COMPLETE Save sequence (locked update + standalone setters).
-  // Every gate must key off this, not updateMutation.isPending alone.
+  // Gate the full Save sequence, including standalone setters, with isSaving.
   const [isSaving, setIsSaving] = React.useState(false);
-  // Surfaces a standalone-setter failure (auto-restart or effort) that React
-  // Query does not track — keeps the dialog open so the user can retry Save.
+  // Keep standalone-setter failures visible so the user can retry Save.
   const [setterError, setSetterError] = React.useState<Error | null>(null);
   const runtimesQuery = useAcpRuntimesQuery({ enabled: open });
+  const acpCommandsQuery = useAcpCommandsQuery({ enabled: open });
   const configSurfaceQuery = useAgentConfigSurface(open ? agent.pubkey : null);
   const runtimes = runtimesQuery.data ?? [];
 
@@ -157,13 +159,10 @@ export function AgentInstanceEditDialog({
   const [envVars, setEnvVars] = React.useState<EnvVarsValue>(agent.envVars);
   const [autoRestartOnConfigChange, setAutoRestartOnConfigChange] =
     React.useState(agent.autoRestartOnConfigChange);
-  // Effort picker is Save-gated: hold the pending selection in dialog state and
-  // embed it in the locked update payload on Save alone (see
-  // resolveEffortSubmission / handleSubmit — PR #4625), never on selection.
-  // `effortTouched` distinguishes "user picked a value" from "showing the
-  // config-surface effective value", so an untouched Save writes nothing.
-  const [effortLevel, setEffortLevel] = React.useState<string | null>(null);
-  const effortTouched = React.useRef(false);
+  // Save-gated effort (PR #4625); untouched Saves write nothing.
+  // `undefined` means untouched; `null` means cleared to the adapter default.
+  const [effortLevel, setEffortLevel] = React.useState<string | null>();
+  const effortTouched = effortLevel !== undefined;
   const personasQuery = usePersonasQuery();
   const linkedPersona = React.useMemo(
     () =>
@@ -193,6 +192,14 @@ export function AgentInstanceEditDialog({
   // Tracks whether the user has made an in-dialog runtime selection.
   const runtimeTouched = React.useRef(false);
 
+  const savedRuntime = React.useMemo(
+    () =>
+      runtimes.find((r) => r.command?.trim() === agent.agentCommand.trim()) ??
+      runtimes.find((r) => r.id === agent.agentCommand.trim()),
+    [runtimes, agent.agentCommand],
+  );
+  const savedRuntimeId = savedRuntime?.id ?? "custom";
+
   // Reset form state only when the dialog opens or when switching to a different agent.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — including agent fields would re-fire on every 5s poll and wipe edits
   React.useEffect(() => {
@@ -213,8 +220,7 @@ export function AgentInstanceEditDialog({
       setIsCustomProviderEditing(false);
       setEnvVars(agent.envVars);
       setAutoRestartOnConfigChange(agent.autoRestartOnConfigChange);
-      setEffortLevel(null);
-      effortTouched.current = false;
+      setEffortLevel(undefined);
       setSetterError(null);
       setRespondTo(agent.respondTo);
       setRespondToAllowlist(agent.respondToAllowlist);
@@ -223,10 +229,7 @@ export function AgentInstanceEditDialog({
       setIsAvatarUploadPending(false);
       setIsAddHarnessOpen(false);
       runtimeTouched.current = false;
-      const matched =
-        runtimes.find((r) => r.command?.trim() === agent.agentCommand.trim()) ??
-        runtimes.find((r) => r.id === agent.agentCommand.trim());
-      setSelectedRuntimeId(matched ? matched.id : "custom");
+      setSelectedRuntimeId(savedRuntimeId);
       updateMutation.reset();
     }
   }, [open, agent.pubkey]);
@@ -236,13 +239,10 @@ export function AgentInstanceEditDialog({
     if (!open || runtimeTouched.current || runtimes.length === 0) {
       return;
     }
-    const matched =
-      runtimes.find((r) => r.command?.trim() === agent.agentCommand.trim()) ??
-      runtimes.find((r) => r.id === agent.agentCommand.trim());
-    if (matched) {
-      setSelectedRuntimeId(matched.id);
+    if (savedRuntime) {
+      setSelectedRuntimeId(savedRuntime.id);
     }
-  }, [open, runtimes, agent.agentCommand]);
+  }, [open, runtimes, savedRuntime]);
 
   // Build the sorted runtime catalog for the dropdown.
   const sortedRuntimes = React.useMemo(
@@ -438,6 +438,7 @@ export function AgentInstanceEditDialog({
     discoveredModelOptions,
     modelDiscoveryLoading,
     modelDiscoveryStatus,
+    agentDefaultModel,
   } = usePersonaModelDiscovery({
     envVars: envVarsForDiscovery,
     isCustomProviderEditing,
@@ -530,8 +531,7 @@ export function AgentInstanceEditDialog({
     runtimeTouched.current = true;
     const resolvedRuntimeId = nextRuntimeId || "custom";
     setSelectedRuntimeId(resolvedRuntimeId);
-    effortTouched.current = false;
-    setEffortLevel(null);
+    setEffortLevel(undefined);
     const isCustomCommand = resolvedRuntimeId === "custom";
 
     // Only pin the harness when the selection can actually supply a command:
@@ -641,6 +641,16 @@ export function AgentInstanceEditDialog({
     !isSaving &&
     !isAvatarUploadPending;
 
+  // Harness pin resolution — see resolveAgentCommandUpdate for the full
+  // sentinel/pin/no-op contract. "" is the pin→inherit transition.
+  const agentCommandUpdate = resolveAgentCommandUpdate({
+    inheritHarness,
+    agentCommand,
+    originalAgentCommand: agent.agentCommand,
+    agentCommandOverride: agent.agentCommandOverride ?? null,
+  });
+  const inheritTransition = agentCommandUpdate === "";
+
   async function handleSubmit() {
     setIsSaving(true);
     setSetterError(null);
@@ -654,16 +664,6 @@ export function AgentInstanceEditDialog({
       // provider-backed inherit-transition carries the persona model (readiness
       // requires one) and a deliberate local model still wins.
       const normalizedModel = inheritedSubmission.model;
-
-      // Harness pin resolution — see resolveAgentCommandUpdate for the full
-      // sentinel/pin/no-op contract, including the inherit→pin transition where
-      // the prefilled command equals the original but must still be pinned.
-      const agentCommandUpdate = resolveAgentCommandUpdate({
-        inheritHarness,
-        agentCommand,
-        originalAgentCommand: agent.agentCommand,
-        agentCommandOverride: agent.agentCommandOverride ?? null,
-      });
 
       // Classify the effective post-submit runtime's provider capability as a
       // tri-state: "capable" persists the provider, "locked" clears it (only
@@ -752,17 +752,14 @@ export function AgentInstanceEditDialog({
             : undefined,
       };
 
-      // Resolve effort before the update so access-change restarts can
-      // snapshot and launch the NEW effort value atomically.
+      // Effort rides the locked update so restarts launch the new value.
       const effortSubmission = resolveEffortSubmission({
-        effortLevel,
-        originalEffortLevel:
-          configSurfaceQuery.data?.normalized.thinkingEffort?.value ?? null,
-        inheritTransition: agentCommandUpdate === "",
+        effortLevel: effortLevel ?? null,
+        originalEffortLevel: storedEffort,
+        inheritTransition,
+        choices: effortOptions,
       });
-      // Include effort in the locked update when touched (tri-state: absent =
-      // don't touch; null = clear; string = set). Only when effortSubmission.persist.
-      if (effortTouched.current && effortSubmission.persist) {
+      if (effortTouched && effortSubmission.persist) {
         input.effortLevel = effortSubmission.level;
       }
 
@@ -781,11 +778,7 @@ export function AgentInstanceEditDialog({
             autoRestartOnConfigChange,
           );
         }
-        // Effort disk write happened inside the locked update. Only need to
-        // invalidate the cache here (when effortTouched && effortSubmission.persist).
-        // If effort was not included (!effortSubmission.persist), nothing to do.
-        if (effortTouched.current && effortSubmission.persist) {
-          // Disk write already done; invalidate so the panel tier reflects it.
+        if (effortTouched && effortSubmission.persist) {
           await queryClient.invalidateQueries({
             queryKey: agentConfigSurfaceQueryKey(agent.pubkey),
           });
@@ -820,6 +813,7 @@ export function AgentInstanceEditDialog({
                 onSuccess: () =>
                   toast.success(t("agents.startedNamed", { name: startedName })),
                 onError: (error) =>
+                  isRelayRemovedError(error) ||
                   toast.error(
                     error instanceof Error
                       ? t("agents.failedToStartNamed", {
@@ -878,6 +872,20 @@ export function AgentInstanceEditDialog({
     options: effectiveModelOptions,
     t,
   });
+  const storedEffort = ownEffortLevel(normalizedConfig?.thinkingEffort);
+  const effortOptions = effortChoices({
+    runtimeId: selectedRuntime?.id,
+    models: [
+      linkedPersona ? linkedPersona.model : inheritedSubmission.model, // Save never sends a linked model
+      globalConfig.model, // build/provider fallbacks never reach Claude
+      agentDefaultModel,
+    ],
+    sessionApplies: !runtimeTouched.current,
+    session: configSurfaceQuery.data,
+  });
+  // Show a pick only while Save would keep it.
+  const effortPickKept =
+    effortTouched && isSavableEffort(effortLevel, effortOptions);
   const modelStatusMessage = resolveModelFieldStatusMessage({
     discoveredModelOptions,
     loading: modelDiscoveryLoading,
@@ -1230,21 +1238,14 @@ export function AgentInstanceEditDialog({
             </div>
 
             <EffortPickerField
-              agent={agent}
-              config={
-                runtimeTouched.current ? undefined : configSurfaceQuery.data
-              }
+              backend={agent.backend}
+              // The inherit transition clears effort, so nothing to pick.
+              choices={inheritTransition ? undefined : effortOptions}
               disabled={isSaving}
-              value={
-                effortTouched.current
-                  ? effortLevel
-                  : (configSurfaceQuery.data?.normalized.thinkingEffort
-                      ?.value ?? null)
-              }
-              onChange={(level) => {
-                effortTouched.current = true;
-                setEffortLevel(level);
-              }}
+              // A stored level survives a runtime switch; keep it clearable.
+              storedEffort={inheritTransition ? null : storedEffort}
+              value={effortPickKept ? effortLevel : storedEffort}
+              onChange={setEffortLevel}
             />
 
             <AgentAiDefaultsNotice
@@ -1257,7 +1258,6 @@ export function AgentInstanceEditDialog({
               inheritedModel={inheritedModelDefault}
               inheritedProvider={inheritedProviderDefault}
             />
-
             <AgentDefaultsDialog
               onOpenChange={setAiDefaultsOpen}
               open={aiDefaultsOpen}
@@ -1298,6 +1298,7 @@ export function AgentInstanceEditDialog({
                   >
                     <EditAgentAdvancedFields
                       acpCommand={acpCommand}
+                      acpCommandCandidates={acpCommandsQuery.data ?? []}
                       agentArgs={agentArgs}
                       autoRestartOnConfigChange={autoRestartOnConfigChange}
                       disabled={isSaving}

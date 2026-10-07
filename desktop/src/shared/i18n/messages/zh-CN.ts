@@ -4693,4 +4693,23 @@ export const zhCN: Record<MessageKey, string> = {
   "status.expirationTimeAria": "状态到期时间",
   "status.chooseFutureDuration": "请选择未来的时间。",
   "status.quickStatuses": "快捷状态",
+
+  // ── 合并 upstream/main → 0.5.27（2026-10）：上游新界面的本地化 ──
+  // 智能体对话框
+  "agents.chooseAcpCommand": "选择 ACP 命令",
+  // 社区：从设备移除流程
+  "community.removeFromDevice": "从此设备移除",
+  "community.leaveFailedRemoveHint":
+    "{message} 如果该社区已不存在，请使用「从此设备移除」。",
+  "community.removeFromDeviceFailed":
+    "无法从此设备移除该社区，请重试。",
+  "community.removeFromDeviceConfirm":
+    "确定要从此设备移除「{name}」吗？Buzz 不会联系中继，因此你的成员身份不会被撤销。以后仍可再次加入该社区。",
+  "common.remove": "移除",
+  // 移动配对：在手机上输入验证码的变体
+  "settings.mobile.stepEnterCodeTitle": "在手机上输入验证码",
+  "settings.mobile.stepEnterCodeDesc":
+    "将此处显示的六位验证码输入 Buzz 手机应用。",
+  "settings.mobile.liveRegionSasEnter":
+    "验证码 {code} 已就绪。请在手机 Buzz 应用中输入此验证码。",
 };

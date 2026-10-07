@@ -1,3 +1,4 @@
+import { isRelayRemovedError } from "@/features/agents/managedAgentRelayCleanup";
 import {
   agentPresenceStartBlockReason,
   type AgentAvailabilityReader,
@@ -136,6 +137,7 @@ export function useMembersSidebarActions({
 
           successCount += 1;
         } catch (error) {
+          if (isRelayRemovedError(error)) continue;
           failures.push({
             error: error instanceof Error ? error.message : failureMessage,
             name: agent.name,
@@ -215,6 +217,7 @@ export function useMembersSidebarActions({
       });
       setActionNoticeMessage(getLifecycleSuccessMessage(agent, t));
     } catch (error) {
+      if (isRelayRemovedError(error)) return;
       setActionErrorMessage(
         error instanceof Error
           ? error.message
@@ -231,6 +234,7 @@ export function useMembersSidebarActions({
         assertStartNotBlockedByPresence(agent, isManagedAgentActive(agent));
         await respawnManagedAgentWithRules({
           agent,
+          relayUrl,
           startManagedAgent: startManagedAgentMutation.mutateAsync,
           stopManagedAgent: stopManagedAgentMutation.mutateAsync,
           onStopped: () => clearActiveTurnsForAgentOnStop(agent.pubkey),

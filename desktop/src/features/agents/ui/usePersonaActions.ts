@@ -1,4 +1,5 @@
 import * as React from "react";
+import { isRelayRemovedError } from "@/features/agents/managedAgentRelayCleanup";
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -177,6 +178,7 @@ export function usePersonaActions() {
     input: CreatePersonaInput | UpdatePersonaInput,
     intent?: AgentCreateIntent,
     backendIntent?: BackendIntent | null,
+    effortLevel?: string | null,
     targetChannel?: Pick<Channel, "id" | "name"> | null,
     options?: { publishCatalogUpdates?: boolean },
   ): Promise<boolean> {
@@ -243,6 +245,7 @@ export function usePersonaActions() {
           runtime,
           undefined,
           startIntent ?? undefined,
+          effortLevel,
         );
 
         try {
@@ -251,7 +254,7 @@ export function usePersonaActions() {
             created,
             targetChannel,
           );
-          if (created.spawnError) {
+          if (created.spawnError && !isRelayRemovedError(created.spawnError)) {
             setPersonaErrorMessage(
               t("agents.createdButDidNotStart", {
                 name: persona.displayName,
@@ -336,6 +339,7 @@ export function usePersonaActions() {
             avatarUrl: persona.avatarUrl ?? undefined,
             description: persona.description ?? undefined,
             systemPrompt: persona.systemPrompt,
+            acpCommand: persona.acpCommand,
             runtime: persona.runtime ?? undefined,
             model: persona.model ?? undefined,
             provider: persona.provider ?? undefined,

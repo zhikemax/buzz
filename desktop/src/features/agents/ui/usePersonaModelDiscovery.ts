@@ -13,7 +13,11 @@ import {
 } from "./personaModelDiscoveryStatus";
 import type { PersonaModelOption } from "./agentConfigOptions";
 import { providerRequiresExplicitModel } from "./agentConfigOptions";
-import { resolveModelLabel } from "@/features/agents/lib/formatAgentModelLabel";
+import {
+  disambiguateModelLabels,
+  resolveModelLabel,
+} from "@/features/agents/lib/formatAgentModelLabel";
+import { generateBareModelLabel } from "./modelCapabilities";
 
 export const MODEL_DISCOVERY_LOADING_VALUE = "__model_discovery_loading__";
 
@@ -38,10 +42,20 @@ function isHarnessDefaultModelEntry(model: { id: string }) {
   return model.id.trim().toLowerCase() === "default";
 }
 
+/** Our generated label for a full Claude Code model id, `[1m]` kept as a
+ * suffix. Short names (`opus`) and unknown suffixes return null. */
+export function claudeCodeModelLabel(id: string): string | null {
+  if (/[^\p{ASCII}]/u.test(id)) return null;
+  const match = /^([^[]+)(\[1m\])?$/i.exec(id.trim());
+  const label = match ? generateBareModelLabel(match[1]) : null;
+  return label && match?.[2] ? `${label} (1M context)` : label;
+}
+
 export function getDiscoveredPersonaModelOptions(
   response: AgentModelsResponse | null,
   provider: string,
   t: TranslateFn,
+  runtimeId?: string,
 ): readonly PersonaModelOption[] | null {
   if (!response?.supportsSwitching || response.models.length === 0) {
     return null;
@@ -55,7 +69,15 @@ export function getDiscoveredPersonaModelOptions(
     (model) => !isHarnessDefaultModelEntry(model),
   );
   const harnessDefaultEntry = response.models.find(isHarnessDefaultModelEntry);
+  const labelFor = (id: string, name: string | null, rawId = id) =>
+    (runtimeId === "claude" ? claudeCodeModelLabel(rawId) : null) ??
+    resolveModelLabel(id, name, provider);
   const agentDefaultModel = response.agentDefaultModel?.trim();
+  // The harness's own "default" entry is already a Default label; naming it
+  // again would read "Default model (Default (recommended))".
+  const defaultIsHarnessEntry =
+    agentDefaultModel !== undefined &&
+    isHarnessDefaultModelEntry({ id: agentDefaultModel });
 
   const defaultModelOption =
     providerRequiresExplicitModel(provider) && harnessDefaultEntry === undefined
@@ -66,15 +88,20 @@ export function getDiscoveredPersonaModelOptions(
             label:
               provider === "relay-mesh"
                 ? t("agents.defaultAuto")
-                : agentDefaultModel
+                : agentDefaultModel && !defaultIsHarnessEntry
                   ? t("settings.agents.defaultModelWithId", {
-                      model: resolveModelLabel(
+                      model: labelFor(
                         agentDefaultModel,
-                        null,
-                        provider,
+                        response.models.find(
+                          (model) => model.id === agentDefaultModel,
+                        )?.name ?? null,
+                        response.agentDefaultModel ?? "",
                       ),
                     })
                   : t("agents.defaultModel"),
+            ...(defaultIsHarnessEntry && harnessDefaultEntry?.description
+              ? { description: harnessDefaultEntry.description }
+              : {}),
           },
         ];
 
@@ -84,10 +111,14 @@ export function getDiscoveredPersonaModelOptions(
 
   return [
     ...defaultModelOption,
-    ...explicitModels.map((model) => ({
-      id: model.id,
-      label: resolveModelLabel(model.id, model.name, provider),
-    })),
+    ...disambiguateModelLabels(
+      explicitModels.map((model) => ({
+        id: model.id,
+        label: labelFor(model.id, model.name),
+        ...(model.description ? { description: model.description } : {}),
+      })),
+      provider,
+    ),
   ];
 }
 
@@ -398,8 +429,14 @@ export function usePersonaModelDiscovery({
         activeModelDiscoveryData,
         trimmedProvider,
         t,
+        selectedRuntime?.id,
       ),
-    [activeModelDiscoveryData, t, trimmedProvider],
+    [
+      activeModelDiscoveryData,
+      t,
+      trimmedProvider,
+      selectedRuntime?.id,
+    ],
   );
   const modelDiscoveryPending = deriveModelDiscoveryPending({
     modelDiscoveryLoading,
@@ -421,5 +458,7 @@ export function usePersonaModelDiscovery({
         ? null
         : activeModelDiscoveryStatus,
     modelDiscoverySuccessfulEmpty,
+    agentDefaultModel:
+      activeModelDiscoveryData?.agentDefaultModel?.trim() || null,
   };
 }

@@ -86,6 +86,7 @@ export function modelDropdownOptions({
     globalModel === undefined
       ? options.map((option) => ({
           label: option.label,
+          description: option.description,
           value: option.id || AUTO_MODEL_DROPDOWN_VALUE,
         }))
       : buildTemplateModelDropdownOptions(

@@ -28,6 +28,26 @@ const REPORT_CATEGORIES: { value: ReportType; labelKey: MessageKey }[] = [
   { value: "other", labelKey: "moderation.report.category.other" },
 ];
 
+/**
+ * Extract a human-readable reason from a report mutation error. Returns the
+ * relay's own error message when present, falling back to a generic string.
+ *
+ * Exported for testing.
+ */
+export function reportErrorMessage(
+  error: unknown,
+  fallback = "Failed to submit report",
+): string {
+  if (error instanceof Error) {
+    const msg = error.message;
+    // Surface the relay's own reason verbatim. Strip any raw status prefix
+    // (e.g. "400: ") so the copy reads naturally in a toast.
+    const stripped = msg.replace(/^[45]\d\d:\s?/, "").trim();
+    return stripped || fallback;
+  }
+  return fallback;
+}
+
 export function ReportMessageDialog({
   open,
   onOpenChange,
@@ -69,7 +89,8 @@ export function ReportMessageDialog({
           toast.success(t("moderation.report.success"));
           onOpenChange(false);
         },
-        onError: () => toast.error(t("moderation.report.failed")),
+        onError: (error) =>
+          toast.error(reportErrorMessage(error, t("moderation.report.failed"))),
       },
     );
   };

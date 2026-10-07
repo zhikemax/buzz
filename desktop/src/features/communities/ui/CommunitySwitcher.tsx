@@ -8,6 +8,7 @@ import {
   Settings2,
   LogOut,
   Ticket,
+  Trash2,
   WifiOff,
 } from "lucide-react";
 import * as React from "react";
@@ -15,6 +16,16 @@ import { toast } from "sonner";
 
 import type { LeaveCommunityResult } from "@/features/communities/leaveCommunity";
 import type { Community } from "@/features/communities/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,7 +86,8 @@ type CommunitySwitcherProps = {
     id: string,
     updates: Partial<Pick<Community, "name" | "relayUrl" | "token">>,
   ) => void;
-  onRemoveCommunity: (id: string) => Promise<LeaveCommunityResult | undefined>;
+  onLeaveCommunity: (id: string) => Promise<LeaveCommunityResult | undefined>;
+  onRemoveCommunityFromDevice: (id: string) => Promise<void>;
 };
 
 export function CommunityEmojiIcon({
@@ -116,7 +128,8 @@ export function CommunitySwitcher({
   onSwitchCommunity,
   onAddCommunity,
   onUpdateCommunity,
-  onRemoveCommunity,
+  onLeaveCommunity,
+  onRemoveCommunityFromDevice,
 }: CommunitySwitcherProps) {
   const t = useT();
   const [editingCommunity, setEditingCommunity] =
@@ -124,6 +137,8 @@ export function CommunitySwitcher({
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [leaveError, setLeaveError] = React.useState<string | null>(null);
   const [isLeaving, setIsLeaving] = React.useState(false);
+  const [removingCommunity, setRemovingCommunity] =
+    React.useState<Community | null>(null);
   const profileMenuHoverTimer = React.useRef<number | null>(null);
   const connectionState = useRelayConnection();
   const degraded = isRelayConnectionDegraded(connectionState);
@@ -181,7 +196,7 @@ export function CommunitySwitcher({
     setIsLeaving(true);
     setLeaveError(null);
     try {
-      const result = await onRemoveCommunity(activeCommunity.id);
+      const result = await onLeaveCommunity(activeCommunity.id);
       setDropdownOpen(false);
       if (result?.status === "already-absent") {
         toast(t("community.removed"), {
@@ -189,16 +204,31 @@ export function CommunitySwitcher({
         });
       }
     } catch (error) {
-      setLeaveError(
+      const message =
         error instanceof Error
           ? error.message
-          : t("community.leaveFailed"),
-      );
+          : t("community.leaveFailed");
+      setLeaveError(t("community.leaveFailedRemoveHint", { message }));
       setDropdownOpen(true);
     } finally {
       setIsLeaving(false);
     }
-  }, [activeCommunity, isLeaving, onRemoveCommunity, t]);
+  }, [activeCommunity, isLeaving, onLeaveCommunity, t]);
+
+  const handleRemoveFromDevice = React.useCallback(async () => {
+    if (!removingCommunity) return;
+    const { id } = removingCommunity;
+    setRemovingCommunity(null);
+    try {
+      await onRemoveCommunityFromDevice(id);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("community.removeFromDeviceFailed"),
+      );
+    }
+  }, [onRemoveCommunityFromDevice, removingCommunity, t]);
 
   const triggerContent = (
     <>
@@ -343,6 +373,19 @@ export function CommunitySwitcher({
                     {isLeaving ? t("community.leaving") : t("community.leave")}
                   </span>
                 </button>
+                <button
+                  className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-destructive outline-hidden transition-colors hover:bg-destructive/10 focus:bg-destructive/10 focus:outline-none focus-visible:bg-destructive/10 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                  disabled={isLeaving}
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    setRemovingCommunity(activeCommunity);
+                  }}
+                  role="menuitem"
+                  type="button"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>{t("community.removeFromDevice")}</span>
+                </button>
                 {leaveError ? (
                   <p
                     className="px-3 py-1 text-xs text-destructive"
@@ -472,6 +515,32 @@ export function CommunitySwitcher({
         community={editingCommunity}
         showIconEditor={editingCommunity?.id === activeCommunity?.id}
       />
+
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!open) setRemovingCommunity(null);
+        }}
+        open={removingCommunity !== null}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("community.removeFromDevice")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("community.removeFromDeviceConfirm", {
+                name: removingCommunity?.name ?? "",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void handleRemoveFromDevice()}>
+              {t("common.remove")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
