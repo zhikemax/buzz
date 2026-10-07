@@ -34,7 +34,7 @@ import { AddAgentDialog, type AgentAddResult } from "./AddAgentDialog";
 import type { HuddleAgentVoiceSettings } from "./AgentVoiceMenu";
 import { MicControls, SpeakerControls } from "./MicControls";
 import { HuddleParticipantsControl } from "./ParticipantList";
-import { truncatePubkey } from "@/shared/lib/pubkey";
+import { truncateNpub } from "@/shared/lib/pubkey";
 
 // Mirrors HuddleState in src-tauri/src/huddle/mod.rs.
 type HuddleState = {
@@ -104,7 +104,7 @@ function fallbackNameForPubkey(
 ): string {
   return pubkey
     ? t("huddle.participants.fallbackParticipant", {
-        short: truncatePubkey(pubkey),
+        short: truncateNpub(pubkey),
       })
     : t("huddle.participants.someone");
 }

@@ -1,17 +1,30 @@
 import * as React from "react";
+import {
+  CalendarClock,
+  Check,
+  ChevronDown,
+  Clock3,
+  SmilePlus,
+} from "lucide-react";
 
 import { EmojiPicker } from "@/features/custom-emoji/ui/EmojiPicker";
-import { StatusEmoji } from "@/features/user-status/ui/StatusEmoji";
-import { useT, type MessageKey } from "@/shared/i18n";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/ui/dialog";
+  DEFAULT_USER_STATUS_EMOJI,
+  StatusEmoji,
+} from "@/features/user-status/ui/StatusEmoji";
+import type { UserStatusInput } from "@/features/user-status/types";
+import { useT, type MessageKey } from "@/shared/i18n";
+import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
+import { Calendar } from "@/shared/ui/calendar";
+import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
+import { Dialog } from "@/shared/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 
 const PRESETS: ReadonlyArray<{
@@ -38,21 +51,168 @@ const PRESETS: ReadonlyArray<{
   },
 ];
 
+const DURATIONS = [
+  "1 hour",
+  "8 hours",
+  "Today",
+  "This week",
+  "Custom",
+] as const;
+
+type DurationLabel = (typeof DURATIONS)[number];
+
+const DURATION_LABEL_KEYS: Record<DurationLabel, MessageKey> = {
+  "1 hour": "status.duration.oneHour",
+  "8 hours": "status.duration.eightHours",
+  Today: "time.today",
+  "This week": "status.duration.thisWeek",
+  Custom: "status.duration.custom",
+};
+
+const HALF_HOUR_TIMES = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2);
+  const minute = index % 2 === 0 ? 0 : 30;
+  const period = hour < 12 ? "AM" : "PM";
+  const displayHour = hour % 12 || 12;
+  return {
+    label: `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`,
+    value: `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
+  };
+});
+
 type SetStatusDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialText?: string;
   initialEmoji?: string;
-  onSave: (text: string, emoji: string) => void;
+  initialExpiresAt?: number;
+  initialUpdatedAt?: number;
+  onSave: (status: UserStatusInput) => void;
   onClear: () => void;
   hasExistingStatus: boolean;
 };
+
+function roundUpToHalfHour(value: Date) {
+  const date = new Date(value);
+  date.setSeconds(0, 0);
+  date.setMinutes(Math.ceil(date.getMinutes() / 30) * 30);
+  return date;
+}
+
+function defaultCustomDate() {
+  return roundUpToHalfHour(new Date(Date.now() + 24 * 60 * 60 * 1_000));
+}
+
+function toLocalTimeValue(date: Date) {
+  return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+}
+
+function formattedTime(date: Date) {
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function endOfToday(from: Date) {
+  const end = new Date(from);
+  end.setHours(24, 0, 0, 0);
+  return end;
+}
+
+function endOfWeek(from: Date) {
+  const end = new Date(from);
+  const daysUntilMonday = (8 - end.getDay()) % 7 || 7;
+  end.setDate(end.getDate() + daysUntilMonday);
+  end.setHours(0, 0, 0, 0);
+  return end;
+}
+
+function inferredDuration(
+  expiresAt: number | undefined,
+  updatedAt: number | undefined,
+): DurationLabel {
+  if (!expiresAt || expiresAt * 1_000 <= Date.now()) return "Today";
+  if (!updatedAt) return "Custom";
+
+  const expiration = expiresAt * 1_000;
+  const updated = updatedAt * 1_000;
+  const withinTwoMinutes = (expected: number) =>
+    Math.abs(expiration - expected) <= 2 * 60_000;
+  if (withinTwoMinutes(updated + 60 * 60_000)) return "1 hour";
+  if (withinTwoMinutes(updated + 8 * 60 * 60_000)) return "8 hours";
+  if (withinTwoMinutes(endOfToday(new Date(updated)).getTime())) return "Today";
+  if (withinTwoMinutes(endOfWeek(new Date(updated)).getTime())) {
+    return "This week";
+  }
+  return "Custom";
+}
+
+function withCustomDate(current: Date, selected: Date) {
+  const next = new Date(current);
+  next.setFullYear(
+    selected.getFullYear(),
+    selected.getMonth(),
+    selected.getDate(),
+  );
+  return next;
+}
+
+function startOfToday() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
+function formattedDate(date: Date) {
+  return date.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function withCustomTime(current: Date, value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return current;
+  const next = new Date(current);
+  next.setHours(hour, minute, 0, 0);
+  return next;
+}
+
+function StatusSection({
+  label,
+  children,
+  className,
+}: {
+  label?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn("space-y-1.5", className)}>
+      {label ? (
+        <h3 className="px-1 text-xs font-medium text-muted-foreground">
+          {label}
+        </h3>
+      ) : null}
+      <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-muted/20">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+const ROW_CLASS =
+  "flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50 focus:outline-none focus-visible:bg-muted/50";
 
 export function SetStatusDialog({
   open,
   onOpenChange,
   initialText = "",
   initialEmoji = "",
+  initialExpiresAt,
+  initialUpdatedAt,
   onSave,
   onClear,
   hasExistingStatus,
@@ -61,13 +221,112 @@ export function SetStatusDialog({
   const [text, setText] = React.useState(initialText);
   const [emoji, setEmoji] = React.useState(initialEmoji);
   const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [calendarOpen, setCalendarOpen] = React.useState(false);
+  const [duration, setDuration] = React.useState<DurationLabel>("Today");
+  const [customUntil, setCustomUntil] = React.useState(defaultCustomDate);
+  const [durationTouched, setDurationTouched] = React.useState(false);
+  const [saveError, setSaveError] = React.useState("");
+  const [baseline, setBaseline] = React.useState(() => ({
+    text: initialText,
+    emoji: initialEmoji,
+    expiresAt: initialExpiresAt,
+    duration: null as DurationLabel | null,
+    customUntil: null as Date | null,
+    hasExistingStatus,
+  }));
+  const initializedForOpenRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (open) {
-      setText(initialText);
-      setEmoji(initialEmoji);
+    if (!open) {
+      initializedForOpenRef.current = false;
+      return;
     }
-  }, [open, initialText, initialEmoji]);
+    if (initializedForOpenRef.current) return;
+    initializedForOpenRef.current = true;
+    setText(initialText);
+    setEmoji(initialEmoji);
+    const currentExpiration = initialExpiresAt
+      ? new Date(initialExpiresAt * 1_000)
+      : null;
+    if (currentExpiration && currentExpiration.getTime() > Date.now()) {
+      const nextDuration = inferredDuration(initialExpiresAt, initialUpdatedAt);
+      setDuration(nextDuration);
+      setCustomUntil(currentExpiration);
+      setBaseline({
+        text: initialText,
+        emoji: initialEmoji,
+        expiresAt: initialExpiresAt,
+        duration: nextDuration,
+        customUntil: currentExpiration,
+        hasExistingStatus,
+      });
+    } else {
+      setDuration("Today");
+      const nextCustomUntil = defaultCustomDate();
+      setCustomUntil(nextCustomUntil);
+      setBaseline({
+        text: initialText,
+        emoji: initialEmoji,
+        expiresAt: undefined,
+        duration: null,
+        customUntil: null,
+        hasExistingStatus,
+      });
+    }
+    setDurationTouched(false);
+    setSaveError("");
+  }, [
+    open,
+    initialText,
+    initialEmoji,
+    initialExpiresAt,
+    initialUpdatedAt,
+    hasExistingStatus,
+  ]);
+
+  const hasContent = Boolean(text.trim() || emoji);
+  const effectiveEmoji =
+    emoji || (text.trim() ? DEFAULT_USER_STATUS_EMOJI : "");
+  const initialEffectiveEmoji =
+    baseline.emoji || (baseline.text.trim() ? DEFAULT_USER_STATUS_EMOJI : "");
+  const isDirty =
+    text.trim() !== baseline.text.trim() ||
+    effectiveEmoji !== initialEffectiveEmoji ||
+    durationTouched ||
+    (duration === "Custom" &&
+      baseline.duration === "Custom" &&
+      baseline.customUntil !== null &&
+      customUntil.getTime() !== baseline.customUntil.getTime());
+  function expirationUnixSeconds(now = new Date()): number | undefined {
+    if (
+      !durationTouched &&
+      baseline.hasExistingStatus &&
+      baseline.expiresAt !== undefined
+    ) {
+      return baseline.expiresAt;
+    }
+    const expiresAt = (() => {
+      switch (duration) {
+        case "1 hour":
+          return new Date(now.getTime() + 60 * 60_000);
+        case "8 hours":
+          return new Date(now.getTime() + 8 * 60 * 60_000);
+        case "Today":
+          return endOfToday(now);
+        case "This week":
+          return endOfWeek(now);
+        case "Custom":
+          return customUntil;
+      }
+    })();
+    return Math.floor(expiresAt.getTime() / 1_000);
+  }
+
+  const displayedExpiration = expirationUnixSeconds();
+  const expirationIsFuture =
+    displayedExpiration === undefined ||
+    displayedExpiration > Math.floor(Date.now() / 1_000);
+  const canSave = hasContent && isDirty && expirationIsFuture;
 
   function handlePresetClick(preset: { text: string; emoji: string }) {
     setText(preset.text);
@@ -80,7 +339,20 @@ export function SetStatusDialog({
   }
 
   function handleSave() {
-    onSave(text.trim(), emoji);
+    if (!hasContent || !isDirty) return;
+    const expiresAt = expirationUnixSeconds();
+    if (
+      expiresAt !== undefined &&
+      expiresAt <= Math.floor(Date.now() / 1_000)
+    ) {
+      setSaveError(t("status.chooseFutureDuration"));
+      return;
+    }
+    onSave({
+      text: text.trim(),
+      emoji: effectiveEmoji,
+      expiresAt,
+    });
     onOpenChange(false);
   }
 
@@ -98,70 +370,202 @@ export function SetStatusDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+      <ChooserDialogContent
         className="sm:max-w-[420px]"
+        contentClassName="space-y-4 pt-3"
         data-testid="set-status-dialog"
+        footer={
+          <div className="flex w-full items-center justify-between gap-3">
+            {baseline.hasExistingStatus ? (
+              <Button
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                data-testid="set-status-clear"
+                onClick={handleClear}
+                type="button"
+                variant="ghost"
+              >
+                {t("status.clear")}
+              </Button>
+            ) : (
+              <span />
+            )}
+            <Button
+              aria-label={t("status.save")}
+              data-testid="set-status-save"
+              disabled={!canSave}
+              onClick={handleSave}
+              type="button"
+            >
+              {t("status.save")}
+            </Button>
+          </div>
+        }
+        footerClassName="border-t-0 pt-0"
+        headerClassName="pb-2"
+        headerSubtitle={t("status.description")}
+        title={t("status.title")}
       >
-        <DialogHeader>
-          <DialogTitle>{t("status.title")}</DialogTitle>
-          <DialogDescription>{t("status.description")}</DialogDescription>
-        </DialogHeader>
+        <div className="flex min-h-12 items-stretch rounded-xl border border-input focus-within:ring-1 focus-within:ring-ring">
+          <Popover onOpenChange={setPickerOpen} open={pickerOpen}>
+            <div className="shrink-0">
+              <PopoverTrigger asChild>
+                <button
+                  aria-label={t("status.chooseEmojiAria")}
+                  className="flex h-12 w-12 items-center justify-center rounded-xl transition-colors hover:bg-accent"
+                  type="button"
+                >
+                  {effectiveEmoji ? (
+                    <StatusEmoji className="h-5 w-5" value={effectiveEmoji} />
+                  ) : (
+                    <SmilePlus className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+              </PopoverTrigger>
+            </div>
+            <PopoverContent
+              align="start"
+              className="w-auto overflow-hidden rounded-2xl p-0"
+              sideOffset={4}
+            >
+              <EmojiPicker autoFocus onSelect={handleEmojiSelect} />
+            </PopoverContent>
+          </Popover>
+          <input
+            className="min-w-0 flex-1 bg-transparent px-1 pr-3 text-base outline-none placeholder:text-muted-foreground"
+            data-testid="set-status-input"
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t("status.placeholder")}
+            value={text}
+          />
+        </div>
 
-        <div className="flex flex-col gap-4 pt-2">
-          <div className="flex items-center gap-2">
-            <Popover onOpenChange={setPickerOpen} open={pickerOpen}>
-              <div className="relative shrink-0">
+        <StatusSection label={t("status.duration.label")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={ROW_CLASS}
+                data-testid="set-status-duration"
+                type="button"
+              >
+                <Clock3 className="h-5 w-5 text-muted-foreground" />
+                <span className="flex-1">{t("status.duration.label")}</span>
+                <span className="text-muted-foreground">
+                  {t(DURATION_LABEL_KEYS[duration])}
+                </span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-52">
+              {DURATIONS.map((option) => (
+                <DropdownMenuItem
+                  className="justify-between"
+                  key={option}
+                  onSelect={() => {
+                    setDuration(option);
+                    setDurationTouched(true);
+                    setSaveError("");
+                  }}
+                >
+                  {t(DURATION_LABEL_KEYS[option])}
+                  {duration === option ? <Check className="h-4 w-4" /> : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {duration === "Custom" ? (
+            <div className={ROW_CLASS}>
+              <CalendarClock className="h-5 w-5 text-muted-foreground" />
+              <span>{t("status.duration.until")}</span>
+              <Popover onOpenChange={setCalendarOpen} open={calendarOpen}>
                 <PopoverTrigger asChild>
                   <button
-                    aria-label={t("status.chooseEmojiAria")}
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-input text-lg transition-colors hover:bg-accent"
+                    aria-label={t("status.expirationDateAria")}
+                    className="flex h-9 min-w-0 flex-1 items-center rounded-md border border-input bg-background px-2 text-sm outline-none focus:ring-1 focus:ring-ring"
                     type="button"
                   >
-                    {emoji ? (
-                      <StatusEmoji className="h-5 w-5" value={emoji} />
-                    ) : (
-                      "\uD83D\uDCAC"
-                    )}
+                    <span className="truncate">
+                      {formattedDate(customUntil)}
+                    </span>
+                    <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
                 </PopoverTrigger>
-                {emoji ? (
-                  <button
-                    aria-label={t("status.clearEmojiAria")}
-                    className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-background bg-muted text-2xs leading-none text-muted-foreground hover:bg-accent hover:text-foreground"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setEmoji("");
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    disabled={{ before: startOfToday() }}
+                    mode="single"
+                    onSelect={(selected) => {
+                      if (!selected) return;
+                      setDurationTouched(true);
+                      setSaveError("");
+                      setCustomUntil((current) =>
+                        withCustomDate(current, selected),
+                      );
+                      setCalendarOpen(false);
                     }}
+                    selected={customUntil}
+                  />
+                </PopoverContent>
+              </Popover>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    aria-label={t("status.expirationTimeAria")}
+                    className="flex h-9 w-28 shrink-0 items-center rounded-md border border-input bg-background px-2 text-sm outline-none focus:ring-1 focus:ring-ring"
                     type="button"
                   >
-                    ×
+                    <span>
+                      {HALF_HOUR_TIMES.find(
+                        (time) => time.value === toLocalTimeValue(customUntil),
+                      )?.label ?? formattedTime(customUntil)}
+                    </span>
+                    <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
-                ) : null}
-              </div>
-              <PopoverContent
-                align="start"
-                sideOffset={4}
-                className="w-auto overflow-hidden rounded-2xl p-0"
-              >
-                <EmojiPicker autoFocus onSelect={handleEmojiSelect} />
-              </PopoverContent>
-            </Popover>
-            <Input
-              autoFocus
-              data-testid="set-status-input"
-              onChange={(event) => setText(event.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t("status.placeholder")}
-              value={text}
-            />
-          </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="max-h-[23rem]"
+                  data-testid="status-expiration-time-menu"
+                  style={{
+                    minWidth: "var(--radix-dropdown-menu-trigger-width)",
+                  }}
+                >
+                  {HALF_HOUR_TIMES.map((time) => (
+                    <DropdownMenuItem
+                      className="justify-between"
+                      key={time.value}
+                      onSelect={() => {
+                        setDurationTouched(true);
+                        setSaveError("");
+                        setCustomUntil((current) =>
+                          withCustomTime(current, time.value),
+                        );
+                      }}
+                    >
+                      {time.label}
+                      {time.value === toLocalTimeValue(customUntil) ? (
+                        <Check className="h-4 w-4" />
+                      ) : null}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : null}
+          {saveError || (!expirationIsFuture && isDirty) ? (
+            <p className="px-3 py-2 text-xs text-destructive" role="alert">
+              {saveError || t("status.chooseFutureDuration")}
+            </p>
+          ) : null}
+        </StatusSection>
 
-          <div className="flex flex-wrap gap-1.5">
+        {!baseline.hasExistingStatus ? (
+          <StatusSection label={t("status.quickStatuses")}>
             {PRESETS.map((preset) => {
               const presetText = t(preset.textKey);
               return (
                 <button
-                  className="rounded-full border border-input px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  className={ROW_CLASS}
                   data-testid={`set-status-preset-${preset.id}`}
                   key={preset.id}
                   onClick={() =>
@@ -169,49 +573,19 @@ export function SetStatusDialog({
                   }
                   type="button"
                 >
-                  {preset.emoji} {presetText}
+                  <span
+                    aria-hidden="true"
+                    className="flex w-5 justify-center text-lg"
+                  >
+                    {preset.emoji}
+                  </span>
+                  <span>{presetText}</span>
                 </button>
               );
             })}
-          </div>
-
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <div>
-              {hasExistingStatus ? (
-                <Button
-                  data-testid="set-status-clear"
-                  onClick={handleClear}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  {t("status.clear")}
-                </Button>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                data-testid="set-status-cancel"
-                onClick={() => onOpenChange(false)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                data-testid="set-status-save"
-                disabled={!text.trim() && !emoji}
-                onClick={handleSave}
-                size="sm"
-                type="button"
-              >
-                {t("common.save")}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
+          </StatusSection>
+        ) : null}
+      </ChooserDialogContent>
     </Dialog>
   );
 }

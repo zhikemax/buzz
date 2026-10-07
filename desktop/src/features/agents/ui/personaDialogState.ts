@@ -64,6 +64,7 @@ export function duplicatePersonaDialogState(
     initialValues: {
       displayName: `${persona.displayName} copy`,
       avatarUrl: persona.avatarUrl ?? "",
+      description: persona.description ?? undefined,
       systemPrompt: persona.systemPrompt,
       runtime: persona.runtime ?? undefined,
       model: persona.model ?? undefined,
@@ -88,7 +89,11 @@ export function duplicatePersonaDialogState(
 function behaviorEntry(
   persona: AgentPersona,
 ): { behavior: PersonaBehaviorInput } | Record<string, never> {
-  if (persona.respondTo == null && persona.parallelism == null) {
+  if (
+    persona.respondTo == null &&
+    persona.parallelism == null &&
+    (persona.sessionPolicy ?? "channel") === "channel"
+  ) {
     return {};
   }
   return {
@@ -99,6 +104,7 @@ function behaviorEntry(
           ? persona.respondToAllowlist
           : undefined,
       parallelism: persona.parallelism ?? undefined,
+      sessionPolicy: persona.sessionPolicy ?? "channel",
     },
   };
 }
@@ -123,6 +129,7 @@ export function editPersonaDialogState(
       id: persona.id,
       displayName: persona.displayName,
       avatarUrl: persona.avatarUrl ?? "",
+      description: persona.description ?? undefined,
       systemPrompt: persona.systemPrompt,
       runtime: persona.runtime ?? undefined,
       model: persona.model ?? undefined,

@@ -9,7 +9,6 @@ import {
 import { toast } from "sonner";
 
 import { useAgentWorking } from "@/features/agents/agentWorkingSignal";
-import { isManagedAgentActive } from "@/features/agents/lib/managedAgentControlActions";
 import {
   mergeObserverEventWindows,
   observerEventScrollId,
@@ -25,6 +24,8 @@ import {
 import { useAnchoredScroll } from "@/features/messages/ui/useAnchoredScroll";
 import { useStableArrayShallow } from "@/shared/hooks/useStableReference";
 import { cancelManagedAgentTurn } from "@/shared/api/agentControl";
+import { awaitCancelTurnOutcome } from "@/features/agents/lib/cancelTurnOutcome";
+import { subscribeControlResults } from "@/features/agents/observerRelayStore";
 import type { Channel } from "@/shared/api/types";
 import { useEscapeKey } from "@/shared/hooks/useEscapeKey";
 import { useIsThreadPanelOverlay } from "@/shared/hooks/use-mobile";
@@ -98,7 +99,7 @@ export function AgentSessionThreadPanel({
   transparentChrome = false,
 }: AgentSessionThreadPanelProps) {
   const t = useT();
-  const isLive = isManagedAgentActive(agent);
+  const isLive = agent.status === "running" || agent.status === "deployed";
   const isOverlay = useIsThreadPanelOverlay();
   const sessionChannelId = channelId ?? channel?.id ?? null;
   // Unified working signal, scoped to this panel's channel (or all channels
@@ -107,7 +108,8 @@ export function AgentSessionThreadPanel({
     agent.pubkey,
     sessionChannelId,
   );
-  const canStopCurrentTurn = isWorking && canInterruptTurn;
+  const canStopCurrentTurn =
+    Boolean(sessionChannelId) && isWorking && canInterruptTurn;
   useEscapeKey(onClose, isOverlay || isSinglePanelView);
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -247,12 +249,36 @@ export function AgentSessionThreadPanel({
   const animateActivity = useTranscriptAnimationEnabled();
   const showTimestamps = useTranscriptTimestampsEnabled();
   async function handleInterruptTurn() {
-    if (!channel) {
+    if (!sessionChannelId) {
       return;
     }
 
     try {
-      await cancelManagedAgentTurn(agent.pubkey, channel.id);
+      const requestId = crypto.randomUUID();
+      const outcome = await awaitCancelTurnOutcome({
+        requestId,
+        channelId: sessionChannelId,
+        subscribe: (listener) =>
+          subscribeControlResults(agent.pubkey, listener),
+        sendCancel: () =>
+          cancelManagedAgentTurn(agent.pubkey, sessionChannelId, requestId),
+        scheduleTimeout: (onTimeout) => {
+          const timeout = window.setTimeout(onTimeout, 8_000);
+          return () => window.clearTimeout(timeout);
+        },
+      });
+      if (outcome === "ambiguous_target") {
+        toast.error(t("agents.stopTurnAmbiguous"));
+        return;
+      }
+      if (outcome === "no_active_turn") {
+        toast.info(t("agents.stopTurnNoActiveTurn"));
+        return;
+      }
+      if (outcome === "unconfirmed") {
+        toast.info(t("agents.stopTurnUnconfirmed"));
+        return;
+      }
       toast.success(t("agents.stopSignalSent", { name: agent.name }));
     } catch (error) {
       toast.error(
@@ -389,9 +415,11 @@ export function AgentSessionThreadPanel({
               title={
                 canStopCurrentTurn
                   ? t("agents.stopTurnTitle")
-                  : isWorking
-                    ? t("agents.stopTurnTitleLocalOnly")
-                    : t("agents.stopTurnHintWorking")
+                  : !sessionChannelId
+                    ? t("agents.stopTurnTitleNoChannel")
+                    : isWorking
+                      ? t("agents.stopTurnTitleLocalOnly")
+                      : t("agents.stopTurnHintWorking")
               }
             >
               <Octagon className="mt-0.5 h-4 w-4 text-muted-foreground" />
@@ -401,9 +429,11 @@ export function AgentSessionThreadPanel({
                 </span>
                 {!canStopCurrentTurn ? (
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {isWorking
-                      ? t("agents.stopTurnHintLocalOnly")
-                      : t("agents.stopTurnHintWorking")}
+                    {!sessionChannelId
+                      ? t("agents.stopTurnTitleNoChannel")
+                      : isWorking
+                        ? t("agents.stopTurnHintLocalOnly")
+                        : t("agents.stopTurnHintWorking")}
                   </span>
                 ) : null}
               </span>
@@ -426,6 +456,7 @@ export function AgentSessionThreadPanel({
           avatarUrl={agentProfile?.avatarUrl ?? null}
           className="size-9"
           label={agentLabel}
+          shape="squircle"
           testId="agent-session-agent-avatar"
         />
         <div className="min-w-0 flex-1">

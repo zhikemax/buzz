@@ -12,8 +12,9 @@ import type { VoiceRegistryEntry } from "@/features/settings/ui/voiceSettingsLog
 import { invokeTauri } from "@/shared/api/tauri";
 import { useT, type TranslateFn } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
-import { truncatePubkey } from "@/shared/lib/pubkey";
+import { truncateNpub } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
+import { ROUNDED_SQUIRCLE_PATH } from "@/shared/ui/AvatarClipPaths";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
 import {
@@ -50,6 +51,13 @@ const MAX_VISIBLE_PARTICIPANTS = 9;
 type ParticipantIdentity = {
   avatarUrl: string | null;
   displayName: string;
+  /**
+   * Label the avatar derives initials from: the authored name when one
+   * exists, otherwise the unprefixed compact key. `displayName` is the
+   * visible "Participant npub1…" fallback, whose word initials would
+   * collapse every unnamed participant onto "PN"/"AN".
+   */
+  initialsLabel: string;
   isActive: boolean;
   isAgent: boolean;
   pubkey: string;
@@ -113,16 +121,13 @@ function buildParticipantIdentities({
     const profile = profiles[normalizedPubkey];
     const isAgent = agentSet.has(normalizedPubkey);
     const agent = agentNames.get(normalizedPubkey);
+    const authoredName = profile?.displayName?.trim() || agent?.name?.trim();
+    const keyLabel = truncateNpub(pubkey);
     const displayName =
-      profile?.displayName?.trim() ||
-      agent?.name?.trim() ||
+      authoredName ||
       (isAgent
-        ? t("huddle.participants.fallbackAgent", {
-            short: truncatePubkey(pubkey),
-          })
-        : t("huddle.participants.fallbackParticipant", {
-            short: truncatePubkey(pubkey),
-          }));
+        ? t("huddle.participants.fallbackAgent", { short: keyLabel })
+        : t("huddle.participants.fallbackParticipant", { short: keyLabel }));
     const speakerLevel =
       normalizedSpeakerLevels.get(normalizedPubkey) ??
       (activeSpeakerSet.has(normalizedPubkey) ? 0.55 : 0);
@@ -130,6 +135,7 @@ function buildParticipantIdentities({
     return {
       avatarUrl: profile?.avatarUrl ?? agent?.avatarUrl ?? null,
       displayName,
+      initialsLabel: authoredName || keyLabel,
       isActive: activeSpeakerSet.has(normalizedPubkey) || speakerLevel > 0.04,
       isAgent,
       pubkey,
@@ -469,16 +475,38 @@ function ParticipantAvatar({
   return (
     <span
       className={cn(
-        "buzz-huddle-speaking-avatar relative z-0 inline-flex shrink-0 rounded-full",
+        "buzz-huddle-speaking-avatar relative z-0 inline-flex shrink-0",
+        participant.isAgent
+          ? "buzz-huddle-speaking-avatar-agent"
+          : "rounded-full",
         sizeClass,
       )}
       data-testid="huddle-participant-avatar"
       style={speakerStyle}
     >
+      {participant.isAgent ? (
+        <svg
+          aria-hidden="true"
+          className="buzz-huddle-speaking-squircle pointer-events-none absolute inset-0 h-full w-full overflow-visible text-[hsl(142_71%_45%)]"
+          data-testid="huddle-agent-speaking-ring"
+          focusable="false"
+          viewBox="0 0 1 1"
+        >
+          <path
+            d={ROUNDED_SQUIRCLE_PATH}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      ) : null}
       <ProfileAvatar
         avatarUrl={participant.avatarUrl}
         label={participant.displayName}
-        className="h-full w-full rounded-full border-2 border-black text-2xs"
+        initialsLabel={participant.initialsLabel}
+        className="h-full w-full border-2 border-black text-2xs"
+        shape={participant.isAgent ? "squircle" : "circle"}
       />
     </span>
   );

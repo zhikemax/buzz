@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, History, MessageSquare } from "lucide-react";
+import { ChevronDown, ChevronUp, History } from "lucide-react";
 import * as React from "react";
 
 import type { ProjectIssue } from "@/features/projects/hooks";
@@ -11,6 +11,8 @@ import {
   type UserProfileLookup,
 } from "@/features/profile/lib/identity";
 import { useT } from "@/shared/i18n";
+import { normalizePubkey } from "@/shared/lib/pubkey";
+import { UserAvatar } from "@/shared/ui/UserAvatar";
 import { ProfileAuthorName } from "./ProjectProfileIdentity";
 import { ProjectRichContent } from "./ProjectRichContent";
 
@@ -108,42 +110,61 @@ export function ProjectIssueCommentTimeline({
         </button>
       ) : null}
 
-      {displayedComments.map((comment, index) => (
-        <div
-          className="flex min-h-10 min-w-0 items-start gap-2 px-3 py-2.5 text-sm text-muted-foreground"
-          data-testid="project-issue-comment-timeline-row"
-          key={comment.id}
-        >
-          <div className="relative flex w-5 shrink-0 justify-center self-stretch">
-            {index < displayedComments.length - 1 ? (
-              <span className="absolute top-2.5 -bottom-[1.875rem] w-px bg-border/80" />
-            ) : null}
-            <span className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full bg-background ring-1 ring-border/70">
-              <MessageSquare className="h-3 w-3" />
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center">
-              <span className="min-w-0 flex-1 truncate">
-                <ProfileAuthorName pubkey={comment.author}>
-                  {resolveUserLabel({ profiles, pubkey: comment.author })}
-                </ProfileAuthorName>
-              </span>
-              <span
-                className="ml-auto w-20 shrink-0 text-right text-xs text-muted-foreground/70"
-                title={formatExactTimestamp(comment.createdAt)}
-              >
-                {relativeTime(comment.createdAt)}
-              </span>
+      {displayedComments.map((comment, index) => {
+        const authorLabel = resolveUserLabel({
+          profiles,
+          pubkey: comment.author,
+        });
+        return (
+          <div
+            className="flex min-h-10 min-w-0 items-start gap-2 py-2.5 text-sm text-muted-foreground"
+            data-testid="project-issue-comment-timeline-row"
+            key={comment.id}
+          >
+            <div className="relative flex w-5 shrink-0 justify-center self-stretch">
+              {index < displayedComments.length - 1 ? (
+                <span className="absolute top-2.5 -bottom-[1.875rem] w-px bg-border/80" />
+              ) : null}
+              {/* bg-background keeps the connector line from showing through
+                  while the avatar image (or delayed fallback) loads. */}
+              <UserAvatar
+                avatarUrl={
+                  profiles?.[normalizePubkey(comment.author)]?.avatarUrl ?? null
+                }
+                className="relative z-10 bg-background ring-1 ring-border/70"
+                displayName={authorLabel}
+                shape={
+                  profiles?.[normalizePubkey(comment.author)]?.isAgent
+                    ? "squircle"
+                    : "circle"
+                }
+                size="xs"
+              />
             </div>
-            <ProjectRichContent
-              className="mt-1 text-sm text-foreground/90"
-              content={comment.content}
-              tags={comment.tags}
-            />
+            <div className="min-w-0 flex-1">
+              {/* h-5 matches the avatar so the header line centers on it. */}
+              <div className="flex h-5 min-w-0 items-center text-xs leading-4">
+                <span className="min-w-0 flex-1 truncate">
+                  <ProfileAuthorName pubkey={comment.author}>
+                    {authorLabel}
+                  </ProfileAuthorName>
+                </span>
+                <span
+                  className="ml-auto w-20 shrink-0 text-right text-muted-foreground/70"
+                  title={formatExactTimestamp(comment.createdAt)}
+                >
+                  {relativeTime(comment.createdAt)}
+                </span>
+              </div>
+              <ProjectRichContent
+                className="mt-1 text-sm text-foreground/90"
+                content={comment.content}
+                tags={comment.tags}
+              />
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -1,12 +1,18 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ClockFading, Hash } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
+import {
+  channelLifecycle,
+  channelLifecycleLabel,
+} from "@/features/channels/lib/channelLifecycle";
 import {
   DEFAULT_EPHEMERAL_TTL_SECONDS,
   formatTtlDuration,
 } from "@/features/channels/lib/ephemeralChannel";
-import { useT } from "@/shared/i18n";
-import type { MessageKey } from "@/shared/i18n";
+import { useIsProjectHomeChannel } from "@/features/projects/lib/projectHomeChannel";
+import type { Channel } from "@/shared/api/types";
+import { useT, type MessageKey } from "@/shared/i18n";
+import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
@@ -15,7 +21,14 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
+import { SegmentedControl } from "@/shared/ui/segmented-control";
+import { EditableInfoFieldRow } from "./ChannelManagementSheetRows";
 import { ChannelTypePicker } from "./ChannelTypePicker";
+
+const CHANNEL_TYPE_OPTIONS = [
+  { value: "temporary", labelKey: "channel.typeTemporary", Icon: ClockFading },
+  { value: "ongoing", labelKey: "channel.typeOngoing", Icon: Hash },
+] as const;
 
 const EPHEMERAL_TIMEOUT_OPTIONS: {
   labelKey: MessageKey;
@@ -37,7 +50,34 @@ const CHANNEL_TYPE_RESIZE_TRANSITION = {
   ease: [0.23, 1, 0.32, 1],
 } as const;
 
+export function ChannelTypeDetailRow({
+  canEdit,
+  channel,
+  onEdit,
+}: {
+  canEdit: boolean;
+  channel: Channel;
+  onEdit?: () => void;
+}) {
+  const projectHome = useIsProjectHomeChannel(channel.id);
+  const lifecycle = channelLifecycle({
+    projectHome,
+    temporary: channel.ttlSeconds !== null,
+  });
+
+  return (
+    <EditableInfoFieldRow
+      editTestId="channel-management-edit-channel-type"
+      label="Channel type"
+      onEdit={canEdit ? onEdit : undefined}
+      testId="channel-management-type"
+      value={channelLifecycleLabel(lifecycle, channel.ttlSeconds)}
+    />
+  );
+}
+
 export function ChannelTypeSettings({
+  channelId,
   disabled,
   label,
   onOpenChange,
@@ -47,7 +87,9 @@ export function ChannelTypeSettings({
   temporary,
   testIdPrefix,
   ttlSeconds,
+  variant = "dropdown",
 }: {
+  channelId?: string | null;
   disabled?: boolean;
   label?: string;
   onOpenChange?: (open: boolean) => void;
@@ -57,8 +99,11 @@ export function ChannelTypeSettings({
   temporary: boolean;
   testIdPrefix: string;
   ttlSeconds: number;
+  variant?: "dropdown" | "segmented";
 }) {
   const t = useT();
+  const projectHome = useIsProjectHomeChannel(channelId);
+  const lifecycle = channelLifecycle({ projectHome, temporary });
   const resolvedLabel = label ?? t("channel.typeLabel");
   const shouldReduceMotion = useReducedMotion();
   const channelTypeResizeTransition = shouldReduceMotion
@@ -94,22 +139,46 @@ export function ChannelTypeSettings({
         className="flex items-center justify-between gap-3 px-3 py-3"
         data-testid={`${testIdPrefix}-channel-type-row`}
       >
-        <span className="text-sm font-medium text-foreground">
+        <span
+          className={cn(
+            "text-sm font-medium text-foreground",
+            disabled && variant === "segmented" && "opacity-50",
+          )}
+        >
           {resolvedLabel}
         </span>
-        <ChannelTypePicker
-          align="end"
-          className="-mr-2.5"
-          disabled={disabled}
-          onOpenChange={onOpenChange}
-          onTemporaryChange={onTemporaryChange}
-          open={open}
-          temporary={temporary}
-          testId={`${testIdPrefix}-channel-type`}
-        />
+        {variant === "segmented" ? (
+          <SegmentedControl
+            disabled={disabled}
+            legend={t("channel.typeLabel")}
+            onValueChange={(value) => onTemporaryChange(value === "temporary")}
+            optionTestIdPrefix={`${testIdPrefix}-channel-type-option`}
+            options={CHANNEL_TYPE_OPTIONS.map((option) => ({
+              value: option.value,
+              label: t(option.labelKey),
+              Icon: option.Icon,
+            }))}
+            testId={`${testIdPrefix}-channel-type`}
+            value={temporary ? "temporary" : "ongoing"}
+          />
+        ) : (
+          <ChannelTypePicker
+            align="end"
+            allowProject={projectHome}
+            className="-mr-2.5"
+            disabled={disabled}
+            lifecycle={lifecycle}
+            onLifecycleChange={(next) =>
+              onTemporaryChange(next === "temporary")
+            }
+            onOpenChange={onOpenChange}
+            open={open}
+            testId={`${testIdPrefix}-channel-type`}
+          />
+        )}
       </div>
       <AnimatePresence initial={false}>
-        {temporary ? (
+        {temporary && !projectHome ? (
           <motion.div
             animate={{ height: "auto", opacity: 1 }}
             className="overflow-hidden"
@@ -123,7 +192,10 @@ export function ChannelTypeSettings({
               data-testid={`${testIdPrefix}-ephemeral-settings`}
             >
               <label
-                className="text-sm font-medium"
+                className={cn(
+                  "text-sm font-medium",
+                  disabled && variant === "segmented" && "opacity-50",
+                )}
                 htmlFor={`${testIdPrefix}-ttl`}
               >
                 {t("channel.expiresAfter")}

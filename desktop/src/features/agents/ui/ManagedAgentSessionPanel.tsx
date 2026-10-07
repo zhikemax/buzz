@@ -7,7 +7,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { isManagedAgentActive } from "@/features/agents/lib/managedAgentControlActions";
 import type { UserProfileLookup } from "@/features/profile/lib/identity";
 import type { ManagedAgent } from "@/shared/api/types";
 import { useT } from "@/shared/i18n";
@@ -41,7 +40,8 @@ import {
 import { buildTranscriptState } from "./agentSessionTranscript";
 
 type ManagedAgentSessionPanelProps = {
-  agent: Pick<ManagedAgent, "pubkey" | "name" | "status"> & {
+  agent: Pick<ManagedAgent, "pubkey" | "name"> & {
+    status: ManagedAgent["status"] | "unknown";
     avatarUrl?: string | null;
   };
   autoTail?: boolean;
@@ -80,7 +80,8 @@ export function ManagedAgentSessionPanel({
   const t = useT();
   const resolvedEmptyDescription =
     emptyDescription ?? t("agents.mentionToWatch");
-  const hasObserver = isManagedAgentActive(agent);
+  // Lifecycle status only — "deployed" is a retained receipt, not live presence.
+  const hasObserver = agent.status === "running" || agent.status === "deployed";
   // Always read from the store — archived frames are ingested regardless of
   // live status and must be renderable for idle agents with channel history.
   // The `hasObserver` flag still gates the relay subscription (via the

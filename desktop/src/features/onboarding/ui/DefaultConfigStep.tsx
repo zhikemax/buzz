@@ -22,6 +22,7 @@ import type {
 import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 import { ONBOARDING_PRIMARY_CTA_CLASS } from "./OnboardingChrome";
+import { useOnboardingCardLayout } from "./OnboardingCard";
 import { OnboardingFooter } from "./OnboardingFooter";
 import {
   type OnboardingTransitionDirection,
@@ -32,6 +33,7 @@ import {
   getVisibleOnboardingRuntimes,
 } from "./onboardingRuntimeSelection";
 import type { DefaultConfigDraft, DefaultConfigStepActions } from "./types";
+import { ONBOARDING_CARD_INPUT_CLASS } from "./onboardingCardStyles";
 import { useT, type TranslateFn } from "@/shared/i18n";
 
 type DefaultConfigStepProps = {
@@ -55,6 +57,7 @@ function AgentDefaultsSection({
   isPending,
   onDraftChange,
   onPersistenceStateChange,
+  onUseDifferentHarness,
   readyRuntimeIds,
 }: {
   draft: DefaultConfigDraft | null;
@@ -64,9 +67,11 @@ function AgentDefaultsSection({
     canComplete: boolean;
     commit: () => Promise<void>;
   }) => void;
+  onUseDifferentHarness?: () => void;
   readyRuntimeIds: readonly string[];
 }) {
   const t = useT();
+  const cardLayout = useOnboardingCardLayout();
   const runtimesQuery = useAcpRuntimesQuery();
   const initialDraftRef = React.useRef(draft);
   const [config, setConfig] = React.useState<GlobalAgentConfig>(
@@ -230,7 +235,7 @@ function AgentDefaultsSection({
   return (
     <fieldset
       aria-busy={isPending}
-      className="w-full space-y-4 text-left text-sm disabled:pointer-events-none disabled:opacity-70"
+      className="w-full space-y-4 text-left text-sm text-primary disabled:pointer-events-none disabled:opacity-70"
       disabled={isPending}
     >
       {configSurfaceLoading ? (
@@ -244,24 +249,32 @@ function AgentDefaultsSection({
         </p>
       ) : (
         <div className="space-y-7">
-          <div className="space-y-4">
-            <label
-              className="pl-3 text-sm font-medium"
-              htmlFor="global-agent-default-harness"
-            >
-              Default harness
-            </label>
-            <AgentDropdownSelect
-              className="h-12 rounded-2xl border-foreground/15 bg-white px-4 py-2 text-sm shadow-none hover:bg-white/95"
-              id="global-agent-default-harness"
-              onValueChange={handleHarnessChange}
-              options={harnessOptions}
-              placeholder={t("onboard.selectHarness")}
-              placeholderClassName="text-foreground/70"
-              testId="global-agent-default-harness"
-              value={selectedRuntimeId}
-            />
-          </div>
+          {!onUseDifferentHarness ? (
+            <div className="space-y-4">
+              <div className="pl-3">
+                <label
+                  className="text-sm font-medium"
+                  htmlFor="global-agent-default-harness"
+                >
+                  {t("settings.agents.defaultHarness")}
+                </label>
+              </div>
+              <AgentDropdownSelect
+                className={
+                  cardLayout
+                    ? `${ONBOARDING_CARD_INPUT_CLASS} py-2 text-sm`
+                    : "h-12 rounded-2xl border-foreground/15 bg-white px-4 py-2 text-sm shadow-none hover:bg-white/95"
+                }
+                id="global-agent-default-harness"
+                onValueChange={handleHarnessChange}
+                options={harnessOptions}
+                placeholder={t("onboard.selectHarness")}
+                placeholderClassName="text-foreground/70"
+                testId="global-agent-default-harness"
+                value={selectedRuntimeId}
+              />
+            </div>
+          ) : null}
 
           <AgentConfigFields
             bakedEnv={bakedEnv}
@@ -291,11 +304,35 @@ function AgentDefaultsSection({
             onValidityChange={setConfigIsValid}
             placeholderClassName="text-foreground/70"
             runtimeFileConfig={runtimeFileConfig}
-            selectClassName="h-12 rounded-2xl border-foreground/15 bg-white px-4 py-2 text-sm shadow-none hover:bg-white/95"
+            selectClassName={
+              cardLayout
+                ? `${ONBOARDING_CARD_INPUT_CLASS} py-2 text-sm`
+                : "h-12 rounded-2xl border-foreground/15 bg-white px-4 py-2 text-sm shadow-none hover:bg-white/95"
+            }
+            showApiKeyEnvVarName={!cardLayout}
+            stackModelAndEffortHorizontally={
+              cardLayout && Boolean(onUseDifferentHarness)
+            }
             disclosure="onboarding-essential"
             unstyled
             useCustomSelect
           />
+
+          {onUseDifferentHarness ? (
+            <div className="flex items-baseline gap-1.5 text-sm text-foreground/70">
+              <span>{t("onboard.or")}</span>
+              <Button
+                className="h-auto p-0 text-sm text-foreground"
+                data-testid="onboarding-use-different-harness"
+                disabled={isPending}
+                onClick={onUseDifferentHarness}
+                type="button"
+                variant="link"
+              >
+                {t("onboard.useDifferentHarness")}
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </fieldset>
@@ -305,7 +342,7 @@ function AgentDefaultsSection({
 /**
  * Machine onboarding page 4 — default model configuration. Presents the
  * global agent defaults (provider, model, effort, env vars) centered under
- * the mock's "Configure your default model settings" heading.
+ * the onboarding card's "Choose your model settings" heading.
  */
 export function DefaultConfigStep({
   actions,
@@ -315,6 +352,7 @@ export function DefaultConfigStep({
   readyRuntimeIds,
 }: DefaultConfigStepProps) {
   const t = useT();
+  const cardLayout = useOnboardingCardLayout();
   const [persistenceState, setPersistenceState] = React.useState<{
     canComplete: boolean;
     commit: () => Promise<void>;
@@ -355,35 +393,54 @@ export function DefaultConfigStep({
 
   return (
     <OnboardingSlideTransition
-      className="flex min-h-full w-full flex-col items-center"
+      className={`flex min-h-full w-full flex-col ${cardLayout ? "items-stretch" : "items-center"}`}
       data-testid="onboarding-page-config"
       direction={direction}
       transitionKey={`default-config-${direction}`}
     >
-      <div className="w-full max-w-[500px] text-center">
+      <div
+        className={`w-full ${cardLayout ? "text-left" : "max-w-[500px] text-center"}`}
+      >
         <h1 className="text-title font-normal text-foreground">
-          {t("onboard.configureDefaults")}
+          {actions.useDifferentHarness
+            ? t("onboard.connectWithApiKey")
+            : t("onboard.chooseModelSettings")}
         </h1>
-        <p className="mx-auto mt-3 max-w-[440px] text-sm leading-5 text-foreground/80">
-          This will be set as your default model configuration across Buzz. You
-          can always change this in your Settings or give specific agents a
-          different configuration.
+        <p
+          className={`w-full text-foreground/80 ${cardLayout ? "mt-2 text-base leading-6" : "mx-auto mt-3 max-w-[440px] text-sm leading-5"}`}
+        >
+          {actions.useDifferentHarness
+            ? t("onboard.connectWithApiKeyHint")
+            : t("onboard.chooseModelSettingsHint")}
         </p>
       </div>
 
-      <div className="flex w-full flex-1 items-center justify-center py-10">
-        <div className="w-full max-w-[328px]">
+      <div
+        className={`flex w-full flex-1 py-10 ${cardLayout ? "items-start justify-start" : "items-center justify-center"}`}
+      >
+        <div className="w-full">
           <AgentDefaultsSection
             draft={draft}
             isPending={isSaving}
             onDraftChange={actions.updateDraft}
             onPersistenceStateChange={setPersistenceState}
+            onUseDifferentHarness={actions.useDifferentHarness}
             readyRuntimeIds={readyRuntimeIds}
           />
         </div>
       </div>
 
       <OnboardingFooter>
+        <Button
+          className="h-9 whitespace-nowrap rounded-full px-6 text-sm text-primary hover:bg-primary/10 hover:text-primary"
+          data-testid="onboarding-config-skip"
+          disabled={isSaving}
+          onClick={handleSkip}
+          type="button"
+          variant="ghost"
+        >
+          {t("common.skip")}
+        </Button>
         <Button
           className={`${ONBOARDING_PRIMARY_CTA_CLASS} text-sm`}
           data-testid="onboarding-finish"
@@ -393,20 +450,10 @@ export function DefaultConfigStep({
         >
           {isSaving ? t("common.saving") : t("common.next")}
         </Button>
-        <Button
-          className="h-9 whitespace-nowrap rounded-full px-6 text-sm hover:bg-foreground/10"
-          data-testid="onboarding-config-skip"
-          disabled={isSaving}
-          onClick={handleSkip}
-          type="button"
-          variant="ghost"
-        >
-          {t("common.skip")}
-        </Button>
 
         {saveError ? (
           <p
-            className="max-w-[440px] text-center text-xs text-destructive"
+            className="w-full text-center text-xs text-destructive"
             data-testid="onboarding-config-save-error"
             role="alert"
           >

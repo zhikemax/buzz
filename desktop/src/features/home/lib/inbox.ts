@@ -627,6 +627,7 @@ export function buildInboxItems({
       const { mentionNames, mentionPubkeysByName } = resolveMentionProps(
         item.tags,
         profiles,
+        item.content,
       );
       const channelLabel = groupChannel.name;
       const displayItem: FeedItem = {

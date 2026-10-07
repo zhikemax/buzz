@@ -1,12 +1,8 @@
 import { sendChannelMessage } from "@/shared/api/tauri";
-import type {
-  Channel,
-  ManagedAgent,
-  PresenceLookup,
-  RelayAgent,
-} from "@/shared/api/types";
+import type { Channel, ManagedAgent, RelayAgent } from "@/shared/api/types";
 import type { TranslateFn } from "@/shared/i18n";
 import { normalizePubkey } from "@/shared/lib/pubkey";
+import type { AgentAvailabilityReader } from "./useAgentAvailability";
 
 type DeleteManagedAgentInput = {
   pubkey: string;
@@ -24,7 +20,7 @@ type ManagedAgentChannelContext = {
 };
 
 type ManagedAgentActionContext = ManagedAgentChannelContext & {
-  presenceLookup?: PresenceLookup | null;
+  getAvailability: AgentAvailabilityReader;
 };
 
 export type ManagedAgentActionResult = {
@@ -32,6 +28,7 @@ export type ManagedAgentActionResult = {
   noticeMessage?: string;
 };
 
+/** Lifecycle action routing only; deployed is a retained receipt, not presence. */
 export function isManagedAgentActive(agent: Pick<ManagedAgent, "status">) {
   return agent.status === "running" || agent.status === "deployed";
 }
@@ -143,7 +140,7 @@ export async function stopManagedAgentWithRules({
       agent.pubkey,
     ]);
     return {
-      noticeMessage: t("agents.shutdownSentShortly"),
+      noticeMessage: t("agents.shutdownRequestedNotConfirmed"),
     };
   }
 
@@ -156,7 +153,7 @@ export async function deleteManagedAgentWithRules({
   channels,
   deleteManagedAgent,
   preferredChannelId,
-  presenceLookup,
+  getAvailability,
   relayAgents,
   skipRemoteDeleteConfirm = false,
   t,
@@ -167,7 +164,7 @@ export async function deleteManagedAgentWithRules({
   t: TranslateFn;
 } & ManagedAgentActionContext): Promise<ManagedAgentActionResult> {
   if (agent.backend.type === "provider" && agent.backendAgentId) {
-    const presence = presenceLookup?.[normalizePubkey(agent.pubkey)];
+    const availability = getAvailability(agent.pubkey);
     const channelId = resolveManagedAgentChannelId(agent, {
       channels,
       preferredChannelId,
@@ -175,14 +172,19 @@ export async function deleteManagedAgentWithRules({
     });
 
     if (channelId) {
-      if (presence === "online" || presence === "away") {
+      // Only established Offline preserves the intentional no-request path.
+      // Unknown is not evidence that shutdown can safely be skipped.
+      if (availability !== "offline") {
         await sendChannelMessage(channelId, "!shutdown", undefined, undefined, [
           agent.pubkey,
         ]);
 
         if (!skipRemoteDeleteConfirm) {
           const confirmed = window.confirm(
-            t("agents.confirmDeleteAfterShutdown"),
+            (availability === undefined
+              ? t("agents.confirmDeleteAvailabilityUnknown")
+              : "") +
+              t("agents.confirmDeleteAfterShutdownRequested"),
           );
           if (!confirmed) {
             return { cancelled: true };
@@ -200,7 +202,9 @@ export async function deleteManagedAgentWithRules({
       }
     } else {
       if (!skipRemoteDeleteConfirm) {
-        const confirmed = window.confirm(t("agents.confirmDeleteOrphanRemote"));
+        const confirmed = window.confirm(
+          t("agents.confirmDeleteDeployedNoChannel"),
+        );
         if (!confirmed) {
           return { cancelled: true };
         }

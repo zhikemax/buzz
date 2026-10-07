@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AgentManagementMarker } from "@/features/agents/ui/OtherSetupAgentMarker";
 import { CopyButton } from "@/features/agents/ui/CopyButton";
 import { MemoryRefreshButton } from "@/features/agent-memory/ui/MemorySection";
 import {
@@ -17,6 +18,7 @@ import { useT } from "@/shared/i18n";
 export function getUserProfilePanelHeaderContent({
   agentSettingsMenu,
   effectivePubkey,
+  ownerPubkey,
   logCopyValue,
   logSubtitle,
   onBack,
@@ -26,6 +28,7 @@ export function getUserProfilePanelHeaderContent({
 }: {
   agentSettingsMenu: ReactNode;
   effectivePubkey: string | null;
+  ownerPubkey?: string | null;
   logCopyValue?: string | null;
   logSubtitle?: string | null;
   onBack: () => void;
@@ -50,6 +53,13 @@ export function getUserProfilePanelHeaderContent({
         subtitleTitle={logSubtitle ?? undefined}
         title={title}
       />
+      {view !== "summary" ? (
+        <AgentManagementMarker
+          pubkey={effectivePubkey}
+          ownerPubkey={ownerPubkey}
+          testId="user-profile-header-agent-provenance"
+        />
+      ) : null}
     </AuxiliaryPanelHeaderGroup>
   );
   const headerActions = (

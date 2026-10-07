@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-import { truncatePubkey } from "@/shared/lib/pubkey";
+import { truncateNpub } from "@/shared/lib/pubkey";
 import { PubKey } from "@/shared/ui/PubKey";
 import { useRemoveRelayMemberMutation } from "@/features/community-members/hooks";
 import type { RelayMember } from "@/shared/api/types";
@@ -27,7 +27,7 @@ export function ConfirmRemoveDialog({
 }) {
   const t = useT();
   const removeMutation = useRemoveRelayMemberMutation();
-  const label = displayName || (member ? truncatePubkey(member.pubkey) : "");
+  const label = displayName || (member ? truncateNpub(member.pubkey) : "");
 
   function handleOpenChange(next: boolean) {
     if (!next) {

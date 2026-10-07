@@ -2324,11 +2324,11 @@ export const en = {
   "agents.respond.noMatchingUsers": "No matching users.",
   "agents.respond.pastePubkeys": "Paste pubkeys",
   "agents.respond.pasteHint":
-    "One per line, or comma/space-separated. 64-char lowercase hex only — npub decoding is not yet supported here.",
+    "One per line, or comma/space-separated. Each entry is an npub (npub1…) or a 64-char hex public key.",
   "agents.respond.invalidEntryOne":
-    "{count} entry is not 64-char hex and will be ignored.",
+    "{count} entry is not a valid npub or 64-char hex public key and will be ignored.",
   "agents.respond.invalidEntryMany":
-    "{count} entries are not 64-char hex and will be ignored.",
+    "{count} entries are not a valid npub or 64-char hex public key and will be ignored.",
   "agents.respond.validPubkeyOne": "{count} valid pubkey ready.",
   "agents.respond.validPubkeyMany": "{count} valid pubkeys ready.",
   "agents.respond.noValidPubkeys": "No valid pubkeys yet.",
@@ -4829,6 +4829,139 @@ export const en = {
   "agents.catalog.noShared": "No shared agents",
   "agents.share.noPeopleFound": "No people found.",
   "profile.noInstructionSet": "No instruction set.",
+
+  // ── Merge upstream/main → 0.5.23 (2026-09-17): localized new upstream UI ──
+  // Agents: stop-turn + delete confirmations
+  "agents.stopTurnTitleNoChannel":
+    "Open activity for a channel to stop its current turn.",
+  "agents.stopTurnAmbiguous":
+    "This channel has multiple agent sessions. Stopping a specific thread isn't available here yet.",
+  "agents.stopTurnNoActiveTurn": "No active turn to stop.",
+  "agents.stopTurnUnconfirmed":
+    "Stop requested, but the agent hasn't confirmed it.",
+  "agents.shutdownRequestedNotConfirmed":
+    "Shutdown requested. This does not confirm the agent has stopped.",
+  "agents.confirmDeleteAvailabilityUnknown":
+    "This agent's availability is unknown. ",
+  "agents.confirmDeleteAfterShutdownRequested":
+    "Shutdown requested, but the agent may still be running. Deleting now removes the local record — the remote deployment will be orphaned if shutdown hasn't completed. Continue?",
+  "agents.confirmDeleteDeployedNoChannel":
+    "This agent is deployed but not in any channel. Deleting removes the local management record; the remote deployment may still be running. Continue?",
+  "agents.failedToSave": "Failed to save",
+  "settings.agents.apiKeyValidationFailed":
+    "We couldn’t validate this API key. Check the key or your connection and try again.",
+  "settings.agents.harnessDesc.pi":
+    "A minimal terminal coding harness, connected through the buzz-pi-acp adapter.",
+  // Channel types
+  "channel.typeProject": "Project",
+  "channel.typeProjectAria": "Project channel",
+  // Composer
+  "composer.insertEmojiOrGif": "Insert emoji or GIF",
+  "composer.emoji": "Emoji",
+  "composer.emojiAndGifs": "Emoji and GIFs",
+  "msg.composer.removeNamed": "Remove {name}",
+  "msg.mentionOutsideOneKeepDraft":
+    "{name} is not in this channel. Invite them to the channel, or cancel to keep your draft.",
+  "msg.mentionOutsideManyKeepDraft":
+    "{names} are not in this channel. Invite them to the channel, or cancel to keep your draft.",
+  "msg.mentionOutsideOneDeniedKeepDraft":
+    "{name} is not in this channel. {denied}",
+  "msg.mentionOutsideManyDeniedKeepDraft":
+    "{names} are not in this channel. {denied}",
+  // Onboarding: runtime setup
+  "onboard.signInRequired": "Sign in required",
+  "onboard.openRuntimeSetup": "Open {name} setup",
+  "onboard.loadingProviders": "Loading providers…",
+  "onboard.continueWithSubscription": "Continue with an AI subscription",
+  "onboard.subscriptionChooseHint":
+    "Subscriptions connect through a compatible harness, like Claude Code or Codex. Choose yours to sign in.",
+  "onboard.chooseHarnessHint":
+    "Choose how your agents will connect to AI providers. You can change this at any time.",
+  "onboard.notInstalled": "Not installed",
+  "onboard.noHarnessesForMethod":
+    "No supported harnesses are available for this connection method.",
+  "onboard.subscriptionNameAmp": "Amp subscription",
+  "onboard.subscriptionNameClaude": "Claude subscription",
+  "onboard.subscriptionNameCodex": "ChatGPT subscription",
+  "onboard.subscriptionNameCursor": "Cursor subscription",
+  "onboard.subscriptionNameDevin": "Devin account",
+  "onboard.subscriptionSignInDescription":
+    "Buzz will open a sign-in window for {name}.",
+  "onboard.setUpRuntime": "Set up {name}",
+  "onboard.setUpRuntimeHint":
+    "Follow the setup guide to install {name}. When you’re done, come back and check again.",
+  "onboard.openGuide": "Open guide",
+  "onboard.connectRuntime": "Connect {name}",
+  "onboard.connectRuntimeHint":
+    "Sign in to connect {name}. You can change this anytime.",
+  "onboard.setUpLater": "Set up later",
+  // Onboarding: backup / identity
+  "onboard.yourPrivateIdentityKey": "Your private identity key",
+  "onboard.dontShareKey":
+    "Don’t share this key. Anyone who has it can access your account.",
+  "onboard.testYourBackup": "Test your backup",
+  "onboard.verifyYourBackup": "Verify your backup",
+  "onboard.yourBackupIsReady": "Your backup is ready",
+  "onboard.createSecureBackupFile": "Create a secure backup file",
+  "onboard.verifyYourBackupHint":
+    "Enter your password to make sure you can unlock this file.",
+  "onboard.yourBackupReadyHint":
+    "Test your backup to make sure it works, or continue without testing.",
+  "onboard.createSecureBackupHint":
+    "This creates a password-protected file with your private key. Remember, Buzz can’t recover your key if you lose it.",
+  "onboard.learnHowIdentityKeysWork": "Learn how identity keys work",
+  "onboard.identityKeyHelpBodyP1":
+    "Buzz will create a Nostr identity with two parts: a private key that signs you in and a public key you can safely share. You can find your public identity anytime in Buzz settings.",
+  "onboard.identityKeyHelpBodyP2":
+    "This identity belongs to you, not Buzz, and can move with you to another device or compatible Nostr app. Because only you control the private key, Buzz can’t reset or recover it. Keep a backup somewhere safe, and never share it.",
+  "onboard.unknownPublicKey": "Unknown public key",
+  "onboard.recover.scanToSignIn": "Scan to sign in",
+  "onboard.recover.scanCodeWithDevice":
+    "Scan this code with a device where you’re currently signed in to Buzz.",
+  "onboard.reimportRecoveryHint":
+    "Your identity is no longer in the system keyring. Re-import your nsec to restore it — Buzz will restart to finish recovery. Or go back to start a new identity with a fresh key.",
+  "onboard.passwordFieldLabel": "Password",
+  "onboard.saveBackup": "Save backup",
+  "onboard.encryptingYourKeyAria": "Encrypting your key",
+  // Onboarding: default config step
+  "onboard.or": "or",
+  "onboard.useDifferentHarness": "Use a different harness",
+  "onboard.connectWithApiKey": "Connect with an API key",
+  "onboard.chooseModelSettings": "Choose your model settings",
+  "onboard.connectWithApiKeyHint":
+    "Choose your provider and enter an API key to connect to the Buzz harness.",
+  "onboard.chooseModelSettingsHint":
+    "Select the model and effort level your agents will use by default.",
+  // Projects
+  "projects.repo.add.chooseProject": "Choose a project for this repository.",
+  "projects.create.dialog.headerSubtitle":
+    "A project starts as a channel with a repository. People in the channel can talk, clone, and open tasks here.",
+  "projects.create.dialog.goalPlaceholder": "What this project should become",
+  "projects.empty.noCommitsYet": "No commits yet",
+  "projects.empty.commitsHint":
+    "Commits pushed to this repository will appear here.",
+  "projects.empty.projectCommitsHint":
+    "Commits pushed to this project's repositories will appear here.",
+  "projects.error.loadCommits": "Could not load commits",
+  "projects.error.refreshHint": "Refresh the repository and try again.",
+  // Sidebar unread DM navigation
+  "sidebar.directionAbove": "above",
+  "sidebar.directionBelow": "below",
+  "sidebar.goToUnreadDm":
+    "Go to unread direct message from {name}. {label} {direction}.",
+  "sidebar.unreadDirection": "{label} {direction}",
+  // User status dialog
+  "status.save": "Save status",
+  "status.duration.label": "Duration",
+  "status.duration.oneHour": "1 hour",
+  "status.duration.eightHours": "8 hours",
+  "status.duration.thisWeek": "This week",
+  "status.duration.custom": "Custom",
+  "status.duration.until": "Until",
+  "status.expirationDateAria": "Status expiration date",
+  "status.expirationTimeAria": "Status expiration time",
+  "status.chooseFutureDuration": "Choose a duration in the future.",
+  "status.quickStatuses": "Quick statuses",
 } as const;
 
 export type MessageKey = keyof typeof en;

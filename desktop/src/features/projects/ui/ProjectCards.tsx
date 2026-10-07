@@ -5,6 +5,7 @@ import {
   Folders,
   GitCommit,
   GitPullRequest,
+  Plus,
   TerminalSquare,
   Trash2,
 } from "lucide-react";
@@ -85,7 +86,10 @@ export function ProjectPeopleStack({
             <UserProfilePopover pubkey={pubkey} triggerElement="span">
               <button
                 aria-label={`View ${label}'s profile`}
-                className="inline-flex rounded-full focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className={cn(
+                  "inline-flex focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+                  profile?.isAgent ? "rounded-[30%]" : "rounded-full",
+                )}
                 type="button"
               >
                 <UserAvatar
@@ -95,6 +99,7 @@ export function ProjectPeopleStack({
                   avatarUrl={profile?.avatarUrl ?? null}
                   className="ring-2 ring-card"
                   displayName={label}
+                  shape={profile?.isAgent ? "squircle" : "circle"}
                   size="xs"
                 />
               </button>
@@ -305,7 +310,11 @@ function RepositoryUnavailableIndicator({
   );
 }
 
-export function EmptyState() {
+export function EmptyState({
+  onCreateProject,
+}: {
+  onCreateProject: () => void;
+}) {
   const t = useT();
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-16 text-center">
@@ -316,6 +325,10 @@ export function EmptyState() {
           {t("projects.empty.noProjectsHint")}
         </p>
       </div>
+      <Button onClick={onCreateProject} size="sm" type="button">
+        <Plus className="h-4 w-4" />
+        {t("projects.create.dialog.submit")}
+      </Button>
     </div>
   );
 }

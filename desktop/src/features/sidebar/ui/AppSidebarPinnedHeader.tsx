@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
 } from "@/shared/ui/sidebar";
 import { SidebarMenuLabel } from "@/shared/ui/sidebar-menu-label";
+import { ProtectedBestieSidebarEntry } from "@protected-feature-components";
 
 type SidebarSelectedView =
   | "home"
@@ -31,7 +32,7 @@ type AppSidebarPinnedHeaderProps = {
   onCreateAgent: () => void;
   onCreateChannel: () => void;
   onOpenDm: (input: { pubkeys: string[] }) => Promise<void>;
-  onOpenSearchResult: (hit: SearchHit) => void;
+  onOpenSearchResult: (hit: SearchHit, query: string) => void;
   onSelectChannel: (channelId: string) => void;
   searchChannels: Channel[];
   searchFocusRequest: number;
@@ -169,6 +170,7 @@ export function AppSidebarPrimaryMenu({
               <SidebarMenuLabel>{t("nav.agents")}</SidebarMenuLabel>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <ProtectedBestieSidebarEntry />
           <FeatureGate feature="workflows">
             <SidebarMenuItem>
               <SidebarMenuButton

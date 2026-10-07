@@ -12,7 +12,11 @@ import {
   getPresenceChipClassName,
 } from "@/features/presence/lib/presence";
 import { SetStatusDialog } from "@/features/user-status/ui/SetStatusDialog";
-import { StatusEmoji } from "@/features/user-status/ui/StatusEmoji";
+import {
+  DEFAULT_USER_STATUS_EMOJI,
+  StatusEmoji,
+} from "@/features/user-status/ui/StatusEmoji";
+import type { UserStatusInput } from "@/features/user-status/types";
 import type { PresenceStatus } from "@/shared/api/types";
 import { presenceMessageKey, useT } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
@@ -28,8 +32,10 @@ interface ProfilePopoverProps {
   isStatusPending?: boolean;
   userStatusText?: string;
   userStatusEmoji?: string;
+  userStatusExpiresAt?: number;
+  userStatusUpdatedAt?: number;
   onSetStatus: (status: PresenceStatus) => void;
-  onSetUserStatus: (text: string, emoji: string) => void;
+  onSetUserStatus: (status: UserStatusInput) => void;
   onClearUserStatus: () => void;
   onOpenSettings: (section?: "profile" | "appearance") => void;
   onSendFeedback?: () => void;
@@ -58,6 +64,8 @@ export function ProfilePopover({
   isStatusPending,
   userStatusText,
   userStatusEmoji,
+  userStatusExpiresAt,
+  userStatusUpdatedAt,
   onSetStatus,
   onSetUserStatus,
   onClearUserStatus,
@@ -213,15 +221,20 @@ export function ProfilePopover({
                 role="menuitem"
                 type="button"
               >
-                <Smile className="h-4 w-4 shrink-0 text-muted-foreground" />
+                {hasUserStatus ? (
+                  <StatusEmoji
+                    className="size-4 shrink-0 text-base"
+                    showTitle={false}
+                    value={userStatusEmoji || DEFAULT_USER_STATUS_EMOJI}
+                  />
+                ) : (
+                  <Smile
+                    aria-hidden="true"
+                    className="h-4 w-4 shrink-0 text-muted-foreground"
+                  />
+                )}
                 {hasUserStatus ? (
                   <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-popover-foreground">
-                    {userStatusEmoji ? (
-                      <StatusEmoji
-                        className="w-5 shrink-0 text-base"
-                        value={userStatusEmoji}
-                      />
-                    ) : null}
                     <span className="truncate">{userStatusText}</span>
                   </span>
                 ) : (
@@ -286,7 +299,9 @@ export function ProfilePopover({
       <SetStatusDialog
         hasExistingStatus={hasUserStatus}
         initialEmoji={userStatusEmoji}
+        initialExpiresAt={userStatusExpiresAt}
         initialText={userStatusText}
+        initialUpdatedAt={userStatusUpdatedAt}
         onClear={onClearUserStatus}
         onOpenChange={setStatusDialogOpen}
         onSave={onSetUserStatus}

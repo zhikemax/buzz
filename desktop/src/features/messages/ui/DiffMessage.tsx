@@ -2,6 +2,7 @@ import * as React from "react";
 import { FileDiff, Maximize2 } from "lucide-react";
 
 import { getDiffTitleBadge } from "@/features/messages/lib/parseDiff";
+import { HighlightedSearchText } from "@/features/search/ui/HighlightedSearchText";
 import { useT } from "@/shared/i18n";
 import { isSafeUrl } from "@/shared/lib/url";
 import { Button } from "@/shared/ui/button";
@@ -15,6 +16,7 @@ type DiffMessageProps = {
   filePath?: string;
   commitSha?: string;
   description?: string;
+  searchQuery?: string;
   truncated?: boolean;
   onExpand?: () => void;
 };
@@ -33,6 +35,7 @@ export default function DiffMessage({
   filePath,
   commitSha,
   description,
+  searchQuery,
   truncated,
   onExpand,
 }: DiffMessageProps) {
@@ -118,7 +121,7 @@ export default function DiffMessage({
 
       {description && (
         <div className="px-3 py-1.5 text-xs text-muted-foreground border-b border-border/40 bg-muted/20">
-          {description}
+          <HighlightedSearchText query={searchQuery ?? ""} text={description} />
         </div>
       )}
 
@@ -128,6 +131,7 @@ export default function DiffMessage({
           className="p-3"
           content={content}
           fallbackFilePath={filePath}
+          searchQuery={searchQuery}
           viewType="unified"
         />
       </div>

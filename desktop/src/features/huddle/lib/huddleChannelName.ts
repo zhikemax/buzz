@@ -1,6 +1,6 @@
 import type { Channel, ChannelMember } from "@/shared/api/types";
 import { detectLocale, translate, type TranslateFn } from "@/shared/i18n";
-import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
+import { normalizePubkey, truncateNpub } from "@/shared/lib/pubkey";
 
 type BuildHuddleChannelNameInput = {
   channel: Channel;
@@ -35,7 +35,7 @@ function channelParticipantLabel(
     return firstName(fallbackName);
   }
 
-  return truncatePubkey(pubkey);
+  return truncateNpub(pubkey);
 }
 
 export function buildHuddleChannelName({

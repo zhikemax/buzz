@@ -5,11 +5,13 @@ export function AgentDefinitionMetadata({
   className,
   isBuiltIn,
   model,
+  provider,
   runtime,
 }: {
   className?: string;
   isBuiltIn: boolean;
   model: string | null;
+  provider?: string | null;
   runtime: string | null;
 }) {
   const t = useT();
@@ -26,6 +28,9 @@ export function AgentDefinitionMetadata({
       label: t("agents.preferredRuntime"),
       value: runtime ?? t("agents.useAppDefault"),
     },
+    ...(provider !== undefined
+      ? [{ label: "Preferred provider", value: provider ?? "Use app default" }]
+      : []),
   ];
 
   return (
@@ -33,7 +38,12 @@ export function AgentDefinitionMetadata({
       className={cn("rounded-lg border border-border/70 bg-card/70", className)}
       data-testid="agent-definition-metadata"
     >
-      <div className="grid sm:grid-cols-3">
+      <div
+        className={cn(
+          "grid",
+          items.length > 3 ? "sm:grid-cols-4" : "sm:grid-cols-3",
+        )}
+      >
         {items.map((item, index) => (
           <div
             className={cn(

@@ -1,4 +1,5 @@
 import { LayoutGrid, List } from "lucide-react";
+import { motion } from "motion/react";
 import * as React from "react";
 import { useT } from "@/shared/i18n";
 
@@ -27,6 +28,7 @@ const MASK_RIGHT =
 type ProjectsToolbarProps = {
   filter: ProjectsFilter;
   onFilterChange: (filter: ProjectsFilter) => void;
+  reduceMotion?: boolean;
 };
 
 export function ProjectsViewModeToggle({
@@ -106,6 +108,7 @@ function useHorizontalOverflow(ref: React.RefObject<HTMLElement | null>) {
 export function ProjectsToolbar({
   filter,
   onFilterChange,
+  reduceMotion = false,
 }: ProjectsToolbarProps) {
   const t = useT();
   const scrollRef = React.useRef<HTMLFieldSetElement>(null);
@@ -152,29 +155,45 @@ export function ProjectsToolbar({
         >
           <legend className="sr-only">{t("projects.layout.ownerFilter")}</legend>
           {filterOptions.map((option) => (
-            <Button
-              aria-label={option.label}
-              aria-pressed={filter === option.value}
-              className={cn(
-                PROJECT_TAB_TRIGGER_CLASS,
-                filter === option.value && PROJECT_TAB_SELECTED_CLASS,
-              )}
-              data-testid={`projects-section-${option.value}`}
+            <motion.span
+              className="shrink-0"
               key={option.value}
-              onClick={() => onFilterChange(option.value)}
-              type="button"
-              variant="ghost"
+              variants={{
+                hidden: {
+                  opacity: 0,
+                  transition: { duration: reduceMotion ? 0 : 0.025 },
+                },
+                visible: {
+                  opacity: 1,
+                  transition: { duration: reduceMotion ? 0 : 0.025 },
+                },
+              }}
             >
-              <span className="grid">
-                <span
-                  aria-hidden="true"
-                  className="invisible col-start-1 row-start-1 font-semibold"
-                >
-                  {option.label}
+              <Button
+                aria-label={option.label}
+                aria-pressed={filter === option.value}
+                className={cn(
+                  PROJECT_TAB_TRIGGER_CLASS,
+                  filter === option.value && PROJECT_TAB_SELECTED_CLASS,
+                )}
+                data-testid={`projects-section-${option.value}`}
+                onClick={() => onFilterChange(option.value)}
+                type="button"
+                variant="ghost"
+              >
+                <span className="grid">
+                  <span
+                    aria-hidden="true"
+                    className="invisible col-start-1 row-start-1 font-semibold"
+                  >
+                    {option.label}
+                  </span>
+                  <span className="col-start-1 row-start-1">
+                    {option.label}
+                  </span>
                 </span>
-                <span className="col-start-1 row-start-1">{option.label}</span>
-              </span>
-            </Button>
+              </Button>
+            </motion.span>
           ))}
         </fieldset>
       </div>

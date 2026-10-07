@@ -1,6 +1,15 @@
 import type { Channel } from "@/shared/api/types";
 import { translate } from "@/shared/i18n";
 
+/** The authored channel detail shown consistently across channel surfaces. */
+export function getChannelDetail(channel: Channel): string | null {
+  return (
+    [channel.topic, channel.description, channel.purpose]
+      .find((value) => value && value.trim().length > 0)
+      ?.trim() ?? null
+  );
+}
+
 export function getChannelDescription(channel: Channel | null): string {
   if (!channel) {
     return translate("channel.descDisconnected");
@@ -13,13 +22,15 @@ export function getChannelDescription(channel: Channel | null): string {
 
   // Show only the first non-empty field to avoid duplication when
   // topic, description, and purpose contain overlapping text.
-  const detail = [channel.topic, channel.description, channel.purpose].find(
-    (value) => value && value.trim().length > 0,
-  );
+  const detail = getChannelDetail(channel);
 
-  const parts = [...prefixes, detail ?? null].filter(Boolean);
+  // Join the status prefixes with spaces, but keep the detail text's own
+  // line breaks intact (native `title` tooltips render newlines) and separate
+  // it from the prefixes with a newline so paragraphs stay readable.
+  const prefixText = prefixes.join(" ");
+  const parts = [prefixText || null, detail ?? null].filter(Boolean);
 
   return parts.length > 0
-    ? parts.join(" ")
+    ? parts.join("\n")
     : translate("channel.descFallback");
 }

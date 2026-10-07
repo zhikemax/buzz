@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { ChannelVisibility } from "@/shared/api/types";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
 import { Dialog } from "@/shared/ui/dialog";
@@ -18,6 +20,8 @@ type ChannelKind = "stream" | "forum";
 type CreateChannelDialogProps = {
   /** Which kind of channel to create, or null when closed. */
   channelKind: ChannelKind | null;
+  children?: ReactNode;
+  description?: string;
   isCreating: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (input: {
@@ -27,13 +31,19 @@ type CreateChannelDialogProps = {
     ttlSeconds?: number;
     templateId?: string;
   }) => Promise<void>;
+  testId?: string;
+  title?: string;
 };
 
 export function CreateChannelDialog({
   channelKind,
+  children,
+  description,
   isCreating,
   onOpenChange,
   onCreate,
+  testId = "create-channel-dialog",
+  title,
 }: CreateChannelDialogProps) {
   const t = useT();
   const open = channelKind !== null;
@@ -59,18 +69,20 @@ export function CreateChannelDialog({
       <ChooserDialogContent
         className="max-w-lg"
         contentClassName="pt-3"
-        data-testid="create-channel-dialog"
+        data-testid={testId}
         footerClassName="border-t-0 pt-0"
         headerClassName="pb-2"
         title={
-          isForum
+          title ??
+          (isForum
             ? t("channel.createTitleForum")
-            : t("channel.createTitleChannel")
+            : t("channel.createTitleChannel"))
         }
         description={
-          isForum
+          description ??
+          (isForum
             ? t("channel.createDescriptionForum")
-            : t("channel.createDescriptionChannel")
+            : t("channel.createDescriptionChannel"))
         }
         footer={<CreateChannelFormFooter form={form} />}
       >
@@ -79,6 +91,7 @@ export function CreateChannelDialog({
           id={CREATE_CHANNEL_FORM_ID}
           onSubmit={form.handleSubmit}
         >
+          {children}
           <CreateChannelFormFields form={form} />
         </form>
       </ChooserDialogContent>

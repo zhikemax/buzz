@@ -26,6 +26,7 @@ import { useT } from "@/shared/i18n";
 export function ProfilePrimaryActions({
   actionGroupRef,
   agentActionDisabled,
+  agentStartBlockReason,
   agentActionLabel,
   agentActionLive,
   className,
@@ -45,6 +46,7 @@ export function ProfilePrimaryActions({
 }: {
   actionGroupRef?: Ref<HTMLDivElement>;
   agentActionDisabled?: boolean;
+  agentStartBlockReason?: string;
   agentActionLabel?: string;
   agentActionLive?: boolean;
   className?: string;
@@ -97,7 +99,8 @@ export function ProfilePrimaryActions({
       {onAgentPrimaryAction && agentActionLabel ? (
         <ProfileActionTile
           active
-          disabled={agentActionDisabled}
+          disabled={agentActionDisabled || Boolean(agentStartBlockReason)}
+          title={agentStartBlockReason}
           icon={agentActionLive ? Square : Play}
           label={agentActionLabel}
           onClick={onAgentPrimaryAction}
@@ -219,6 +222,7 @@ function ProfileActionTile({
   label,
   onClick,
   testId,
+  title,
 }: {
   active?: boolean;
   disabled?: boolean;
@@ -227,6 +231,7 @@ function ProfileActionTile({
   label: string;
   onClick: () => void;
   testId?: string;
+  title?: string;
 }) {
   return (
     <button
@@ -237,6 +242,7 @@ function ProfileActionTile({
         active && "bg-foreground text-background hover:bg-foreground/90",
       )}
       data-testid={testId}
+      title={title}
       disabled={disabled}
       onClick={onClick}
       type="button"

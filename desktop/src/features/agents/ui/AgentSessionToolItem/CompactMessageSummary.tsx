@@ -108,7 +108,7 @@ export function CompactMessageSummary({
             aria-label={`Open ${displayName} profile`}
             className={cn(
               avatarClassName,
-              "pointer-events-auto rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "pointer-events-auto rounded-[30%] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             )}
             onClick={(event) => {
               event.preventDefault();
@@ -121,6 +121,7 @@ export function CompactMessageSummary({
               avatarUrl={avatarUrl}
               className="size-full text-xs"
               displayName={displayName}
+              shape="squircle"
               size="sm"
               testId="transcript-agent-sent-avatar"
             />
@@ -133,6 +134,7 @@ export function CompactMessageSummary({
               isCompactPreview ? "text-3xs" : "text-xs",
             )}
             displayName={displayName}
+            shape="squircle"
             size="sm"
             testId="transcript-agent-sent-avatar"
           />

@@ -11,6 +11,7 @@ type SidebarRelayConnectionCardProps = {
   isActionDisabled?: boolean;
   actionTestId?: string;
   className?: string;
+  dismissClassName?: string;
   isConnected?: boolean;
   isReconnectPending: boolean;
   isWaitingOnReconnectHook?: boolean;
@@ -50,6 +51,7 @@ export function SidebarRelayConnectionCard({
 export function SidebarRelayConnectionCompactCard({
   actionTestId,
   className,
+  dismissClassName,
   isActionDisabled = false,
   isConnected = false,
   isReconnectPending,
@@ -81,6 +83,7 @@ export function SidebarRelayConnectionCompactCard({
             ? reconnectDescription
             : t("relay.clickToConnect")
       }
+      dismissClassName={dismissClassName}
       dismissLabel={t("relay.dismiss")}
       iconKey={
         isConnected ? "connected" : isReconnectPending ? "pending" : "idle"

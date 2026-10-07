@@ -181,8 +181,8 @@ export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
     id: "always-address-agent",
     labelKey: "settings.shortcuts.alwaysAddressAgent.label",
     descriptionKey: "settings.shortcuts.alwaysAddressAgent.description",
-    keys: "⇧⌘↵",
-    keysWindows: "Ctrl+Shift+Enter",
+    keys: "⇧⌘M",
+    keysWindows: "Ctrl+Shift+M",
     category: "messages",
   },
   {

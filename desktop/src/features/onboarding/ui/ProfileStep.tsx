@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
 import { SidebarRelayConnectionCompactCard } from "@/features/sidebar/ui/SidebarRelayConnectionCard";
@@ -9,7 +10,9 @@ import { isRelayUnreachableError } from "@/shared/lib/relayError";
 import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 import { ONBOARDING_PRIMARY_CTA_CLASS } from "./OnboardingChrome";
+import { useOnboardingCardLayout } from "./OnboardingCard";
 import { OnboardingFooter } from "./OnboardingFooter";
+import { OnboardingInput } from "./OnboardingInput";
 import {
   type OnboardingTransitionDirection,
   type OnboardingTransitionEffect,
@@ -143,10 +146,11 @@ function OnboardingRelayConnectionErrorCard({
     return null;
   }
 
-  return (
-    <div className="fixed bottom-4 left-4 z-50 w-[calc(100vw-2rem)] text-left sm:bottom-6 sm:left-6 sm:w-[22rem]">
+  return createPortal(
+    <div className="buzz-onboarding-neutral-theme fixed bottom-4 left-4 z-50 w-[calc(100vw-2rem)] text-left sm:bottom-6 sm:left-6 sm:w-[22rem]">
       <SidebarRelayConnectionCompactCard
         actionTestId="onboarding-reconnect-relay"
+        dismissClassName="pointer-events-auto [&>span]:opacity-100"
         isActionDisabled={isActionPending}
         isConnected={hasSuccess}
         isReconnectPending={isActionPending}
@@ -156,7 +160,8 @@ function OnboardingRelayConnectionErrorCard({
         surface="secondary"
         testId="onboarding-relay-reconnect-card"
       />
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -204,10 +209,12 @@ export function ProfileStep({
     submit,
     updateDisplayName,
   } = actions;
-  const { isSaving, name, saveRecovery } = state;
+  const { isReadyToSubmit, isSaving, name, saveRecovery } = state;
   const displayNameDraft = name.draftValue;
   const hasDisplayNameDraft = displayNameDraft.length > 0;
-  const canSubmit = displayNameDraft.trim().length > 0 && !isSaving;
+  const canSubmit =
+    displayNameDraft.trim().length > 0 && isReadyToSubmit && !isSaving;
+  const cardLayout = useOnboardingCardLayout();
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useLayoutEffect(() => {
@@ -216,7 +223,10 @@ export function ProfileStep({
 
   return (
     <OnboardingSlideTransition
-      className="flex w-full flex-col items-center text-center"
+      className={cn(
+        "flex w-full flex-col",
+        cardLayout ? "items-stretch text-left" : "items-center text-center",
+      )}
       data-testid="onboarding-page-1"
       direction={direction}
       effect={transitionEffect}
@@ -231,35 +241,17 @@ export function ProfileStep({
         </p>
       </div>
 
-      <label
-        className="mt-12 flex w-full cursor-text flex-col items-center"
-        htmlFor="onboarding-display-name"
-      >
-        <span className="sr-only">{t("onboard.name")}</span>
-        <div className="relative h-20 w-full max-w-[576px]">
-          {!hasDisplayNameDraft ? (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
-            >
-              <span className="relative inline-flex select-none items-center gap-0 text-4xl font-semibold text-muted-foreground/35 sm:text-5xl">
-                <span
-                  aria-hidden="true"
-                  className="buzz-onboarding-name-placeholder-caret h-[0.9em] w-0.5 rounded-full bg-primary"
-                />
-                {t("onboard.enterYourName")}
-              </span>
-            </div>
-          ) : null}
-          <input
+      {cardLayout ? (
+        <label
+          className="mt-8 block w-full text-sm font-medium text-foreground"
+          htmlFor="onboarding-display-name"
+        >
+          <span className="mb-2 block">{t("onboard.name")}</span>
+          <OnboardingInput
             aria-label={t("onboard.name")}
             autoCapitalize="none"
             autoComplete="off"
             autoCorrect="off"
-            className={cn(
-              "h-full w-full border-0 bg-transparent px-0 py-0 text-center text-4xl font-semibold text-foreground shadow-none outline-none caret-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:text-5xl",
-              !hasDisplayNameDraft && "text-transparent caret-transparent",
-            )}
             data-testid="onboarding-display-name"
             disabled={isSaving}
             id="onboarding-display-name"
@@ -270,12 +262,59 @@ export function ProfileStep({
                 submit();
               }
             }}
+            placeholder={t("onboard.enterYourName")}
             ref={inputRef}
             spellCheck={false}
             value={displayNameDraft}
           />
-        </div>
-      </label>
+        </label>
+      ) : (
+        <label
+          className="mt-12 flex w-full cursor-text flex-col items-center"
+          htmlFor="onboarding-display-name"
+        >
+          <span className="sr-only">{t("onboard.name")}</span>
+          <div className="relative h-20 w-full max-w-[576px]">
+            {!hasDisplayNameDraft ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 flex select-none items-center justify-center"
+              >
+                <span className="relative inline-flex select-none items-center gap-0 text-4xl font-semibold text-muted-foreground/35 sm:text-5xl">
+                  <span
+                    aria-hidden="true"
+                    className="buzz-onboarding-name-placeholder-caret h-[0.9em] w-0.5 rounded-full bg-primary"
+                  />
+                  {t("onboard.enterYourName")}
+                </span>
+              </div>
+            ) : null}
+            <input
+              aria-label={t("onboard.name")}
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              className={cn(
+                "h-full w-full border-0 bg-transparent px-0 py-0 text-center text-4xl font-semibold text-foreground shadow-none outline-none caret-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:text-5xl",
+                !hasDisplayNameDraft && "text-transparent caret-transparent",
+              )}
+              data-testid="onboarding-display-name"
+              disabled={isSaving}
+              id="onboarding-display-name"
+              onChange={(event) => updateDisplayName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && canSubmit) {
+                  event.preventDefault();
+                  submit();
+                }
+              }}
+              ref={inputRef}
+              spellCheck={false}
+              value={displayNameDraft}
+            />
+          </div>
+        </label>
+      )}
 
       {saveRecovery.errorMessage ? (
         <ErrorBanner isSaving={isSaving} message={saveRecovery.errorMessage} />
@@ -324,32 +363,34 @@ export function ProfileStep({
           </Button>
         ) : null}
 
-        <div className="flex min-h-8 items-center gap-2">
-          <div className="flex-1" />
-          {saveRecovery.canSkipForNow ? (
-            <Button
-              className="text-muted-foreground hover:text-accent-foreground"
-              data-testid="onboarding-skip"
-              onClick={skipForNow}
-              type="button"
-              variant="ghost"
-            >
-              {t("common.skip")}
-            </Button>
-          ) : null}
-          {saveRecovery.canAdvanceWithoutSaving ? (
-            <Button
-              className="text-muted-foreground hover:text-accent-foreground"
-              data-testid="onboarding-next-without-saving"
-              onClick={advanceWithoutSaving}
-              type="button"
-              variant="ghost"
-            >
-              {t("onboard.continueWithoutSaving")}
-            </Button>
-          ) : null}
-          <div className="flex-1" />
-        </div>
+        {saveRecovery.canSkipForNow || saveRecovery.canAdvanceWithoutSaving ? (
+          <div className="flex min-h-8 items-center gap-2">
+            <div className="flex-1" />
+            {saveRecovery.canSkipForNow ? (
+              <Button
+                className="text-muted-foreground hover:text-accent-foreground"
+                data-testid="onboarding-skip"
+                onClick={skipForNow}
+                type="button"
+                variant="ghost"
+              >
+                {t("common.skip")}
+              </Button>
+            ) : null}
+            {saveRecovery.canAdvanceWithoutSaving ? (
+              <Button
+                className="text-muted-foreground hover:text-accent-foreground"
+                data-testid="onboarding-next-without-saving"
+                onClick={advanceWithoutSaving}
+                type="button"
+                variant="ghost"
+              >
+                {t("onboard.continueWithoutSaving")}
+              </Button>
+            ) : null}
+            <div className="flex-1" />
+          </div>
+        ) : null}
       </OnboardingFooter>
     </OnboardingSlideTransition>
   );

@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -34,12 +35,20 @@ function rememberIdentityKeyHelpSeen() {
   }
 }
 
-export function IdentityKeyHelpDialog() {
+export function IdentityKeyHelpDialog({
+  inline = false,
+  onOpen,
+}: {
+  inline?: boolean;
+  onOpen?: () => void;
+}) {
   const t = useT();
-  const [isVisible, setIsVisible] = React.useState(hasSeenIdentityKeyHelp);
+  const [isVisible, setIsVisible] = React.useState(
+    inline ? true : hasSeenIdentityKeyHelp,
+  );
 
   React.useEffect(() => {
-    if (isVisible) return;
+    if (inline || isVisible) return;
 
     const timeout = window.setTimeout(() => {
       rememberIdentityKeyHelpSeen();
@@ -47,25 +56,48 @@ export function IdentityKeyHelpDialog() {
     }, IDENTITY_KEY_HELP_DELAY_MS);
 
     return () => window.clearTimeout(timeout);
-  }, [isVisible]);
+  }, [inline, isVisible]);
+
+  const triggerButton = (
+    <Button
+      className={cn(
+        inline
+          ? "h-auto justify-start p-0 text-left text-foreground underline decoration-foreground/45 underline-offset-4 hover:decoration-foreground"
+          : "text-foreground/70 hover:text-foreground",
+        "transition-opacity duration-300 motion-reduce:transition-none",
+        isVisible ? "opacity-100" : "pointer-events-none opacity-0",
+      )}
+      data-testid="identity-key-help-trigger"
+      onClick={onOpen}
+      tabIndex={isVisible ? 0 : -1}
+      type="button"
+      variant="link"
+    >
+      {inline
+        ? t("onboard.learnHowIdentityKeysWork")
+        : t("onboard.identityKeyHelpTitle")}
+    </Button>
+  );
+
+  if (onOpen) {
+    return inline ? (
+      triggerButton
+    ) : (
+      <OnboardingFooter className="max-w-none">
+        {triggerButton}
+      </OnboardingFooter>
+    );
+  }
+
+  const trigger = <DialogTrigger asChild>{triggerButton}</DialogTrigger>;
 
   return (
     <Dialog>
-      <OnboardingFooter className="max-w-none">
-        <DialogTrigger asChild>
-          <Button
-            className={`text-foreground/70 transition-opacity duration-300 hover:text-foreground motion-reduce:transition-none ${
-              isVisible ? "opacity-100" : "pointer-events-none opacity-0"
-            }`}
-            data-testid="identity-key-help-trigger"
-            tabIndex={isVisible ? 0 : -1}
-            type="button"
-            variant="link"
-          >
-            {t("onboard.identityKeyHelpTitle")}
-          </Button>
-        </DialogTrigger>
-      </OnboardingFooter>
+      {inline ? (
+        trigger
+      ) : (
+        <OnboardingFooter className="max-w-none">{trigger}</OnboardingFooter>
+      )}
       <DialogContent
         className="buzz-onboarding-neutral-theme max-w-[47.5rem] -translate-y-5"
         closeButtonClassName={ONBOARDING_INK_ICON_CLASS}
@@ -83,19 +115,39 @@ export function IdentityKeyHelpDialog() {
             className="mt-6 space-y-4 text-pretty text-base leading-7 text-[color:var(--buzz-onboarding-backup-ink)]"
           >
             <div>
-              <p>
-                {t("onboard.identityKeyHelpP1")}
-              </p>
-              <p>
-                {t("onboard.identityKeyHelpP2")}
-              </p>
-              <p>
-                {t("onboard.identityKeyHelpP3")}
-              </p>
+              <IdentityKeyHelpBody />
             </div>
           </DialogDescription>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function IdentityKeyHelpBody() {
+  const t = useT();
+  return (
+    <>
+      <p>{t("onboard.identityKeyHelpBodyP1")}</p>
+      <p>{t("onboard.identityKeyHelpBodyP2")}</p>
+    </>
+  );
+}
+
+/** Identity-key explainer content for the onboarding card sheet. */
+export function IdentityKeyHelpContent() {
+  const t = useT();
+  return (
+    <div className="w-full" data-testid="identity-key-help-dialog">
+      <h1 className="text-title font-normal text-foreground">
+        {t("onboard.identityKeyHelpTitle")}
+      </h1>
+      <div
+        className="mt-2 w-full space-y-4 text-pretty text-base leading-7 text-foreground/80"
+        data-testid="identity-key-help-body"
+      >
+        <IdentityKeyHelpBody />
+      </div>
+    </div>
   );
 }

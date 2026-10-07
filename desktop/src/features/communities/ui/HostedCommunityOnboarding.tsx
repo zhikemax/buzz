@@ -14,17 +14,20 @@ import {
   HOSTED_COMMUNITY_SUFFIX,
   hostedCommunityErrorMessage,
   hostedCommunityRelayUrl,
+  loadHostedCommunityAccount,
+  normalizedBoundKeyHex,
+  startBuilderlabLogin,
+  usableBoundIdentityNpub,
+  VALID_HOSTED_COMMUNITY_NAME,
   type BuilderlabAuth,
   type HostedCommunity,
   type HostedNostrIdentity,
-  loadHostedCommunityAccount,
-  startBuilderlabLogin,
-  VALID_HOSTED_COMMUNITY_NAME,
 } from "@/features/communities/hostedCommunityApi";
 import { useCommunityOnboarding } from "@/features/onboarding/communityOnboarding";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import { useT, type MessageKey } from "@/shared/i18n";
 import { safeNpub } from "@/shared/lib/nostrUtils";
+import { UNAVAILABLE_KEY_LABEL } from "@/shared/lib/pubkey";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
@@ -197,14 +200,30 @@ export function HostedCommunityOnboarding({
       await loadAccount();
     });
 
-  const boundPubkey = identity?.pubkey_hex ?? null;
+  // Identity rows display npubs derived from the same key the mismatch gate
+  // and recovery actions act on: the account row from the authoritative
+  // bound `pubkey_hex` — the server-sent `npub` is an independent field that
+  // nothing on this path proves encodes the same key — and the device row
+  // from the local key. An unencodable or non-identity-length key renders the
+  // neutral label instead of leaking raw hex or the unverified npub. Both
+  // keys are compared in the one normalized hex form, so a padded or
+  // mixed-case spelling of the same key never reads as a mismatch, and an
+  // npub stored in the hex field is not a key at all.
+  const boundHex = normalizedBoundKeyHex(identity?.pubkey_hex);
+  const localHex = normalizedBoundKeyHex(localPubkey);
+  const localNpub = localHex === null ? null : safeNpub(localHex);
+  const boundNpub = usableBoundIdentityNpub(identity);
+  // The account only drives this flow when its authoritative `pubkey_hex`
+  // normalizes to a hex key: without that key the flow cannot establish
+  // which identity create/connect actions would affect. An identity payload
+  // without a usable authoritative key therefore counts as a mismatch that
+  // requires recovery — never as a linked, ready account.
+  const usableBoundIdentity = boundHex !== null;
   const identityMismatch = Boolean(
     identity &&
-      boundPubkey &&
-      localPubkey &&
-      boundPubkey.toLowerCase() !== localPubkey.toLowerCase(),
+      (!usableBoundIdentity ||
+        (boundHex !== null && localHex !== null && boundHex !== localHex)),
   );
-  const localNpub = localPubkey ? safeNpub(localPubkey) : null;
 
   const switchToDeviceIdentity = () =>
     run("hosted.switchingIdentity", async () => {
@@ -246,7 +265,12 @@ export function HostedCommunityOnboarding({
   const hasCommunities = activeCommunities.length > 0;
 
   React.useEffect(() => {
-    if (!identity || identityMismatch || !normalizedName || !validName) {
+    if (
+      !usableBoundIdentity ||
+      identityMismatch ||
+      !normalizedName ||
+      !validName
+    ) {
       setCheckingName(false);
       return;
     }
@@ -271,7 +295,7 @@ export function HostedCommunityOnboarding({
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [identity, identityMismatch, normalizedName, validName]);
+  }, [normalizedName, validName, usableBoundIdentity, identityMismatch]);
 
   const connect = (community: HostedCommunity, _created = false) => {
     const relayUrl = hostedCommunityRelayUrl(community);
@@ -292,7 +316,13 @@ export function HostedCommunityOnboarding({
 
   const create = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validName || !identity || identityMismatch || atCommunityLimit) return;
+    if (
+      !validName ||
+      !usableBoundIdentity ||
+      identityMismatch ||
+      atCommunityLimit
+    )
+      return;
     void run("hosted.creatingCommunity", async () => {
       const available = await checkHostedCommunityName(normalizedName);
       if (available.error || !available.available) {
@@ -321,9 +351,11 @@ export function HostedCommunityOnboarding({
 
   const busy = action !== null;
   // The account is set up once we're signed in with a linked, matching
-  // identity. Until then the sign-in / link-identity modal drives the flow and
-  // the page behind it shows a blurred preview of where communities will land.
-  const ready = Boolean(auth && identity && !identityMismatch);
+  // identity — and a link is only usable when its authoritative `pubkey_hex`
+  // canonicalizes. Until then the sign-in / link-identity modal drives the
+  // flow and the page behind it shows a blurred preview of where
+  // communities will land.
+  const ready = Boolean(auth && usableBoundIdentity && !identityMismatch);
   const modalOpen = !loading && !ready;
 
   // Tell the parent once sign-in completes so it can reveal the stage page.
@@ -544,11 +576,11 @@ export function HostedCommunityOnboarding({
               </DialogDescription>
               <p className="mt-4 w-full break-all rounded-xl bg-[rgb(var(--buzz-hosted-community-identity-bg)/0.5)] px-4 py-3 text-left font-mono text-xs text-foreground">
                 {t("hosted.accountLine", {
-                  id: identity.npub ?? boundPubkey ?? "",
+                  id: boundNpub ?? UNAVAILABLE_KEY_LABEL,
                 })}
                 <br />
                 {t("hosted.thisDeviceLine", {
-                  id: localNpub ?? localPubkey ?? "",
+                  id: localNpub ?? UNAVAILABLE_KEY_LABEL,
                 })}
               </p>
               {errorBox ? <div className="mt-5 w-full">{errorBox}</div> : null}

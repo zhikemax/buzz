@@ -4,7 +4,8 @@ import {
   mergeAllowlist,
   parsePubkeyInput,
 } from "@/features/agents/lib/respondToAllowlist";
-import { truncatePubkey } from "@/shared/lib/pubkey";
+import { parsePubkeyInput as parseCanonicalPubkey } from "@/shared/lib/nostrUtils";
+import { truncateNpub } from "@/shared/lib/pubkey";
 import { PubKey } from "@/shared/ui/PubKey";
 import { useIsArchivedPredicate } from "@/features/identity-archive/hooks";
 import { useUserSearchQuery } from "@/features/profile/hooks";
@@ -60,7 +61,7 @@ function formatSearchUserName(user: UserSearchResult) {
   return (
     user.displayName?.trim() ||
     user.nip05Handle?.trim() ||
-    truncatePubkey(user.pubkey)
+    truncateNpub(user.pubkey)
   );
 }
 
@@ -70,7 +71,7 @@ function formatSearchUserSecondary(user: UserSearchResult) {
   if (displayName && nip05Handle) {
     return nip05Handle;
   }
-  return truncatePubkey(user.pubkey);
+  return truncateNpub(user.pubkey);
 }
 
 const RESPOND_TO_OPTIONS: ReadonlyArray<{
@@ -291,8 +292,6 @@ export function CreateAgentRespondToField({
   );
 }
 
-const HEX_64_RE = /^[0-9a-f]{64}$/i;
-
 function AllowlistPicker({
   allowlist,
   deferredQuery,
@@ -339,10 +338,12 @@ function AllowlistPicker({
   const t = useT();
   const isPersona = variant === "persona";
 
-  // Detect if the query is a valid hex pubkey that's not already in the list.
-  const queryIsHexPubkey =
-    HEX_64_RE.test(deferredQuery) &&
-    !allowlist.some((p) => p.toLowerCase() === deferredQuery.toLowerCase());
+  // Detect if the query is a pubkey (npub or hex) not already in the list;
+  // direct entry offers the canonical hex for storage.
+  const queryPubkey = parseCanonicalPubkey(deferredQuery);
+  const queryIsDirectPubkey =
+    queryPubkey !== null &&
+    !allowlist.some((p) => p.toLowerCase() === queryPubkey);
 
   return (
     <div
@@ -400,13 +401,13 @@ function AllowlistPicker({
               >
                 <UserAvatar
                   avatarUrl={null}
-                  displayName={truncatePubkey(pubkey)}
+                  displayName={truncateNpub(pubkey)}
                   size="xs"
                 />
                 <PubKey pubkey={pubkey} />
                 <button
                   aria-label={t("agents.respond.removeAria", {
-                    name: truncatePubkey(pubkey),
+                    name: truncateNpub(pubkey),
                   })}
                   className="text-muted-foreground transition-colors hover:text-foreground"
                   disabled={disabled}
@@ -439,6 +440,7 @@ function AllowlistPicker({
                       <UserAvatar
                         avatarUrl={result.avatarUrl}
                         displayName={formatSearchUserName(result)}
+                        shape={result.isAgent ? "squircle" : "circle"}
                         size="xs"
                       />
                       <div className="min-w-0">
@@ -456,22 +458,22 @@ function AllowlistPicker({
                   </button>
                 ))}
               </div>
-            ) : queryIsHexPubkey ? (
+            ) : queryIsDirectPubkey ? (
               <button
                 className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors hover:bg-accent hover:text-accent-foreground"
                 data-testid="agent-respond-to-add-raw-pubkey"
-                onClick={() => onAddRawPubkey(deferredQuery.toLowerCase())}
+                onClick={() => onAddRawPubkey(queryPubkey)}
                 type="button"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <UserAvatar
                     avatarUrl={null}
-                    displayName={truncatePubkey(deferredQuery)}
+                    displayName={truncateNpub(queryPubkey)}
                     size="xs"
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-5">
-                      {truncatePubkey(deferredQuery)}
+                      {truncateNpub(queryPubkey)}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {t("agents.respond.addPubkeyDirectly")}
@@ -524,7 +526,7 @@ function AllowlistPicker({
                 data-testid="agent-respond-to-paste"
                 disabled={disabled}
                 onChange={(event) => onPasteTextChange(event.target.value)}
-                placeholder="abcdef0123…"
+                placeholder="npub1… or abcdef0123…"
                 value={pasteText}
               />
               {pasteInvalid.length > 0 ? (

@@ -1,5 +1,6 @@
 import { useAgentManagement } from "@/features/agents/useAgentManagement";
 import { useT } from "@/shared/i18n";
+import { ProjectChannelRequestDialog } from "@/features/projects/ui/ProjectChannelRequestDialog";
 import { AgentCardDialogs } from "./AgentCardViewerDialog";
 import { AgentDialog } from "./AgentDialog";
 
@@ -44,6 +45,7 @@ export function AgentManagementDialogs() {
           title={t("agents.editAgent")}
         />
       ) : null}
+      <ProjectChannelRequestDialog />
       <AgentCardDialogs />
     </>
   );

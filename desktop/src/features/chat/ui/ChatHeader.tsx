@@ -34,6 +34,8 @@ type ChatHeaderProps = {
   mode?: "home" | "channel" | "agents" | "workflows" | "pulse" | "projects";
   overlaysContent?: boolean;
   statusBadge?: React.ReactNode;
+  /** Identity adornment rendered exactly 4px after a DM title. */
+  titleAdornment?: React.ReactNode;
   /** Render the chrome wrapper without an individual backdrop when a parent supplies shared blur. */
   transparentChrome?: boolean;
 };
@@ -97,6 +99,7 @@ export function ChatHeader({
   mode = "channel",
   overlaysContent = false,
   statusBadge,
+  titleAdornment,
   transparentChrome = false,
 }: ChatHeaderProps) {
   const t = useT();
@@ -145,6 +148,7 @@ export function ChatHeader({
             >
               {title}
             </h1>
+            {titleAdornment}
             <Button
               aria-label={t("channel.copyNameAria", { title })}
               className="h-6 w-6 shrink-0 opacity-0 text-muted-foreground transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/title:opacity-100"

@@ -2,8 +2,9 @@ import { ArrowLeft } from "lucide-react";
 import { useT } from "@/shared/i18n";
 import * as React from "react";
 
-import { useChannelsQuery } from "@/features/channels/hooks";
 import type { CreateProjectInput } from "@/features/projects/useCreateProject";
+import { CreateProjectFormSettings } from "@/features/projects/ui/CreateProjectFormSettings";
+import { useCreateProjectFormSettings } from "@/features/projects/ui/useCreateProjectFormSettings";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui/button";
 import { ChooserDialogContent } from "@/shared/ui/chooser-dialog-content";
@@ -35,56 +36,43 @@ export function CreateProjectFormContent({
   const t = useT();
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [cloneUrl, setCloneUrl] = React.useState("");
-  const [webUrl, setWebUrl] = React.useState("");
-  const [accessChannelId, setAccessChannelId] = React.useState("");
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const nameInputRef = React.useRef<HTMLInputElement>(null);
-  const channelsQuery = useChannelsQuery({ enabled: active });
-  const accessChannels = React.useMemo(
-    () =>
-      (channelsQuery.data ?? []).filter(
-        (channel) =>
-          channel.isMember &&
-          !channel.archivedAt &&
-          channel.channelType !== "dm",
-      ),
-    [channelsQuery.data],
-  );
+  const settings = useCreateProjectFormSettings(active, setDescription);
 
   React.useEffect(() => {
     if (!active) return;
     setName(initialName);
     setDescription("");
-    setCloneUrl("");
-    setWebUrl("");
-    setAccessChannelId(accessChannels[0]?.id ?? "");
     setErrorMessage(null);
 
     const timerId = globalThis.setTimeout(() => {
       nameInputRef.current?.focus();
     }, 50);
     return () => globalThis.clearTimeout(timerId);
-  }, [accessChannels, active, initialName]);
+  }, [active, initialName]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedName = name.trim();
-    if (!trimmedName || !accessChannelId) return;
+    if (!trimmedName) return;
 
     setErrorMessage(null);
     try {
       await onCreate({
-        accessChannelId,
         name: trimmedName,
         description: description.trim() || undefined,
-        cloneUrl: cloneUrl.trim() || undefined,
-        webUrl: webUrl.trim() || undefined,
+        channelVisibility: settings.channelVisibility,
+        projectVisibility: settings.projectVisibility,
+        agents: settings.buildAgents(),
+        templateId: settings.templateId,
       });
       onCreated();
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to create project.",
+        error instanceof Error
+          ? error.message
+          : t("projects.create.dialog.failed"),
       );
     }
   }
@@ -94,14 +82,12 @@ export function CreateProjectFormContent({
       className="max-w-lg"
       contentClassName="pt-3"
       data-testid="create-project-dialog"
-      description={t("projects.create.dialog.description")}
+      headerSubtitle={t("projects.create.dialog.headerSubtitle")}
       footer={
         <div className="flex w-full items-center justify-end gap-3">
           <Button
             data-testid="create-project-submit"
-            disabled={
-              isCreating || name.trim().length === 0 || !accessChannelId
-            }
+            disabled={isCreating || name.trim().length === 0}
             form="create-project-form"
             type="submit"
           >
@@ -174,44 +160,6 @@ export function CreateProjectFormContent({
         <div className="space-y-1.5">
           <label
             className="text-sm font-medium text-foreground"
-            htmlFor="create-project-access-channel"
-          >
-            {t("projects.create.dialog.accessChannel")}
-          </label>
-          <div
-            className={cn(
-              "flex min-h-11 items-center px-3",
-              CREATE_FIELD_SHELL_CLASS,
-            )}
-          >
-            <select
-              className={cn("h-8 w-full px-0 py-0", CREATE_FIELD_CONTROL_CLASS)}
-              data-testid="create-project-access-channel"
-              disabled={isCreating}
-              id="create-project-access-channel"
-              onChange={(event) => {
-                setAccessChannelId(event.target.value);
-                setErrorMessage(null);
-              }}
-              required
-              value={accessChannelId}
-            >
-              <option value="">{t("composer.selectChannel")}</option>
-              {accessChannels.map((channel) => (
-                <option key={channel.id} value={channel.id}>
-                  {channel.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {t("projects.create.dialog.accessChannelHint")}
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            className="text-sm font-medium text-foreground"
             htmlFor="create-project-description"
           >
             {t("channel.fieldDescription")}
@@ -230,84 +178,14 @@ export function CreateProjectFormContent({
                 setDescription(event.target.value);
                 setErrorMessage(null);
               }}
-              placeholder={t("projects.create.dialog.descriptionPlaceholder")}
+              placeholder={t("projects.create.dialog.goalPlaceholder")}
               rows={2}
               value={description}
             />
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label
-            className="text-sm font-medium text-foreground"
-            htmlFor="create-project-clone-url"
-          >
-            {t("projects.create.dialog.cloneUrl")}
-            <span className={CREATE_LABEL_OPTIONAL_CLASS}>{t("channel.fieldOptional")}</span>
-          </label>
-          <div
-            className={cn(
-              "flex min-h-11 items-center px-3",
-              CREATE_FIELD_SHELL_CLASS,
-            )}
-          >
-            <Input
-              autoCapitalize="none"
-              autoComplete="off"
-              autoCorrect="off"
-              className={cn(
-                "h-8 px-0 py-0 leading-6",
-                CREATE_FIELD_CONTROL_CLASS,
-              )}
-              data-testid="create-project-clone-url"
-              disabled={isCreating}
-              id="create-project-clone-url"
-              onChange={(event) => {
-                setCloneUrl(event.target.value);
-                setErrorMessage(null);
-              }}
-              placeholder={t("projects.create.dialog.cloneUrlPlaceholder")}
-              spellCheck={false}
-              value={cloneUrl}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            className="text-sm font-medium text-foreground"
-            htmlFor="create-project-web-url"
-          >
-            {t("projects.create.dialog.webUrl")}
-            <span className={CREATE_LABEL_OPTIONAL_CLASS}>{t("channel.fieldOptional")}</span>
-          </label>
-          <div
-            className={cn(
-              "flex min-h-11 items-center px-3",
-              CREATE_FIELD_SHELL_CLASS,
-            )}
-          >
-            <Input
-              autoCapitalize="none"
-              autoComplete="off"
-              autoCorrect="off"
-              className={cn(
-                "h-8 px-0 py-0 leading-6",
-                CREATE_FIELD_CONTROL_CLASS,
-              )}
-              data-testid="create-project-web-url"
-              disabled={isCreating}
-              id="create-project-web-url"
-              onChange={(event) => {
-                setWebUrl(event.target.value);
-                setErrorMessage(null);
-              }}
-              placeholder={t("projects.create.dialog.webUrlPlaceholder")}
-              spellCheck={false}
-              value={webUrl}
-            />
-          </div>
-        </div>
+        <CreateProjectFormSettings disabled={isCreating} {...settings} />
 
         {errorMessage ? (
           <p className="text-sm text-destructive">{errorMessage}</p>

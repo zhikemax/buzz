@@ -14,7 +14,7 @@ import { useRemindLater } from "@/features/reminders/ui/RemindMeLaterProvider";
 import { useIdentityQuery } from "@/shared/api/hooks";
 import type { Channel, FeedItem, HomeFeedResponse } from "@/shared/api/types";
 import { useT } from "@/shared/i18n";
-import { normalizePubkey, truncatePubkey } from "@/shared/lib/pubkey";
+import { normalizePubkey, truncateNpub } from "@/shared/lib/pubkey";
 import { useNow } from "@/shared/lib/useNow";
 import { Markdown } from "@/shared/ui/markdown";
 import {
@@ -79,11 +79,13 @@ function RowActionButton({
 }
 
 function ThreadPreviewRow({
+  isAgent,
   item,
   onMarkRead,
   onOpen,
   onRemindLater,
 }: {
+  isAgent: boolean;
   item: InboxItem;
   onMarkRead: () => void;
   onOpen: () => void;
@@ -106,6 +108,7 @@ function ThreadPreviewRow({
           avatarUrl={item.avatarUrl}
           className="h-9 w-9 shrink-0"
           displayName={item.senderLabel}
+          shape={isAgent ? "squircle" : "circle"}
           size="md"
         />
         <div className="min-w-0 flex-1">
@@ -149,12 +152,15 @@ function ThreadPreviewRow({
 function WorkingAgentRow({
   avatarUrl,
   elapsed,
+  initialsLabel,
   name,
   onOpen,
   pubkey,
 }: {
   avatarUrl: string | null;
   elapsed: string;
+  /** Unprefixed key (or authored name) the avatar derives initials from. */
+  initialsLabel: string;
   name: string;
   onOpen: () => void;
   pubkey: string;
@@ -171,6 +177,8 @@ function WorkingAgentRow({
         avatarUrl={avatarUrl}
         className="h-9 w-9 shrink-0"
         displayName={name}
+        initialsLabel={initialsLabel}
+        shape="squircle"
         size="md"
       />
       <div className="min-w-0 flex-1">
@@ -191,7 +199,12 @@ function WorkingAgentRow({
   );
 }
 
-function WorkingAgentRows({
+/**
+ * Working-agent rows for the channel activity popover. Exported for consumer
+ * tests: it owns the generated `Agent npub1…` fallback label that flows into
+ * `UserAvatar` initials.
+ */
+export function WorkingAgentRows({
   activeWorking,
   channelId,
   onOpen,
@@ -212,14 +225,16 @@ function WorkingAgentRows({
 
   return activeWorking.agentPubkeys.map((pubkey, index) => {
     const profile = profiles?.[normalizePubkey(pubkey)];
+    const authoredName =
+      profile?.displayName?.trim() || alignedAgentNames?.[index];
+    const keyLabel = truncateNpub(pubkey);
     const name =
-      profile?.displayName?.trim() ||
-      alignedAgentNames?.[index] ||
-      t("sidebar.agentFallback", { short: truncatePubkey(pubkey) });
+      authoredName || t("sidebar.agentFallback", { short: keyLabel });
     return (
       <WorkingAgentRow
         avatarUrl={profile?.avatarUrl ?? null}
         elapsed={elapsed}
+        initialsLabel={authoredName || keyLabel}
         key={pubkey}
         name={name}
         onOpen={() => onOpen(pubkey, channelId)}
@@ -429,6 +444,10 @@ export function ChannelActivityPopover({
             {activityItems.length > 0
               ? activityItems.map((item) => (
                   <ThreadPreviewRow
+                    isAgent={
+                      profiles?.[normalizePubkey(item.item.pubkey)]?.isAgent ===
+                      true
+                    }
                     item={item}
                     key={item.conversationId}
                     onMarkRead={() => handleMarkRead(item)}

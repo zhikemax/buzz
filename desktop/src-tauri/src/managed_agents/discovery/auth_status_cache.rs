@@ -23,6 +23,12 @@ pub(super) fn clear() {
     }
 }
 
+pub(super) fn remove(runtime_id: &str) {
+    if let Ok(mut guard) = cache().lock() {
+        guard.remove(runtime_id);
+    }
+}
+
 pub(super) fn store(runtime_id: &str, status: &AuthStatus) {
     if let Ok(mut guard) = cache().lock() {
         guard.insert(runtime_id.to_string(), status.clone());

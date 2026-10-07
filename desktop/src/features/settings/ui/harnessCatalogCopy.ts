@@ -29,6 +29,8 @@ const HARNESS_DESCRIPTION_KEYS: Record<string, MessageKey> = {
   cursor: "settings.agents.harnessDesc.cursor",
   // Source: https://github.com/can1357/oh-my-pi
   omp: "settings.agents.harnessDesc.omp",
+  // Sources: https://pi.dev/docs/latest, https://github.com/salman1993/pi-acp
+  pi: "settings.agents.harnessDesc.pi",
   // Source: https://build.x.ai (docs unavailable during research; kept
   // deliberately conservative).
   grok: "settings.agents.harnessDesc.grok",

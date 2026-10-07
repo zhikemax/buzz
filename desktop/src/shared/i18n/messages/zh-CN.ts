@@ -2172,11 +2172,11 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.respond.noMatchingUsers": "没有匹配的用户。",
   "agents.respond.pastePubkeys": "粘贴公钥",
   "agents.respond.pasteHint":
-    "每行一个，或用逗号/空格分隔。仅支持 64 位小写 hex — 此处尚不支持 npub 解码。",
+    "每行一个，或用逗号/空格分隔。每项为 npub（npub1…）或 64 位 hex 公钥。",
   "agents.respond.invalidEntryOne":
-    "{count} 项不是 64 位 hex，将被忽略。",
+    "{count} 项不是有效的 npub 或 64 位 hex 公钥，将被忽略。",
   "agents.respond.invalidEntryMany":
-    "{count} 项不是 64 位 hex，将被忽略。",
+    "{count} 项不是有效的 npub 或 64 位 hex 公钥，将被忽略。",
   "agents.respond.validPubkeyOne": "{count} 个有效公钥已就绪。",
   "agents.respond.validPubkeyMany": "{count} 个有效公钥已就绪。",
   "agents.respond.noValidPubkeys": "尚无有效公钥。",
@@ -2655,14 +2655,14 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.importFreshKeypair":
     "将创建带有全新密钥对的新智能体。导入的智能体与来源独立 — 身份不会随之迁移。",
   "agents.importMemoryWarning":
-    "此快照包含 {count} 条{level}记忆。记忆以明文保存在文件中，并将恢复到新智能体身份下。",
-  "agents.entry": "entry",
-  "agents.entries": "entries",
+    "此快照包含 {count} {entries}{level}记忆。记忆以明文保存在文件中，并将恢复到新智能体身份下。",
+  "agents.entry": "条",
+  "agents.entries": "条",
   "agents.memoryLevelCore": "核心",
   "agents.memoryLevelAll": "全部",
   "agents.memoryLevelNone": "无",
   "agents.noMemoryConfigOnly": "未包含记忆 — 仅配置。",
-  "agents.respondToAllowlist": "响应允许列表（{count} 项）",
+  "agents.respondToAllowlist": "响应允许列表（{count} {entries}）",
   "agents.allowlistReview":
     "此快照包含源环境公钥。选择「保留」前请逐一核对；若不认识，选「清空」更安全。",
   "agents.clearAllowlist": "清空 — 以空允许列表开始（更安全）",
@@ -2672,8 +2672,8 @@ export const zhCN: Record<MessageKey, string> = {
     "这是从文件解码出的完整可移植载荷。密钥、凭证与来源身份不属于快照格式。",
   "agents.createdSuccessfully": "{name} 已成功创建。",
   "agents.memoryPartialRestore":
-    "记忆部分恢复：已写入 {written}/{total} 条。智能体已存在，但部分记忆条目发布失败。",
-  "agents.memoryRestored": "已恢复 {count} 条记忆。",
+    "记忆部分恢复：已写入 {written}/{total} {entries}。智能体已存在，但部分记忆条目发布失败。",
+  "agents.memoryRestored": "已恢复 {count} {entries}记忆。",
   "agents.profileSync": "资料同步：{message}",
   "agents.importTeamSnapshot": "导入团队快照",
   "agents.teamImported": "团队已导入",
@@ -3044,8 +3044,8 @@ export const zhCN: Record<MessageKey, string> = {
   "agents.profiles": "资料",
   "agents.profileSyncFailedFor": "以下资料同步失败：",
   "agents.memoryPartialAcrossMembers":
-    "记忆部分恢复：已在所有成员中写入 {written}/{total} 条。",
-  "agents.memoryRestoredAcrossMembers": "已在所有成员中恢复 {count} 条记忆。",
+    "记忆部分恢复：已在所有成员中写入 {written}/{total} {entries}。",
+  "agents.memoryRestoredAcrossMembers": "已在所有成员中恢复 {count} {entries}记忆。",
   "agents.noSavedProviderSettings": "无已保存设置 — 提供方将使用其默认值。",
   "agents.runOnImmutableHint":
     "这些是创建智能体时保存的设置。运行位置之后无法更改 — 若要换位置，请新建智能体。",
@@ -4572,4 +4572,125 @@ export const zhCN: Record<MessageKey, string> = {
   "projects.create.toast.created": "项目「{name}」已创建。",
   "projects.repo.toast.created": "仓库「{name}」已创建。",
   "projects.repo.toast.added": "仓库「{name}」已添加。",
+
+  // ── 合并 upstream/main → 0.5.23（2026-09-17）：上游新界面的本地化 ──
+  // 智能体：停止回合与删除确认
+  "agents.stopTurnTitleNoChannel":
+    "打开一个频道的活动即可停止其当前回合。",
+  "agents.stopTurnAmbiguous":
+    "此频道有多个智能体会话。暂不支持在此停止某个特定线程。",
+  "agents.stopTurnNoActiveTurn": "没有可停止的活动回合。",
+  "agents.stopTurnUnconfirmed": "已请求停止，但智能体尚未确认。",
+  "agents.shutdownRequestedNotConfirmed":
+    "已请求关闭，但这并不表示智能体已经停止。",
+  "agents.confirmDeleteAvailabilityUnknown": "无法确认该智能体的在线状态。 ",
+  "agents.confirmDeleteAfterShutdownRequested":
+    "已请求关闭，但智能体可能仍在运行。立即删除只会移除本地记录——如果关闭尚未完成，远程部署将变成孤立实例。是否继续？",
+  "agents.confirmDeleteDeployedNoChannel":
+    "该智能体已部署但不在任何频道中。删除只会移除本地管理记录；远程部署可能仍在运行。是否继续？",
+  "agents.failedToSave": "保存失败",
+  "settings.agents.apiKeyValidationFailed":
+    "无法验证此 API key。请检查 key 或网络连接后重试。",
+  "settings.agents.harnessDesc.pi":
+    "一款极简的终端编程运行时，通过 buzz-pi-acp 适配器连接。",
+  // 频道类型
+  "channel.typeProject": "项目",
+  "channel.typeProjectAria": "项目频道",
+  // 输入框
+  "composer.insertEmojiOrGif": "插入表情或 GIF",
+  "composer.emoji": "表情",
+  "composer.emojiAndGifs": "表情和 GIF",
+  "msg.composer.removeNamed": "移除 {name}",
+  "msg.mentionOutsideOneKeepDraft":
+    "{name} 不在此频道中。邀请他们加入频道，或取消以保留你的草稿。",
+  "msg.mentionOutsideManyKeepDraft":
+    "{names} 不在此频道中。邀请他们加入频道，或取消以保留你的草稿。",
+  "msg.mentionOutsideOneDeniedKeepDraft": "{name} 不在此频道中。{denied}",
+  "msg.mentionOutsideManyDeniedKeepDraft": "{names} 不在此频道中。{denied}",
+  // 引导：运行时设置
+  "onboard.signInRequired": "需要登录",
+  "onboard.openRuntimeSetup": "打开 {name} 设置",
+  "onboard.loadingProviders": "正在加载提供方…",
+  "onboard.continueWithSubscription": "使用 AI 订阅继续",
+  "onboard.subscriptionChooseHint":
+    "订阅通过兼容的运行时（如 Claude Code 或 Codex）连接。选择你的订阅以登录。",
+  "onboard.chooseHarnessHint":
+    "选择智能体连接 AI 提供方的方式。你可以随时更改。",
+  "onboard.notInstalled": "未安装",
+  "onboard.noHarnessesForMethod": "此连接方式没有可用的受支持运行时。",
+  "onboard.subscriptionNameAmp": "Amp 订阅",
+  "onboard.subscriptionNameClaude": "Claude 订阅",
+  "onboard.subscriptionNameCodex": "ChatGPT 订阅",
+  "onboard.subscriptionNameCursor": "Cursor 订阅",
+  "onboard.subscriptionNameDevin": "Devin 账户",
+  "onboard.subscriptionSignInDescription": "Buzz 将为 {name} 打开登录窗口。",
+  "onboard.setUpRuntime": "设置 {name}",
+  "onboard.setUpRuntimeHint":
+    "按照设置指南安装 {name}。完成后回到这里再次检查。",
+  "onboard.openGuide": "打开指南",
+  "onboard.connectRuntime": "连接 {name}",
+  "onboard.connectRuntimeHint": "登录以连接 {name}。你可以随时更改。",
+  "onboard.setUpLater": "稍后设置",
+  // 引导：备份与身份
+  "onboard.yourPrivateIdentityKey": "你的私人身份密钥",
+  "onboard.dontShareKey":
+    "不要分享此密钥。任何拿到它的人都可以访问你的账户。",
+  "onboard.testYourBackup": "测试你的备份",
+  "onboard.verifyYourBackup": "验证你的备份",
+  "onboard.yourBackupIsReady": "备份已就绪",
+  "onboard.createSecureBackupFile": "创建安全备份文件",
+  "onboard.verifyYourBackupHint": "输入密码，确认你可以解锁此文件。",
+  "onboard.yourBackupReadyHint": "测试你的备份以确保可用，或不测试直接继续。",
+  "onboard.createSecureBackupHint":
+    "这会创建一个受密码保护、包含你的私钥的文件。请记住，一旦丢失密钥，Buzz 无法帮你恢复。",
+  "onboard.learnHowIdentityKeysWork": "了解身份密钥的工作原理",
+  "onboard.identityKeyHelpBodyP1":
+    "Buzz 将创建一个包含两部分的 Nostr 身份：用于登录签名的私钥，以及可以安全分享的公钥。你随时可以在 Buzz 设置中查看自己的公开身份。",
+  "onboard.identityKeyHelpBodyP2":
+    "此身份属于你本人，不属于 Buzz，可以随你迁移到另一台设备或兼容的 Nostr 应用。由于私钥仅由你掌控，Buzz 无法重置或恢复它。请将备份保存在安全的地方，切勿分享给他人。",
+  "onboard.unknownPublicKey": "未知公钥",
+  "onboard.recover.scanToSignIn": "扫码登录",
+  "onboard.recover.scanCodeWithDevice":
+    "用一台当前已登录 Buzz 的设备扫描此二维码。",
+  "onboard.reimportRecoveryHint":
+    "你的身份已不在系统密钥环中。重新导入 nsec 以恢复——Buzz 将重启以完成恢复。或者返回并使用新密钥创建新身份。",
+  "onboard.passwordFieldLabel": "密码",
+  "onboard.saveBackup": "保存备份",
+  "onboard.encryptingYourKeyAria": "正在加密你的密钥",
+  // 引导：默认配置步骤
+  "onboard.or": "或",
+  "onboard.useDifferentHarness": "使用其他运行时",
+  "onboard.connectWithApiKey": "使用 API key 连接",
+  "onboard.chooseModelSettings": "选择模型设置",
+  "onboard.connectWithApiKeyHint":
+    "选择提供方并输入 API key，以连接 Buzz 运行时。",
+  "onboard.chooseModelSettingsHint":
+    "选择智能体默认使用的模型与努力级别。",
+  // 项目
+  "projects.repo.add.chooseProject": "选择此仓库所属的项目。",
+  "projects.create.dialog.headerSubtitle":
+    "项目以一个带仓库的频道开始。频道中的成员可以在此交流、克隆代码和创建任务。",
+  "projects.create.dialog.goalPlaceholder": "这个项目要成为什么样",
+  "projects.empty.noCommitsYet": "暂无提交",
+  "projects.empty.commitsHint": "推送到此仓库的提交将显示在这里。",
+  "projects.empty.projectCommitsHint": "推送到此项目各仓库的提交将显示在这里。",
+  "projects.error.loadCommits": "无法加载提交",
+  "projects.error.refreshHint": "刷新仓库后重试。",
+  // 侧栏未读私信导航
+  "sidebar.directionAbove": "上方",
+  "sidebar.directionBelow": "下方",
+  "sidebar.goToUnreadDm": "前往来自 {name} 的未读私信。{label}，{direction}。",
+  "sidebar.unreadDirection": "{label}，{direction}",
+  // 状态设置对话框
+  "status.save": "保存状态",
+  "status.duration.label": "持续时间",
+  "status.duration.oneHour": "1 小时",
+  "status.duration.eightHours": "8 小时",
+  "status.duration.thisWeek": "本周",
+  "status.duration.custom": "自定义",
+  "status.duration.until": "直到",
+  "status.expirationDateAria": "状态到期日期",
+  "status.expirationTimeAria": "状态到期时间",
+  "status.chooseFutureDuration": "请选择未来的时间。",
+  "status.quickStatuses": "快捷状态",
 };
